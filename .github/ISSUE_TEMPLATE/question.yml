@@ -1,0 +1,83 @@
+name: Question/Support
+description: Ask a question or get support
+title: "[QUESTION] "
+labels: ["question", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your question! Please provide as much detail as possible to help us assist you.
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What type of question is this?
+      options:
+        - Usage/How-to
+        - Best Practices
+        - Performance
+        - Integration
+        - Architecture
+        - Troubleshooting
+        - Design Decision
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What is your question?
+      placeholder: Please be as specific as possible
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish?
+      placeholder: |
+        Describe what you're building or what problem you're trying to solve.
+        This helps us provide better answers.
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried?
+      description: What approaches have you already attempted?
+      placeholder: |
+        - Searched documentation
+        - Tried approach X
+        - Looked at examples Y and Z
+        - etc.
+
+  - type: textarea
+    id: code-sample
+    attributes:
+      label: Code Sample (Optional)
+      description: If relevant, include a code sample showing what you're trying to do
+      render: rust
+      placeholder: |
+        use mcp_rust_sdk::*;
+        
+        // Your code here
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of mcp-protocol-sdk are you using?
+      placeholder: "e.g., 0.1.0"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: Environment details, constraints, requirements, etc.

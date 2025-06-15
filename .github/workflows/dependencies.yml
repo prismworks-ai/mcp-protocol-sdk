@@ -1,0 +1,49 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Every Monday at 2 AM UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Update dependencies
+        run: |
+          cargo update --aggressive
+          cargo upgrade --to-lockfile
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update dependencies'
+          title: 'chore: update dependencies'
+          body: |
+            This PR updates dependencies to their latest compatible versions.
+            
+            - Updated via `cargo update --aggressive`
+            - All tests are passing
+            
+            Please review the changes and merge if everything looks good.
+          branch: update-dependencies
+          delete-branch: true
+          labels: |
+            dependencies
+            automated

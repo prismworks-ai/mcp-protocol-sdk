@@ -1,0 +1,100 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage reports
+tarpaulin-report.html
+cobertura.xml
+lcov.info
+
+# Benchmarks
+/target/criterion/
+
+# Documentation
+/target/doc/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# Build artifacts
+/dist/
+/build/
+
+# Testing
+/test-results/
+/coverage/
+
+# Profiling
+*.prof
+perf.data*
+
+# Security
+audit.json
+
+# Local development
+.local/
+local/
+scratch/
+playground/
+my-docs/
+
+# Personal/Development files
+*_SUMMARY.md
+*_OVERVIEW.md
+*_PLAN.md
+*upgrade_plan*
+*personal*
+*private*
+*notes*
+*todo*
+*draft*
+
+# Deployment and release scripts (keep public CI/dev scripts)
+scripts/prepare_open_source.sh
+scripts/deploy.sh
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.generated.*
+
+# Enterprise-related content (should not leak to OSS)
+*enterprise*
+*commercial*
+*proprietary*

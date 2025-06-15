@@ -1,0 +1,43 @@
+name: mcp-protocol-sdk
+title: MCP Protocol SDK
+description: Production-ready Rust implementation of the Model Context Protocol
+url: https://rishirandhawa.github.io/mcp-protocol-sdk
+baseurl: /mcp-protocol-sdk
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Navigation
+header_pages:
+  - getting-started.md
+  - examples.md
+  - transports.md
+  - architecture.md
+  - api-reference.md
+
+# Social links
+github_username: rishirandhawa
+repository: rishirandhawa/mcp-protocol-sdk
+
+# SEO
+social:
+  name: MCP Protocol SDK
+  links:
+    - https://github.com/rishirandhawa/mcp-protocol-sdk
+    - https://crates.io/crates/mcp-protocol-sdk
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - README.md

@@ -1,0 +1,152 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1'  # Run weekly on Monday
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  code_quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-quality-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -W clippy::all -A unused_imports -A unused_variables -A dead_code -A unused_mut -A private_interfaces -A clippy::redundant_closure -A clippy::redundant_pattern_matching -A clippy::should_implement_trait -A clippy::manual_strip -A clippy::type_complexity
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          if grep -r "TODO\|FIXME" src/ --exclude-dir=target; then
+            echo "::notice::Found TODO/FIXME comments in code - these are reminders for future enhancements"
+          else
+            echo "No TODO/FIXME comments found"
+          fi
+
+  complexity_analysis:
+    name: Complexity Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install scc (Source Code Counter)
+        run: |
+          wget -O scc.tar.gz https://github.com/boyter/scc/releases/download/v3.1.0/scc_Linux_x86_64.tar.gz
+          tar -xzf scc.tar.gz
+          sudo mv scc /usr/local/bin/
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run complexity analysis
+        run: |
+          echo "## Code Complexity Report" > complexity-report.md
+          echo "" >> complexity-report.md
+          if command -v scc >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+            scc --format json src/ | jq . > complexity.json || echo "{}" > complexity.json
+            scc --format markdown src/ >> complexity-report.md || echo "Complexity analysis failed" >> complexity-report.md
+          else
+            echo "scc or jq not available, skipping detailed analysis" >> complexity-report.md
+            echo "{}" > complexity.json
+          fi
+
+      - name: Upload complexity report
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-analysis
+          path: |
+            complexity-report.md
+            complexity.json
+
+  dependency_analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-tree
+        run: cargo install cargo-tree
+
+      - name: Analyze dependencies
+        run: |
+          echo "## Dependency Tree" > dependency-report.md
+          echo "" >> dependency-report.md
+          echo '```' >> dependency-report.md
+          cargo tree --all-features >> dependency-report.md
+          echo '```' >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "## Duplicate Dependencies" >> dependency-report.md
+          echo '```' >> dependency-report.md
+          cargo tree --duplicates >> dependency-report.md || echo "No duplicate dependencies found" >> dependency-report.md
+          echo '```' >> dependency-report.md
+
+      - name: Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-analysis
+          path: dependency-report.md
+
+  msrv_check:
+    name: MSRV Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: ['1.75.0', '1.76.0']  # Test with current MSRV and newer version
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check build with Rust ${{ matrix.rust }}
+        run: cargo check --all-features
+
+      - name: Run tests with Rust ${{ matrix.rust }}
+        run: cargo test --all-features

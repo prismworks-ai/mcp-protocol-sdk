@@ -1,0 +1,76 @@
+name: Documentation Issue
+description: Report an issue with documentation
+title: "[DOCS] "
+labels: ["documentation", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Please provide details about the documentation issue.
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation has the issue?
+      options:
+        - README
+        - API Documentation (docs.rs)
+        - Code Examples
+        - Contributing Guide
+        - Changelog
+        - Tutorial/Guide
+        - Code Comments
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Where is the documentation issue? (URL, file path, function name, etc.)
+      placeholder: "e.g., src/server/mcp_server.rs line 123, or https://docs.rs/mcp-protocol-sdk/..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What type of issue is this?
+      options:
+        - Missing documentation
+        - Incorrect information
+        - Unclear explanation
+        - Broken example
+        - Typo/grammar
+        - Outdated information
+        - Missing example
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the documentation issue in detail
+      placeholder: What specifically is wrong, missing, or unclear?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How do you think this should be improved?
+      placeholder: What would make this documentation better?
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the documentation issue
+      placeholder: Any additional information that might be helpful
