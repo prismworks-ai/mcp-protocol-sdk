@@ -1,7 +1,7 @@
 name: mcp-protocol-sdk
 title: MCP Protocol SDK
 description: Production-ready Rust implementation of the Model Context Protocol
-url: https://rishirandhawa.github.io/mcp-protocol-sdk
+url: https://mcp-rust.github.io
 baseurl: /mcp-protocol-sdk
 
 # Build settings
@@ -21,14 +21,14 @@ header_pages:
   - api-reference.md
 
 # Social links
-github_username: rishirandhawa
-repository: rishirandhawa/mcp-protocol-sdk
+github_username: mcp-rust
+repository: mcp-rust/mcp-protocol-sdk
 
 # SEO
 social:
   name: MCP Protocol SDK
   links:
-    - https://github.com/rishirandhawa/mcp-protocol-sdk
+    - https://github.com/mcp-rust/mcp-protocol-sdk
     - https://crates.io/crates/mcp-protocol-sdk
 
 # Exclude from processing

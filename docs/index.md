@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/v/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
 [![Documentation](https://docs.rs/mcp-protocol-sdk/badge.svg)](https://docs.rs/mcp-protocol-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/rishirandhawa/mcp-protocol-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/rishirandhawa/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
 
 ---
 
@@ -125,10 +125,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 🔗 Quick Links
 
-- [**GitHub Repository**](https://github.com/rishirandhawa/mcp-protocol-sdk)
+- [**GitHub Repository**](https://github.com/mcp-rust/mcp-protocol-sdk)
 - [**Crates.io Package**](https://crates.io/crates/mcp-protocol-sdk)
-- [**Issue Tracker**](https://github.com/rishirandhawa/mcp-protocol-sdk/issues)
-- [**Contributing Guide**](https://github.com/rishirandhawa/mcp-protocol-sdk/blob/main/CONTRIBUTING.md)
+- [**Issue Tracker**](https://github.com/mcp-rust/mcp-protocol-sdk/issues)
+- [**Contributing Guide**](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/CONTRIBUTING.md)
 
 ---
 

@@ -3,9 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
 [![Documentation](https://docs.rs/mcp-protocol-sdk/badge.svg)](https://docs.rs/mcp-protocol-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/your-username/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/your-username/mcp-protocol-sdk/actions)
-[![Security Audit](https://github.com/your-username/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/your-username/mcp-protocol-sdk/actions)
-[![codecov](https://codecov.io/gh/your-username/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/mcp-protocol-sdk)
+[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+[![Security Audit](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+[![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
 
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
 
@@ -13,7 +13,7 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 
 ---
 
-## 📚 [Complete Documentation & Guides](./docs/README.md) | 📖 [API Reference](./docs/api/README.md) | 🚀 [Getting Started](./docs/getting-started.md)
+## 📚 [Complete Documentation & Guides](https://mcp-rust.github.io/mcp-protocol-sdk/) | 📖 [API Reference](https://docs.rs/mcp-protocol-sdk) | 🚀 [Getting Started](https://mcp-rust.github.io/mcp-protocol-sdk/getting-started.html)
 
 ---
 
@@ -116,13 +116,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 | **Scenario** | **Description** | **Guide** |
 |--------------|-----------------|-----------|
-| 🖥️ **Claude Desktop Integration** | Add custom tools to Claude Desktop | [📝 Guide](./docs/integrations/claude-desktop.md) |
-| ⚡ **Cursor IDE Enhancement** | AI-powered development tools | [📝 Guide](./docs/integrations/cursor.md) |
-| 📝 **VS Code Extensions** | Smart code assistance and automation | [📝 Guide](./docs/integrations/vscode.md) |
-| 🗄️ **Database Access** | SQL queries and data analysis | [📝 Example](./examples/database_server.rs) |
-| 🌐 **API Integration** | External service connectivity | [📝 Example](./examples/http_server.rs) |
-| 📁 **File Operations** | Filesystem tools and utilities | [📝 Example](./examples/simple_server.rs) |
-| 💬 **Chat Applications** | Real-time AI conversations | [📝 Example](./examples/websocket_server.rs) |
+| 🖥️ **Claude Desktop Integration** | Add custom tools to Claude Desktop | [📝 Guide](https://mcp-rust.github.io/mcp-protocol-sdk/integrations/claude-desktop.html) |
+| ⚡ **Cursor IDE Enhancement** | AI-powered development tools | [📝 Guide](https://mcp-rust.github.io/mcp-protocol-sdk/integrations/cursor.html) |
+| 📝 **VS Code Extensions** | Smart code assistance and automation | [📝 Guide](https://mcp-rust.github.io/mcp-protocol-sdk/integrations/vscode.html) |
+| 🗄️ **Database Access** | SQL queries and data analysis | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/database_server.rs) |
+| 🌐 **API Integration** | External service connectivity | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_server.rs) |
+| 📁 **File Operations** | Filesystem tools and utilities | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/simple_server.rs) |
+| 💬 **Chat Applications** | Real-time AI conversations | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/websocket_server.rs) |
 
 ## 🏗️ Architecture
 
@@ -177,7 +177,7 @@ cargo run --example transport_benchmark --all-features
 cargo run --example conservative_http_demo --all-features
 ```
 
-**[📖 Full Advanced Transport Guide](./docs/ADVANCED_HTTP_TRANSPORT.md)**
+**[📖 Full Advanced Transport Guide](https://mcp-rust.github.io/mcp-protocol-sdk/transports.html)**
 
 ## 📋 Protocol Support
 
@@ -210,15 +210,15 @@ cargo run --example conservative_http_demo --all-features
 
 | Example | Description | Transport | Features |
 |---------|-------------|-----------|----------|
-| [Conservative HTTP Demo](./examples/conservative_http_demo.rs) | **Production-ready HTTP client** | **Advanced HTTP** | **Connection pooling, metrics** |
-| [Transport Benchmark](./examples/transport_benchmark.rs) | **Performance comparison** | **Multiple** | **45% speed improvement** |
-| [Advanced HTTP Client](./examples/advanced_http_client.rs) | **Full-featured HTTP demo** | **Advanced HTTP** | **Retry logic, health checks** |
-| [Echo Server](./examples/echo_server.rs) | Simple tool demonstration | STDIO | Basic tools |
-| [Database Server](./examples/database_server.rs) | SQL query execution | STDIO | Database access |
-| [HTTP Server](./examples/http_server.rs) | RESTful API integration | HTTP | Web services |
-| [WebSocket Server](./examples/websocket_server.rs) | Real-time communication | WebSocket | Live updates |
-| [File Server](./examples/simple_server.rs) | File system operations | STDIO | File handling |
-| [Client Example](./examples/client_example.rs) | Basic client usage | STDIO | Client patterns |
+| [Conservative HTTP Demo](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/conservative_http_demo.rs) | **Production-ready HTTP client** | **Advanced HTTP** | **Connection pooling, metrics** |
+| [Transport Benchmark](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/transport_benchmark.rs) | **Performance comparison** | **Multiple** | **45% speed improvement** |
+| [Advanced HTTP Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/advanced_http_client.rs) | **Full-featured HTTP demo** | **Advanced HTTP** | **Retry logic, health checks** |
+| [Echo Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/echo_server.rs) | Simple tool demonstration | STDIO | Basic tools |
+| [Database Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/database_server.rs) | SQL query execution | STDIO | Database access |
+| [HTTP Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_server.rs) | RESTful API integration | HTTP | Web services |
+| [WebSocket Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/websocket_server.rs) | Real-time communication | WebSocket | Live updates |
+| [File Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/simple_server.rs) | File system operations | STDIO | File handling |
+| [Client Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client_example.rs) | Basic client usage | STDIO | Client patterns |
 
 ## 🛠️ Development
 
@@ -287,7 +287,7 @@ Licensed under the [MIT License](./LICENSE).
 
 <div align="center">
 
-**[📚 Read the Full Documentation](./docs/README.md)** | **[🚀 Get Started Now](./docs/getting-started.md)**
+**[📚 Read the Full Documentation](https://mcp-rust.github.io/mcp-protocol-sdk/)** | **[🚀 Get Started Now](https://mcp-rust.github.io/mcp-protocol-sdk/getting-started.html)**
 
 *Built with ❤️ in Rust*
 

@@ -20,12 +20,12 @@ permalink: /nav/
 
 ### 📖 Reference
 - [**API Reference**](https://docs.rs/mcp-protocol-sdk) - Complete API documentation
-- [**Project Overview**](https://github.com/rishirandhawa/mcp-protocol-sdk/blob/main/PROJECT_OVERVIEW.md) - Why this SDK was created
+- [**Project Overview**](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/PROJECT_OVERVIEW.md) - Why this SDK was created
 
 ### 🔗 External Links
-- [**GitHub Repository**](https://github.com/rishirandhawa/mcp-protocol-sdk) - Source code & issues
+- [**GitHub Repository**](https://github.com/mcp-rust/mcp-protocol-sdk) - Source code & issues
 - [**Crates.io Package**](https://crates.io/crates/mcp-protocol-sdk) - Package registry
-- [**Contributing Guide**](https://github.com/rishirandhawa/mcp-protocol-sdk/blob/main/CONTRIBUTING.md) - How to contribute
+- [**Contributing Guide**](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/CONTRIBUTING.md) - How to contribute
 
 ---
 
@@ -73,4 +73,4 @@ let transport = StdioServerTransport::new();
 
 ---
 
-*Need help? Check our [GitHub Issues](https://github.com/rishirandhawa/mcp-protocol-sdk/issues) or [Contributing Guide](https://github.com/rishirandhawa/mcp-protocol-sdk/blob/main/CONTRIBUTING.md)*
+*Need help? Check our [GitHub Issues](https://github.com/mcp-rust/mcp-protocol-sdk/issues) or [Contributing Guide](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/CONTRIBUTING.md)*

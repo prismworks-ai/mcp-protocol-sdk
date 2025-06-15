@@ -1,17 +1,29 @@
 [package]
 name = "mcp-protocol-sdk"
-version = "0.2.1"
-edition = "2024"
-rust-version = "1.85"  # Minimum for 2024 edition
-authors = ["MCP Rust SDK Contributors"]
-description = "Rust SDK for the Model Context Protocol (MCP)"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["MCP Rust Contributors <mcp-rust@users.noreply.github.com>"]
+description = "Production-ready Rust SDK for the Model Context Protocol (MCP) with multiple transport support"
 license = "MIT"
-repository = "https://github.com/rishirandhawa/mcp-protocol-sdk"
-keywords = ["mcp", "ai", "llm", "protocol", "jsonrpc"]
-categories = ["api-bindings", "network-programming", "development-tools"]
+repository = "https://github.com/mcp-rust/mcp-protocol-sdk"
+keywords = ["mcp", "ai", "protocol", "jsonrpc", "llm"]
+categories = ["api-bindings", "network-programming", "development-tools", "asynchronous"]
 readme = "README.md"
-homepage = "https://modelcontextprotocol.io"
+homepage = "https://mcp-rust.github.io/mcp-protocol-sdk/"
 documentation = "https://docs.rs/mcp-protocol-sdk"
+exclude = [
+    "target/",
+    ".github/",
+    "docs/",
+    "benches/",
+    "scripts/",
+    "*.md",
+    "Makefile",
+    "deny.toml",
+    "clippy.toml",
+    "rustfmt.toml"
+]
 
 [lib]
 name = "mcp_protocol_sdk"

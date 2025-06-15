@@ -38,7 +38,7 @@ Thank you for your interest in contributing to the MCP Protocol SDK! This docume
 ### Local Development
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/mcp-protocol-sdk.git
+git clone https://github.com/mcp-rust/mcp-protocol-sdk.git
 cd mcp-protocol-sdk
 
 # Install dependencies and build
