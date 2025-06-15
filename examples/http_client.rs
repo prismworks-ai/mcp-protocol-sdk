@@ -182,7 +182,9 @@ async fn demonstrate_http_operations(
                 tracing::info!("HTTP Server status:");
                 for content in &result.contents {
                     match content {
-                        mcp_protocol_sdk::protocol::types::ResourceContents::Text { text, .. } => {
+                        mcp_protocol_sdk::protocol::types::ResourceContents::Text {
+                            text, ..
+                        } => {
                             tracing::info!("  {}", text);
                         }
                         mcp_protocol_sdk::protocol::types::ResourceContents::Blob { .. } => {
@@ -207,7 +209,9 @@ async fn demonstrate_http_operations(
                 tracing::info!("HTTP Server metrics:");
                 for content in &result.contents {
                     match content {
-                        mcp_protocol_sdk::protocol::types::ResourceContents::Text { text, .. } => {
+                        mcp_protocol_sdk::protocol::types::ResourceContents::Text {
+                            text, ..
+                        } => {
                             tracing::info!("  {}", text);
                         }
                         mcp_protocol_sdk::protocol::types::ResourceContents::Blob { .. } => {

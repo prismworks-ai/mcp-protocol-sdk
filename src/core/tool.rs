@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::types::{Content, ToolInfo, ToolResult, ToolInputSchema};
+use crate::protocol::types::{Content, ToolInfo, ToolInputSchema, ToolResult};
 
 /// Trait for implementing tool handlers
 #[async_trait]
@@ -56,13 +56,22 @@ impl Tool {
                 description,
                 input_schema: ToolInputSchema {
                     schema_type: "object".to_string(),
-                    properties: input_schema.get("properties").and_then(|p| p.as_object()).map(|obj| {
-                        obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
-                    }),
-                    required: input_schema.get("required").and_then(|r| r.as_array()).map(|arr| {
-                        arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
-                    }),
-                    additional_properties: input_schema.as_object().unwrap_or(&serde_json::Map::new()).iter()
+                    properties: input_schema
+                        .get("properties")
+                        .and_then(|p| p.as_object())
+                        .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
+                    required: input_schema
+                        .get("required")
+                        .and_then(|r| r.as_array())
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|v| v.as_str().map(String::from))
+                                .collect()
+                        }),
+                    additional_properties: input_schema
+                        .as_object()
+                        .unwrap_or(&serde_json::Map::new())
+                        .iter()
                         .filter(|(k, _)| !["type", "properties", "required"].contains(&k.as_str()))
                         .map(|(k, v)| (k.clone(), v.clone()))
                         .collect(),

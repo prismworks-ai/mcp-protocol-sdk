@@ -756,7 +756,7 @@ pub struct PaginatedResult {
 impl Content {
     /// Create text content
     pub fn text<S: Into<String>>(text: S) -> Self {
-        Self::Text { 
+        Self::Text {
             text: text.into(),
             annotations: None,
         }
@@ -991,7 +991,10 @@ mod tests {
         assert_eq!(annotations.read_only, Some(true));
         assert_eq!(annotations.destructive, Some(false));
         assert_eq!(annotations.danger, Some(DangerLevel::Safe));
-        assert_eq!(annotations.audience, Some(vec![AnnotationAudience::Developer]));
+        assert_eq!(
+            annotations.audience,
+            Some(vec![AnnotationAudience::Developer])
+        );
     }
 
     #[test]
@@ -1006,8 +1009,7 @@ mod tests {
 
     #[test]
     fn test_jsonrpc_batching() {
-        let req1 = JsonRpcRequest::new(json!(1), "method1".to_string(), Some(json!({})))
-            .unwrap();
+        let req1 = JsonRpcRequest::new(json!(1), "method1".to_string(), Some(json!({}))).unwrap();
         let req2 = JsonRpcRequest::new::<serde_json::Value>(json!(2), "method2".to_string(), None)
             .unwrap();
 
@@ -1024,7 +1026,9 @@ mod tests {
     #[test]
     fn test_server_capabilities_2025() {
         let caps = ServerCapabilities {
-            tools: Some(ToolsCapability { list_changed: Some(true) }),
+            tools: Some(ToolsCapability {
+                list_changed: Some(true),
+            }),
             completions: Some(CompletionsCapability::default()),
             logging: Some(LoggingCapability::default()),
             experimental: Some(HashMap::new()),

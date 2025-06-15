@@ -334,7 +334,11 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Image { data, mime_type, annotations } => {
+        Content::Image {
+            data,
+            mime_type,
+            annotations,
+        } => {
             if data.is_empty() {
                 return Err(McpError::Validation(
                     "Image data cannot be empty".to_string(),
@@ -354,7 +358,11 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Audio { data, mime_type, annotations } => {
+        Content::Audio {
+            data,
+            mime_type,
+            annotations,
+        } => {
             if data.is_empty() {
                 return Err(McpError::Validation(
                     "Audio data cannot be empty".to_string(),
@@ -374,7 +382,10 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Resource { resource, annotations } => {
+        Content::Resource {
+            resource,
+            annotations,
+        } => {
             if resource.uri.is_empty() {
                 return Err(McpError::Validation(
                     "Resource URI cannot be empty".to_string(),
@@ -457,9 +468,7 @@ pub fn validate_complete_params(params: &CompleteParams) -> McpResult<()> {
 /// Validates root definition (2025-03-26 NEW)
 pub fn validate_root(root: &Root) -> McpResult<()> {
     if root.uri.is_empty() {
-        return Err(McpError::Validation(
-            "Root URI cannot be empty".to_string(),
-        ));
+        return Err(McpError::Validation("Root URI cannot be empty".to_string()));
     }
 
     // Root URIs must start with file:// for now
@@ -641,21 +650,22 @@ pub fn validate_mcp_request(method: &str, params: Option<&Value>) -> McpResult<(
                     })?;
                 validate_create_message_params(&params)?;
             }
-            methods::COMPLETION_COMPLETE => {  // New in 2025-03-26
+            methods::COMPLETION_COMPLETE => {
+                // New in 2025-03-26
                 let params: CompleteParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| {
-                        McpError::Validation(format!("Invalid complete params: {}", e))
-                    })?;
+                    .map_err(|e| McpError::Validation(format!("Invalid complete params: {}", e)))?;
                 validate_complete_params(&params)?;
             }
             methods::PROGRESS => {
-                let params: ProgressNotificationParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| McpError::Validation(format!("Invalid progress params: {}", e)))?;
+                let params: ProgressNotificationParams =
+                    serde_json::from_value(params_value.clone()).map_err(|e| {
+                        McpError::Validation(format!("Invalid progress params: {}", e))
+                    })?;
                 validate_progress_params(&params)?;
             }
             methods::LOGGING_MESSAGE => {
-                let params: LoggingMessageNotificationParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| {
+                let params: LoggingMessageNotificationParams =
+                    serde_json::from_value(params_value.clone()).map_err(|e| {
                         McpError::Validation(format!("Invalid logging message params: {}", e))
                     })?;
                 validate_logging_message_params(&params)?;
@@ -714,9 +724,16 @@ mod tests {
             description: Some("A test tool".to_string()),
             input_schema: ToolInputSchema {
                 schema_type: "object".to_string(),
-                properties: Some(json!({
-                    "param": {"type": "string"}
-                }).as_object().unwrap().iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
+                properties: Some(
+                    json!({
+                        "param": {"type": "string"}
+                    })
+                    .as_object()
+                    .unwrap()
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect(),
+                ),
                 required: None,
                 additional_properties: std::collections::HashMap::new(),
             },

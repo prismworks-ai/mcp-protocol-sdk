@@ -551,7 +551,7 @@ pub mod methods {
 
     /// Progress notification (enhanced in 2025-03-26)
     pub const PROGRESS: &str = "notifications/progress";
-    
+
     /// Cancelled notification (2025-03-26 NEW)
     pub const CANCELLED: &str = "notifications/cancelled";
 }
@@ -562,10 +562,7 @@ pub mod methods {
 
 impl InitializeParams {
     /// Create new initialize parameters (2025-03-26)
-    pub fn new(
-        client_info: Implementation,
-        capabilities: ClientCapabilities,
-    ) -> Self {
+    pub fn new(client_info: Implementation, capabilities: ClientCapabilities) -> Self {
         Self {
             client_info,
             capabilities,
@@ -594,8 +591,8 @@ impl InitializeResult {
 impl CallToolParams {
     /// Create new call tool parameters (2025-03-26)
     pub fn new(name: String, arguments: Option<HashMap<String, serde_json::Value>>) -> Self {
-        Self { 
-            name, 
+        Self {
+            name,
             arguments,
             meta: None,
         }
@@ -620,18 +617,15 @@ impl CallToolParams {
 impl ReadResourceParams {
     /// Create new read resource parameters (2025-03-26)
     pub fn new(uri: String) -> Self {
-        Self { 
-            uri,
-            meta: None,
-        }
+        Self { uri, meta: None }
     }
 }
 
 impl GetPromptParams {
     /// Create new get prompt parameters (2025-03-26)
     pub fn new(name: String, arguments: Option<HashMap<String, serde_json::Value>>) -> Self {
-        Self { 
-            name, 
+        Self {
+            name,
             arguments,
             meta: None,
         }
@@ -710,11 +704,7 @@ impl SamplingMessage {
 
 impl ProgressNotificationParams {
     /// Create progress notification with message (2025-03-26)
-    pub fn with_message(
-        progress_token: ProgressToken,
-        progress: f64,
-        message: String,
-    ) -> Self {
+    pub fn with_message(progress_token: ProgressToken, progress: f64, message: String) -> Self {
         Self {
             progress_token,
             progress,
@@ -827,12 +817,12 @@ mod tests {
             version: "1.0.0".to_string(),
         };
         let capabilities = ClientCapabilities::default();
-        
+
         let params = InitializeParams::new(client_info, capabilities);
-        
+
         assert_eq!(params.protocol_version, LATEST_PROTOCOL_VERSION);
         assert_eq!(params.client_info.name, "test-client");
-        
+
         let json = serde_json::to_value(&params).unwrap();
         assert_eq!(json["protocolVersion"], "2025-03-26");
         assert_eq!(json["clientInfo"]["name"], "test-client");
@@ -842,13 +832,16 @@ mod tests {
     fn test_call_tool_with_metadata() {
         let mut args = HashMap::new();
         args.insert("param1".to_string(), json!("value1"));
-        
+
         let params = CallToolParams::new("test_tool".to_string(), Some(args))
             .with_progress_token(json!("progress-123"));
-        
+
         assert_eq!(params.name, "test_tool");
         assert!(params.meta.is_some());
-        assert_eq!(params.meta.unwrap().progress_token, Some(json!("progress-123")));
+        assert_eq!(
+            params.meta.unwrap().progress_token,
+            Some(json!("progress-123"))
+        );
     }
 
     #[test]
@@ -856,11 +849,11 @@ mod tests {
         // Test text message
         let text_msg = SamplingMessage::user_text("Hello, world!");
         assert_eq!(text_msg.role, Role::User);
-        
+
         // Test audio message (new in 2025-03-26)
         let audio_msg = SamplingMessage::user_audio("base64data", "audio/wav");
         assert_eq!(audio_msg.role, Role::User);
-        
+
         let json = serde_json::to_value(&audio_msg).unwrap();
         assert_eq!(json["content"]["type"], "audio");
         assert_eq!(json["content"]["mimeType"], "audio/wav");
@@ -873,10 +866,10 @@ mod tests {
             0.5,
             "Processing files...".to_string(),
         );
-        
+
         assert_eq!(progress.progress, 0.5);
         assert_eq!(progress.message, Some("Processing files...".to_string()));
-        
+
         let json = serde_json::to_value(&progress).unwrap();
         assert_eq!(json["progressToken"], "token-123");
         assert_eq!(json["progress"], 0.5);
@@ -888,10 +881,9 @@ mod tests {
         let content = vec![Content::text("Operation successful")];
         let mut meta = HashMap::new();
         meta.insert("execution_time".to_string(), json!(1.5));
-        
-        let result = CallToolResult::success(content)
-            .with_metadata(meta);
-        
+
+        let result = CallToolResult::success(content).with_metadata(meta);
+
         assert_eq!(result.is_error, Some(false));
         assert!(result.meta.is_some());
         assert_eq!(
@@ -912,7 +904,7 @@ mod tests {
             },
             meta: None,
         };
-        
+
         let json = serde_json::to_value(&params).unwrap();
         assert_eq!(json["ref"]["type"], "ref/tool");
         assert_eq!(json["ref"]["name"], "test_tool");
@@ -928,11 +920,14 @@ mod tests {
         assert_eq!(methods::RESOURCES_READ, "resources/read");
         assert_eq!(methods::PROMPTS_GET, "prompts/get");
         assert_eq!(methods::SAMPLING_CREATE_MESSAGE, "sampling/createMessage");
-        
+
         // New in 2025-03-26
         assert_eq!(methods::ROOTS_LIST, "roots/list");
         assert_eq!(methods::COMPLETION_COMPLETE, "completion/complete");
-        assert_eq!(methods::RESOURCES_TEMPLATES_LIST, "resources/templates/list");
+        assert_eq!(
+            methods::RESOURCES_TEMPLATES_LIST,
+            "resources/templates/list"
+        );
     }
 
     #[test]
@@ -943,7 +938,7 @@ mod tests {
             experimental: Some(HashMap::new()),
             ..Default::default()
         };
-        
+
         let json = serde_json::to_value(&caps).unwrap();
         assert!(json.get("completions").is_some());
         assert!(json.get("logging").is_some());
@@ -954,7 +949,7 @@ mod tests {
     fn test_embedded_resource_content() {
         let resource_content = Content::resource("file:///test.txt");
         let json = serde_json::to_value(&resource_content).unwrap();
-        
+
         assert_eq!(json["type"], "resource");
         assert_eq!(json["resource"]["uri"], "file:///test.txt");
     }

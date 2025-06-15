@@ -213,8 +213,8 @@ impl Transport for WebSocketClientTransport {
     }
 
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
-        let notification_text =
-            serde_json::to_string(&notification).map_err(|e| McpError::Serialization(e.to_string()))?;
+        let notification_text = serde_json::to_string(&notification)
+            .map_err(|e| McpError::Serialization(e.to_string()))?;
 
         tracing::trace!("Sending WebSocket notification: {}", notification_text);
 
@@ -582,8 +582,8 @@ impl ServerTransport for WebSocketServerTransport {
     }
 
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
-        let notification_text =
-            serde_json::to_string(&notification).map_err(|e| McpError::Serialization(e.to_string()))?;
+        let notification_text = serde_json::to_string(&notification)
+            .map_err(|e| McpError::Serialization(e.to_string()))?;
 
         let mut clients_guard = self.clients.write().await;
         let mut disconnected_clients = Vec::new();

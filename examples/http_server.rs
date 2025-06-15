@@ -166,7 +166,7 @@ async fn main() -> McpResult<()> {
     tracing_subscriber::fmt::init();
 
     let mut http_server = HttpMcpServer::new("http-mcp-server".to_string(), "1.0.0".to_string());
-    
+
     // Get a reference to the underlying server for adding tools and resources
     let server = http_server.server().await;
 

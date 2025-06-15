@@ -16,7 +16,7 @@ use mcp_protocol_sdk::{
         resource::ResourceHandler,
         tool::ToolHandler,
     },
-    protocol::types::{Content, ResourceContents, Resource as ResourceInfo, ToolResult},
+    protocol::types::{Content, Resource as ResourceInfo, ResourceContents, ToolResult},
     server::McpServer,
     transport::stdio::StdioServerTransport,
 };

@@ -237,7 +237,9 @@ async fn demonstrate_websocket_operations(
                 tracing::info!("WebSocket Server status:");
                 for content in &result.contents {
                     match content {
-                        mcp_protocol_sdk::protocol::types::ResourceContents::Text { text, .. } => {
+                        mcp_protocol_sdk::protocol::types::ResourceContents::Text {
+                            text, ..
+                        } => {
                             tracing::info!("  {}", text);
                         }
                         mcp_protocol_sdk::protocol::types::ResourceContents::Blob { .. } => {
@@ -262,7 +264,9 @@ async fn demonstrate_websocket_operations(
                 tracing::info!("WebSocket connections info:");
                 for content in &result.contents {
                     match content {
-                        mcp_protocol_sdk::protocol::types::ResourceContents::Text { text, .. } => {
+                        mcp_protocol_sdk::protocol::types::ResourceContents::Text {
+                            text, ..
+                        } => {
                             tracing::info!("  {}", text);
                         }
                         mcp_protocol_sdk::protocol::types::ResourceContents::Blob { .. } => {

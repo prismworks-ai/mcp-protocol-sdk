@@ -34,35 +34,40 @@ impl HttpMcpServer {
     pub async fn start(&mut self, mut transport: HttpServerTransport) -> McpResult<()> {
         // Set up the request handler to use the MCP server
         let server_clone = self.server.clone();
-        
-        transport.set_request_handler(move |request: JsonRpcRequest| {
-            let server = server_clone.clone();
-            let (tx, rx) = tokio::sync::oneshot::channel();
-            
-            tokio::spawn(async move {
-                let server_guard = server.lock().await;
-                let response = server_guard.handle_request(request).await.unwrap_or_else(|e| {
-                    tracing::error!("Error handling HTTP request: {}", e);
-                    JsonRpcResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id: serde_json::Value::Null,
-                        result: Some(serde_json::json!({
-                            "error": {
-                                "code": -32603,
-                                "message": e.to_string()
+
+        transport
+            .set_request_handler(move |request: JsonRpcRequest| {
+                let server = server_clone.clone();
+                let (tx, rx) = tokio::sync::oneshot::channel();
+
+                tokio::spawn(async move {
+                    let server_guard = server.lock().await;
+                    let response = server_guard
+                        .handle_request(request)
+                        .await
+                        .unwrap_or_else(|e| {
+                            tracing::error!("Error handling HTTP request: {}", e);
+                            JsonRpcResponse {
+                                jsonrpc: "2.0".to_string(),
+                                id: serde_json::Value::Null,
+                                result: Some(serde_json::json!({
+                                    "error": {
+                                        "code": -32603,
+                                        "message": e.to_string()
+                                    }
+                                })),
                             }
-                        })),
-                    }
+                        });
+                    let _ = tx.send(response);
                 });
-                let _ = tx.send(response);
-            });
-            
-            rx
-        }).await;
+
+                rx
+            })
+            .await;
 
         // Start the transport
         transport.start().await?;
-        
+
         self.transport = Some(transport);
         Ok(())
     }

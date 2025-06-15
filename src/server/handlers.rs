@@ -207,7 +207,10 @@ impl ResourceHandler {
         let query_params = HashMap::new();
         let contents = resource.handler.read(&params.uri, &query_params).await?;
 
-        Ok(ReadResourceResult { contents, meta: None })
+        Ok(ReadResourceResult {
+            contents,
+            meta: None,
+        })
     }
 
     /// Handle resources/subscribe request
@@ -354,12 +357,17 @@ impl PromptHandler {
                     PromptMessage {
                         role: msg.role,
                         content: match msg.content {
-                            Content::Text { text, .. } => {
-                                Content::Text { text, annotations: None }
-                            }
-                            Content::Image { data, mime_type, .. } => {
-                                Content::Image { data, mime_type, annotations: None }
-                            }
+                            Content::Text { text, .. } => Content::Text {
+                                text,
+                                annotations: None,
+                            },
+                            Content::Image {
+                                data, mime_type, ..
+                            } => Content::Image {
+                                data,
+                                mime_type,
+                                annotations: None,
+                            },
                             other => other,
                         },
                     }

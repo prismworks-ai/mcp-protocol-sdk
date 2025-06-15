@@ -26,7 +26,9 @@ use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, JsonRpcError, error_codes, JsonRpcMessage};
+use crate::protocol::types::{
+    error_codes, JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse,
+};
 use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
 
 // ============================================================================
@@ -246,7 +248,7 @@ impl Transport for HttpClientTransport {
         let url = format!("{}/mcp", self.base_url);
 
         let mut http_request = self.client.post(&url);
-        
+
         // Apply headers from config and defaults
         for (name, value) in self.headers.iter() {
             let name_str = name.as_str();
@@ -284,19 +286,16 @@ impl Transport for HttpClientTransport {
             )));
         }
 
-        let json_response: JsonRpcResponse = response
-            .json()
-            .await
-            .map_err(|e| {
-                // Untrack request on parse error
-                let request_id = request_with_id.id.clone();
-                let pending_requests = self.pending_requests.clone();
-                tokio::spawn(async move {
-                    let mut pending = pending_requests.lock().await;
-                    pending.remove(&request_id);
-                });
-                McpError::Http(format!("Failed to parse response: {}", e))
-            })?;
+        let json_response: JsonRpcResponse = response.json().await.map_err(|e| {
+            // Untrack request on parse error
+            let request_id = request_with_id.id.clone();
+            let pending_requests = self.pending_requests.clone();
+            tokio::spawn(async move {
+                let mut pending = pending_requests.lock().await;
+                pending.remove(&request_id);
+            });
+            McpError::Http(format!("Failed to parse response: {}", e))
+        })?;
 
         // Validate response ID matches request ID
         if json_response.id != request_with_id.id {
@@ -317,7 +316,7 @@ impl Transport for HttpClientTransport {
         let url = format!("{}/mcp/notify", self.base_url);
 
         let mut http_request = self.client.post(&url);
-        
+
         // Apply headers from config and defaults
         for (name, value) in self.headers.iter() {
             let name_str = name.as_str();
@@ -506,7 +505,7 @@ impl ServerTransport for HttpServerTransport {
         // This is now handled by the HTTP server itself and should not be called directly
         // The HTTP transport handles requests through the HTTP server routes
         tracing::warn!("handle_request called directly on HTTP transport - this may indicate a configuration issue");
-        
+
         let state = self.state.read().await;
 
         if let Some(ref handler) = state.request_handler {
@@ -519,7 +518,9 @@ impl ServerTransport for HttpServerTransport {
             }
         } else {
             // Return an error indicating no handler is configured
-            Err(McpError::Http("No request handler configured for HTTP transport".to_string()))
+            Err(McpError::Http(
+                "No request handler configured for HTTP transport".to_string(),
+            ))
         }
     }
 

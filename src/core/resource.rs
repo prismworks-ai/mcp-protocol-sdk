@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::types::{ResourceContents, Resource as ResourceInfo};
+use crate::protocol::types::{Resource as ResourceInfo, ResourceContents};
 
 /// Template for parameterized resources
 #[derive(Debug, Clone, PartialEq)]
@@ -454,7 +454,9 @@ mod tests {
         let content = resource.read("test://resource", &params).await.unwrap();
         assert_eq!(content.len(), 1);
         match &content[0] {
-            ResourceContents::Text { text, mime_type, .. } => {
+            ResourceContents::Text {
+                text, mime_type, ..
+            } => {
                 assert_eq!(*text, "Hello, World!".to_string());
                 assert_eq!(*mime_type, Some("text/plain".to_string()));
             }

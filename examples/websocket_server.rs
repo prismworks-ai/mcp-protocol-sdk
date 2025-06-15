@@ -98,8 +98,6 @@ impl ToolHandler for WebSocketChatHandler {
             .and_then(|v| v.as_str())
             .unwrap_or("general");
 
-
-
         Ok(ToolResult {
             content: vec![Content::text(format!(
                 "💬 [{}] {}: {}",

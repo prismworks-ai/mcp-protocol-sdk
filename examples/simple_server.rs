@@ -17,8 +17,8 @@ use mcp_protocol_sdk::{
         tool::ToolHandler,
     },
     protocol::types::{
-        Content, PromptArgument, Prompt as PromptInfo, PromptMessage, GetPromptResult as PromptResult,
-        ResourceContents, Resource as ResourceInfo, ToolResult, Role,
+        Content, GetPromptResult as PromptResult, Prompt as PromptInfo, PromptArgument,
+        PromptMessage, Resource as ResourceInfo, ResourceContents, Role, ToolResult,
     },
     server::mcp_server::ServerConfig,
     server::McpServer,

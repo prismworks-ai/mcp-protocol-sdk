@@ -4,7 +4,7 @@
 //! # MCP Rust SDK (2025-03-26)
 //!
 //! A comprehensive Rust SDK for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
-//! version 2025-03-26, providing both server and client implementations with full MCP specification 
+//! version 2025-03-26, providing both server and client implementations with full MCP specification
 //! compliance including audio content, annotations, and enhanced capabilities.
 //!
 //! ## Features

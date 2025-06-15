@@ -9,7 +9,8 @@ use std::collections::HashMap;
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{
-    PromptArgument, Content, Prompt as PromptInfo, PromptMessage, GetPromptResult as PromptResult, Role,
+    Content, GetPromptResult as PromptResult, Prompt as PromptInfo, PromptArgument, PromptMessage,
+    Role,
 };
 
 /// Trait for implementing prompt handlers
@@ -134,10 +135,7 @@ impl PromptMessage {
 
     /// Create a message with custom role
     pub fn with_role(role: Role, content: Content) -> Self {
-        Self {
-            role,
-            content,
-        }
+        Self { role, content }
     }
 }
 
@@ -460,9 +458,7 @@ mod tests {
         let image_content = Content::image("base64data", "image/png");
         match image_content {
             Content::Image {
-                data,
-                mime_type,
-                ..
+                data, mime_type, ..
             } => {
                 assert_eq!(data, "base64data");
                 assert_eq!(mime_type, "image/png");

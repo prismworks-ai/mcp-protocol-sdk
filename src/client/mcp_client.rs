@@ -179,10 +179,7 @@ impl McpClient {
 
     /// Initialize the connection with the server
     async fn initialize(&self) -> McpResult<InitializeResult> {
-        let params = InitializeParams::new(
-            self.info.clone(),
-            self.capabilities.clone(),
-        );
+        let params = InitializeParams::new(self.info.clone(), self.capabilities.clone());
 
         let request = JsonRpcRequest::new(
             Value::from(self.next_request_id().await),
