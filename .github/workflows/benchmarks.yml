@@ -29,7 +29,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Set up cargo cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -43,7 +43,14 @@ jobs:
         run: cargo install cargo-criterion
 
       - name: Run benchmarks
-        run: cargo criterion --all-features
+        run: |
+          if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
+            cargo criterion --all-features
+          else
+            echo "No benchmarks found, skipping benchmark run"
+            mkdir -p target/criterion/reports
+            echo "<html><body><h1>No benchmarks found</h1></body></html>" > target/criterion/reports/index.html
+          fi
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
@@ -68,7 +75,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Set up cargo cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -79,7 +86,13 @@ jobs:
           key: ${{ runner.os }}-cargo-bench-pr-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run PR benchmarks
-        run: cargo bench --all-features -- --output-format json | tee pr_benchmark.json
+        run: |
+          if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
+            cargo bench --all-features -- --output-format json | tee pr_benchmark.json
+          else
+            echo "No benchmarks found, creating empty results" 
+            echo "[]" > pr_benchmark.json
+          fi
 
       - name: Checkout main
         uses: actions/checkout@v4
@@ -87,7 +100,13 @@ jobs:
           ref: main
 
       - name: Run main benchmarks
-        run: cargo bench --all-features -- --output-format json | tee main_benchmark.json
+        run: |
+          if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
+            cargo bench --all-features -- --output-format json | tee main_benchmark.json
+          else
+            echo "No benchmarks found, creating empty results"
+            echo "[]" > main_benchmark.json
+          fi
 
       - name: Compare benchmarks
         run: |

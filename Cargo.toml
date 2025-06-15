@@ -1,8 +1,8 @@
 [package]
 name = "mcp-protocol-sdk"
 version = "0.2.3"
-edition = "2024"
-rust-version = "1.85"  # Minimum for 2024 edition
+edition = "2021"
+rust-version = "1.75"  # Minimum stable Rust version
 authors = ["MCP Rust Contributors <mcp-rust@users.noreply.github.com>"]
 description = "Production-ready Rust SDK for the Model Context Protocol (MCP) with multiple transport support"
 license = "MIT"
@@ -62,8 +62,8 @@ fastrand = { version = "2.0", optional = true }
 # Schema validation
 jsonschema = { version = "0.17", optional = true }
 
-# Process management for stdio
-tokio-process = { version = "0.2", optional = true }
+# Note: Process support is built into modern tokio (tokio::process)
+# No additional dependencies needed for stdio transport
 
 [dev-dependencies]
 tokio-test = "0.4"
@@ -75,7 +75,7 @@ chrono = { version = "0.4", features = ["serde"] }
 [features]
 default = ["stdio", "tracing-subscriber"]
 full = ["stdio", "http", "websocket", "validation", "tracing-subscriber", "chrono"]
-stdio = ["tokio-process"]
+stdio = []  # Uses tokio::process from main tokio crate
 http = ["axum", "tower", "tower-http", "reqwest", "chrono", "tokio-stream", "futures", "fastrand"]
 websocket = ["tokio-tungstenite", "http", "futures", "futures-util"]
 validation = ["jsonschema"]
