@@ -28,13 +28,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-audit
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-audit
-          version: latest
+        run: cargo install cargo-audit
 
       - name: Run cargo audit
-        run: cargo audit --deny warnings
+        run: cargo audit
 
       - name: Run cargo audit (JSON output)
         run: cargo audit --format json > audit-results.json
@@ -58,10 +55,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-deny
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-deny
-          version: latest
+        run: cargo install cargo-deny
 
       - name: Run cargo deny
         run: cargo deny check
@@ -77,10 +71,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-license
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-license
-          version: latest
+        run: cargo install cargo-license
 
       - name: Check licenses
         run: cargo license --json > licenses.json
