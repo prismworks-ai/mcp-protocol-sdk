@@ -2,21 +2,18 @@
 //!
 //! These tests demonstrate full end-to-end functionality using the current API.
 
-use std::collections::HashMap;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 
 use mcp_protocol_sdk::{
     core::{
         error::{McpError, McpResult},
-        tool::{ToolHandler, EchoTool, AdditionTool},
-        resource::ResourceHandler,
         prompt::PromptHandler,
+        resource::ResourceHandler,
+        tool::{AdditionTool, EchoTool, ToolHandler},
     },
+    protocol::{messages::*, types::*},
     server::mcp_server::{McpServer, ServerConfig},
-    protocol::{
-        types::*,
-        messages::*,
-    },
 };
 
 // ========================================================================
@@ -74,10 +71,7 @@ struct TextProcessorTool;
 #[async_trait::async_trait]
 impl ToolHandler for TextProcessorTool {
     async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
-        let text = arguments
-            .get("text")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let text = arguments.get("text").and_then(|v| v.as_str()).unwrap_or("");
 
         let operation = arguments
             .get("operation")
@@ -119,7 +113,11 @@ struct SampleDataResource;
 
 #[async_trait::async_trait]
 impl ResourceHandler for SampleDataResource {
-    async fn read(&self, uri: &str, _params: &HashMap<String, String>) -> McpResult<Vec<ResourceContents>> {
+    async fn read(
+        &self,
+        uri: &str,
+        _params: &HashMap<String, String>,
+    ) -> McpResult<Vec<ResourceContents>> {
         Ok(vec![ResourceContents::Text {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
@@ -134,7 +132,8 @@ impl ResourceHandler for SampleDataResource {
                     "created": "2024-01-01",
                     "updated": "2024-06-16"
                 }
-            }).to_string(),
+            })
+            .to_string(),
         }])
     }
 
@@ -163,10 +162,14 @@ impl UserProfileResource {
 
 #[async_trait::async_trait]
 impl ResourceHandler for UserProfileResource {
-    async fn read(&self, uri: &str, _params: &HashMap<String, String>) -> McpResult<Vec<ResourceContents>> {
+    async fn read(
+        &self,
+        uri: &str,
+        _params: &HashMap<String, String>,
+    ) -> McpResult<Vec<ResourceContents>> {
         // Extract user ID from URI (simple parsing for demo)
         let user_id = uri.split('/').last().unwrap_or(&self.user_id);
-        
+
         Ok(vec![ResourceContents::Text {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
@@ -180,7 +183,8 @@ impl ResourceHandler for UserProfileResource {
                     "theme": "dark",
                     "notifications": true
                 }
-            }).to_string(),
+            })
+            .to_string(),
         }])
     }
 
@@ -240,7 +244,10 @@ impl PromptHandler for CodeReviewPrompt {
         ];
 
         Ok(PromptResult {
-            description: Some(format!("Code review assistant for {} with {} focus", language, focus)),
+            description: Some(format!(
+                "Code review assistant for {} with {} focus",
+                language, focus
+            )),
             messages,
             meta: Some({
                 let mut meta = HashMap::new();
@@ -293,13 +300,19 @@ impl PromptHandler for DocumentationPrompt {
         ];
 
         Ok(PromptResult {
-            description: Some(format!("Documentation assistant for {} targeting {}", doc_type, audience)),
+            description: Some(format!(
+                "Documentation assistant for {} targeting {}",
+                doc_type, audience
+            )),
             messages,
             meta: Some({
                 let mut meta = HashMap::new();
                 meta.insert("type".to_string(), json!(doc_type));
                 meta.insert("audience".to_string(), json!(audience));
-                meta.insert("sections".to_string(), json!(["overview", "examples", "reference"]));
+                meta.insert(
+                    "sections".to_string(),
+                    json!(["overview", "examples", "reference"]),
+                );
                 meta
             }),
         })
@@ -503,7 +516,10 @@ async fn test_tool_operations() {
     div_args.insert("a".to_string(), json!(100.0));
     div_args.insert("b".to_string(), json!(4.0));
 
-    let div_result = server.call_tool("calculator", Some(div_args)).await.unwrap();
+    let div_result = server
+        .call_tool("calculator", Some(div_args))
+        .await
+        .unwrap();
     assert_eq!(div_result.is_error, Some(false));
 
     // Test division by zero
@@ -559,7 +575,10 @@ async fn test_text_processing_tool() {
     count_args.insert("text".to_string(), json!(test_text));
     count_args.insert("operation".to_string(), json!("count"));
 
-    let count_result = server.call_tool("text_processor", Some(count_args)).await.unwrap();
+    let count_result = server
+        .call_tool("text_processor", Some(count_args))
+        .await
+        .unwrap();
     assert!(count_result.meta.is_some());
 
     // Test word count
@@ -567,7 +586,10 @@ async fn test_text_processing_tool() {
     word_args.insert("text".to_string(), json!(test_text));
     word_args.insert("operation".to_string(), json!("words"));
 
-    let word_result = server.call_tool("text_processor", Some(word_args)).await.unwrap();
+    let word_result = server
+        .call_tool("text_processor", Some(word_args))
+        .await
+        .unwrap();
     assert_eq!(word_result.is_error, Some(false));
 
     // Test case conversion
@@ -575,7 +597,10 @@ async fn test_text_processing_tool() {
     upper_args.insert("text".to_string(), json!("hello world"));
     upper_args.insert("operation".to_string(), json!("uppercase"));
 
-    let upper_result = server.call_tool("text_processor", Some(upper_args)).await.unwrap();
+    let upper_result = server
+        .call_tool("text_processor", Some(upper_args))
+        .await
+        .unwrap();
     assert_eq!(upper_result.is_error, Some(false));
 
     // Test reverse
@@ -583,7 +608,10 @@ async fn test_text_processing_tool() {
     reverse_args.insert("text".to_string(), json!("hello"));
     reverse_args.insert("operation".to_string(), json!("reverse"));
 
-    let reverse_result = server.call_tool("text_processor", Some(reverse_args)).await.unwrap();
+    let reverse_result = server
+        .call_tool("text_processor", Some(reverse_args))
+        .await
+        .unwrap();
     assert_eq!(reverse_result.is_error, Some(false));
 }
 
@@ -622,7 +650,10 @@ async fn test_resource_operations() {
 
     let test_data_resource = resources.iter().find(|r| r.uri == "memory://test-data");
     assert!(test_data_resource.is_some());
-    assert_eq!(test_data_resource.unwrap().name, Some("Test Dataset".to_string()));
+    assert_eq!(
+        test_data_resource.unwrap().name,
+        Some("Test Dataset".to_string())
+    );
 
     // Test reading resources
     let sample_contents = server.read_resource("memory://test-data").await.unwrap();
@@ -657,7 +688,10 @@ async fn test_resource_operations() {
     let resources_after = server.list_resources().await.unwrap();
     assert_eq!(resources_after.len(), 1);
 
-    let not_removed = server.remove_resource("memory://nonexistent").await.unwrap();
+    let not_removed = server
+        .remove_resource("memory://nonexistent")
+        .await
+        .unwrap();
     assert!(!not_removed);
 }
 
@@ -692,13 +726,11 @@ async fn test_prompt_operations() {
     let doc_info = PromptInfo {
         name: "documentation".to_string(),
         description: Some("Documentation prompt".to_string()),
-        arguments: Some(vec![
-            PromptArgument {
-                name: "type".to_string(),
-                description: Some("Doc type".to_string()),
-                required: Some(false),
-            },
-        ]),
+        arguments: Some(vec![PromptArgument {
+            name: "type".to_string(),
+            description: Some("Doc type".to_string()),
+            required: Some(false),
+        }]),
     };
 
     server
@@ -734,7 +766,10 @@ async fn test_prompt_operations() {
     doc_args.insert("type".to_string(), json!("api"));
     doc_args.insert("audience".to_string(), json!("beginners"));
 
-    let doc_result = server.get_prompt("documentation", Some(doc_args)).await.unwrap();
+    let doc_result = server
+        .get_prompt("documentation", Some(doc_args))
+        .await
+        .unwrap();
     assert!(doc_result.description.is_some());
     assert!(doc_result.description.unwrap().contains("api"));
     assert_eq!(doc_result.messages.len(), 2);
@@ -764,21 +799,14 @@ async fn test_json_rpc_request_handling() {
         ClientCapabilities::default(),
     );
 
-    let init_request = JsonRpcRequest::new(
-        json!(1),
-        "initialize".to_string(),
-        Some(init_params),
-    ).unwrap();
+    let init_request =
+        JsonRpcRequest::new(json!(1), "initialize".to_string(), Some(init_params)).unwrap();
 
     let init_response = server.handle_request(init_request).await.unwrap();
     assert!(init_response.result.is_some());
 
     // Test ping request
-    let ping_request = JsonRpcRequest::new(
-        json!(2),
-        "ping".to_string(),
-        None::<Value>,
-    ).unwrap();
+    let ping_request = JsonRpcRequest::new(json!(2), "ping".to_string(), None::<Value>).unwrap();
 
     let ping_response = server.handle_request(ping_request).await.unwrap();
     assert!(ping_response.result.is_some());
@@ -803,11 +831,8 @@ async fn test_json_rpc_request_handling() {
 
     // Test tools/list request
     let tools_list_params = ListToolsParams::default();
-    let tools_request = JsonRpcRequest::new(
-        json!(3),
-        "tools/list".to_string(),
-        Some(tools_list_params),
-    ).unwrap();
+    let tools_request =
+        JsonRpcRequest::new(json!(3), "tools/list".to_string(), Some(tools_list_params)).unwrap();
 
     let tools_response = server.handle_request(tools_request).await.unwrap();
     assert!(tools_response.result.is_some());
@@ -822,21 +847,15 @@ async fn test_json_rpc_request_handling() {
         meta: None,
     };
 
-    let call_request = JsonRpcRequest::new(
-        json!(4),
-        "tools/call".to_string(),
-        Some(call_params),
-    ).unwrap();
+    let call_request =
+        JsonRpcRequest::new(json!(4), "tools/call".to_string(), Some(call_params)).unwrap();
 
     let call_response = server.handle_request(call_request).await.unwrap();
     assert!(call_response.result.is_some());
 
     // Test invalid method
-    let invalid_request = JsonRpcRequest::new(
-        json!(5),
-        "invalid/method".to_string(),
-        None::<Value>,
-    ).unwrap();
+    let invalid_request =
+        JsonRpcRequest::new(json!(5), "invalid/method".to_string(), None::<Value>).unwrap();
 
     let invalid_response = server.handle_request(invalid_request).await;
     // Should still return a response with error information
@@ -845,9 +864,10 @@ async fn test_json_rpc_request_handling() {
 
 #[tokio::test]
 async fn test_concurrent_operations() {
-    let server = std::sync::Arc::new(
-        McpServer::new("concurrent-server".to_string(), "1.0.0".to_string())
-    );
+    let server = std::sync::Arc::new(McpServer::new(
+        "concurrent-server".to_string(),
+        "1.0.0".to_string(),
+    ));
 
     // Add multiple tools
     for i in 0..5 {
@@ -910,9 +930,8 @@ async fn test_concurrent_operations() {
 
     for _ in 0..5 {
         let server_clone = server.clone();
-        let handle = tokio::spawn(async move {
-            server_clone.read_resource("memory://concurrent").await
-        });
+        let handle =
+            tokio::spawn(async move { server_clone.read_resource("memory://concurrent").await });
         read_handles.push(handle);
     }
 
@@ -932,7 +951,7 @@ async fn test_error_handling() {
     let missing_tool_result = server.call_tool("nonexistent", None).await;
     assert!(missing_tool_result.is_err());
     match missing_tool_result.unwrap_err() {
-        McpError::ToolNotFound(_) => {},
+        McpError::ToolNotFound(_) => {}
         _ => panic!("Expected ToolNotFound error"),
     }
 
@@ -940,7 +959,7 @@ async fn test_error_handling() {
     let missing_resource_result = server.read_resource("memory://nonexistent").await;
     assert!(missing_resource_result.is_err());
     match missing_resource_result.unwrap_err() {
-        McpError::ResourceNotFound(_) => {},
+        McpError::ResourceNotFound(_) => {}
         _ => panic!("Expected ResourceNotFound error"),
     }
 
@@ -948,7 +967,7 @@ async fn test_error_handling() {
     let missing_prompt_result = server.get_prompt("nonexistent", None).await;
     assert!(missing_prompt_result.is_err());
     match missing_prompt_result.unwrap_err() {
-        McpError::PromptNotFound(_) => {},
+        McpError::PromptNotFound(_) => {}
         _ => panic!("Expected PromptNotFound error"),
     }
 

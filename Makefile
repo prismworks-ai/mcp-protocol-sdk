@@ -1,169 +1,222 @@
-# Makefile for MCP Protocol SDK Development
+# Makefile for MCP Protocol SDK
+# Provides easy commands to run CI checks locally before pushing
 
-.PHONY: help setup check quick-check format lint test test-all examples docs clean audit coverage bench
+.PHONY: help check quick full fmt clippy test test-all test-features examples docs security coverage clean install-tools setup-hooks
 
 # Default target
 help: ## Show this help message
-	@echo "MCP Protocol SDK - Development Commands"
-	@echo "==================================="
+	@echo "MCP Protocol SDK - Local CI Commands"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@echo "Usage: make [target]"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make setup      # Set up development environment"
-	@echo "  make check      # Run all CI checks locally"
-	@echo "  make quick      # Run essential checks only"
-	@echo "  make test       # Run all tests"
+	@echo "Targets:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-setup: ## Install development tools and dependencies
-	@echo "🔧 Setting up development environment..."
-	./scripts/setup-dev.sh
+# Quick validation before commit
+quick: ## Quick validation (format, clippy, basic tests)
+	@echo "🚀 Running quick validation..."
+	@$(MAKE) fmt
+	@$(MAKE) clippy
+	@cargo check --all-features
+	@cargo test --lib
+	@echo "✅ Quick validation complete!"
 
-check: ## Run full CI checks (mirrors GitHub Actions)
-	@echo "🚀 Running full CI checks..."
-	./scripts/ci-check.sh
+# Standard CI checks
+check: ## Run standard CI checks (mirrors GitHub Actions)
+	@echo "🚀 Running standard CI pipeline..."
+	@$(MAKE) fmt
+	@$(MAKE) clippy
+	@cargo check --all-features
+	@$(MAKE) test-all
+	@$(MAKE) examples
+	@$(MAKE) docs
+	@echo "✅ Standard CI checks complete!"
 
-quick-check: ## Run essential checks only (faster)
-	@echo "⚡ Running quick checks..."
-	./scripts/ci-check.sh --quick
+# Full CI pipeline
+full: ## Run full CI pipeline including all matrix combinations
+	@echo "🚀 Running full CI pipeline..."
+	@./scripts/local-ci.sh --full
 
-format: ## Format code with rustfmt
-	@echo "🎨 Formatting code..."
-	cargo fmt --all
+# Formatting
+fmt: ## Check code formatting
+	@echo "🎨 Checking code formatting..."
+	@cargo fmt --all -- --check
 
-format-check: ## Check if code is properly formatted
-	@echo "🔍 Checking code formatting..."
-	cargo fmt --all -- --check
+fmt-fix: ## Fix code formatting
+	@echo "🎨 Fixing code formatting..."
+	@cargo fmt --all
 
-lint: ## Run clippy lints
-	@echo "🧹 Running clippy lints..."
-	cargo clippy --all-features -- -W clippy::all -A unused_imports -A unused_variables -A dead_code -A unused_mut -A private_interfaces -A clippy::redundant_closure -A clippy::redundant_pattern_matching -A clippy::should_implement_trait -A clippy::manual_strip -A clippy::type_complexity
+# Linting
+clippy: ## Run Clippy linter
+	@echo "📎 Running Clippy linter..."
+	@cargo clippy --all-features -- -W clippy::all -A unused_imports -A unused_variables -A dead_code -A unused_mut -A private_interfaces -A clippy::redundant_closure -A clippy::redundant_pattern_matching -A clippy::should_implement_trait -A clippy::manual_strip -A clippy::type_complexity
 
-lint-fix: ## Automatically fix clippy issues
-	@echo "🔧 Fixing clippy issues..."
-	cargo clippy --all-features --fix
+clippy-fix: ## Fix Clippy suggestions automatically
+	@echo "📎 Fixing Clippy suggestions..."
+	@cargo clippy --all-features --fix
 
-compile: ## Check compilation
-	@echo "🔨 Checking compilation..."
-	cargo check --all-features
-
+# Testing
 test: ## Run tests with default features
-	@echo "🧪 Running tests..."
-	cargo test --verbose
+	@echo "🧪 Running tests (default features)..."
+	@cargo test --verbose
 
-test-all: ## Run tests with all feature combinations
-	@echo "🧪 Running all tests..."
-	cargo test --all-features --verbose
-	cargo test --no-default-features --verbose
-	cargo test --features stdio --verbose
-	cargo test --features http --verbose
-	cargo test --features websocket --verbose
-	cargo test --features validation --verbose
+test-all: ## Run all test combinations
+	@echo "🧪 Running all test combinations..."
+	@cargo test --verbose
+	@cargo test --all-features --verbose
+	@cargo test --no-default-features --verbose --lib
 
-examples: ## Check that all examples compile
+test-features: ## Run feature-specific tests
+	@echo "🔬 Running feature-specific tests..."
+	@cargo test --features stdio --verbose
+	@cargo test --features http --verbose
+	@cargo test --features websocket --verbose
+	@cargo test --features validation --verbose
+	@cargo test --features full --verbose
+
+# Examples
+examples: ## Check all examples compile
 	@echo "📚 Checking examples..."
-	cargo check --example simple_server
-	cargo check --example echo_server
-	cargo check --example client_example
-	cargo check --example database_server
-	cargo check --example http_server --features http
-	cargo check --example http_client --features http
-	cargo check --example websocket_server --features websocket
-	cargo check --example websocket_client --features websocket
+	@cargo check --example simple_server
+	@cargo check --example echo_server
+	@cargo check --example client_example
+	@cargo check --example database_server
+	@cargo check --example http_server --features http
+	@cargo check --example http_client --features http
+	@cargo check --example websocket_server --features websocket
+	@cargo check --example websocket_client --features websocket
 
-docs: ## Build documentation
-	@echo "📖 Building documentation..."
-	cargo doc --all-features --no-deps --document-private-items
+# Documentation
+docs: ## Generate documentation
+	@echo "📖 Generating documentation..."
+	@cargo doc --all-features --no-deps --document-private-items
 
-docs-open: ## Build and open documentation
-	@echo "📖 Building and opening documentation..."
-	cargo doc --all-features --no-deps --document-private-items --open
+docs-open: ## Generate and open documentation
+	@echo "📖 Generating and opening documentation..."
+	@cargo doc --all-features --no-deps --document-private-items --open
 
-clean: ## Clean build artifacts
-	@echo "🧽 Cleaning build artifacts..."
-	cargo clean
-
-audit: ## Run security audit
+# Security
+security: ## Run security audit
 	@echo "🔒 Running security audit..."
-	cargo audit
+	@cargo audit
 
+audit-fix: ## Attempt to fix security vulnerabilities
+	@echo "🔒 Attempting to fix security vulnerabilities..."
+	@cargo audit fix
+
+# Dependencies
+deps: ## Analyze dependencies
+	@echo "📦 Analyzing dependencies..."
+	@cargo tree --duplicates || echo "No duplicate dependencies found"
+
+deps-update: ## Update dependencies
+	@echo "📦 Updating dependencies..."
+	@cargo update
+
+# Coverage
 coverage: ## Generate code coverage report
 	@echo "📊 Generating code coverage..."
-	cargo tarpaulin --all-features --workspace --timeout 120 --out html
-	@echo "Coverage report generated: tarpaulin-report.html"
+	@cargo tarpaulin --all-features --workspace --timeout 120 --out html --output-dir coverage
+	@echo "Coverage report generated in coverage/ directory"
 
-bench: ## Run benchmarks
-	@echo "🏎️  Running benchmarks..."
-	cargo bench
+coverage-open: ## Generate and open coverage report
+	@$(MAKE) coverage
+	@open coverage/tarpaulin-report.html || xdg-open coverage/tarpaulin-report.html || echo "Open coverage/tarpaulin-report.html manually"
 
-# Development workflow targets
-dev-setup: setup ## Complete development setup
-	@echo "✅ Development environment ready!"
+# Benchmarks
+bench: ## Run performance benchmarks
+	@echo "⚡ Running benchmarks..."
+	@cargo bench
 
-pre-commit: format lint compile test examples ## Run pre-commit checks
-	@echo "✅ Pre-commit checks passed!"
+# Clean
+clean: ## Clean build artifacts
+	@echo "🧹 Cleaning build artifacts..."
+	@cargo clean
+	@rm -rf coverage/
+	@rm -f *.profraw
 
-ci-local: check ## Run full CI checks locally
-	@echo "✅ Local CI checks complete!"
-
-# Release preparation targets
-pre-release: test-all docs audit ## Prepare for release
-	@echo "🚀 Ready for release!"
-
-# Feature-specific targets
-test-stdio: ## Test STDIO features only
-	cargo test --features stdio --verbose
-
-test-http: ## Test HTTP features only
-	cargo test --features http --verbose
-
-test-websocket: ## Test WebSocket features only
-	cargo test --features websocket --verbose
-
-test-validation: ## Test validation features only
-	cargo test --features validation --verbose
-
-# Utility targets
-watch: ## Watch for changes and run tests
-	@echo "👀 Watching for changes..."
-	cargo watch -x "test --all-features"
-
-watch-check: ## Watch for changes and run checks
-	@echo "👀 Watching for changes (checks only)..."
-	cargo watch -x "check --all-features"
-
-deps: ## Show dependency tree
-	cargo tree --all-features
-
-outdated: ## Check for outdated dependencies
-	cargo outdated
-
-update: ## Update dependencies
-	cargo update
-
-# Docker targets (if needed)
-docker-build: ## Build Docker image for testing
-	@echo "🐳 Building Docker image..."
-	docker build -t mcp-protocol-sdk .
-
-docker-test: ## Run tests in Docker
-	@echo "🐳 Running tests in Docker..."
-	docker run --rm mcp-protocol-sdk cargo test --all-features
+# Tool installation
+install-tools: ## Install required development tools
+	@echo "🔧 Installing development tools..."
+	@cargo install cargo-audit || echo "cargo-audit already installed"
+	@cargo install cargo-tarpaulin || echo "cargo-tarpaulin already installed"
+	@cargo install cargo-tree || echo "cargo-tree already installed"
+	@cargo install cargo-license || echo "cargo-license already installed"
+	@cargo install cargo-deny || echo "cargo-deny already installed"
+	@rustup component add rustfmt clippy
 
 # Git hooks
-install-hooks: ## Install git hooks
-	@echo "🪝 Installing git hooks..."
-	cp .git/hooks/pre-commit.sample .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
+setup-hooks: ## Set up Git hooks for automatic CI
+	@echo "🪝 Setting up Git hooks..."
+	@cp scripts/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-push
+	@echo "✅ Pre-push hook installed!"
+	@echo "   Now 'git push' will automatically run CI checks"
 
-# Size analysis
-bloat: ## Analyze binary size
-	@echo "📏 Analyzing binary size..."
-	cargo bloat --release --crates
+remove-hooks: ## Remove Git hooks
+	@echo "🪝 Removing Git hooks..."
+	@rm -f .git/hooks/pre-push
+	@echo "✅ Pre-push hook removed"
 
-# Cross-compilation checks
-check-cross: ## Check cross-compilation targets
-	@echo "🌍 Checking cross-compilation..."
-	cargo check --target x86_64-unknown-linux-gnu
-	cargo check --target x86_64-pc-windows-gnu
-	cargo check --target x86_64-apple-darwin
+# Development workflow commands
+dev-setup: install-tools setup-hooks ## Complete development environment setup
+	@echo "🚀 Development environment setup complete!"
+
+commit-ready: quick ## Check if code is ready to commit
+	@echo "✅ Code is ready to commit!"
+
+push-ready: check ## Check if code is ready to push
+	@echo "✅ Code is ready to push!"
+
+# CI simulation
+ci-local: ## Run exact same checks as GitHub Actions
+	@echo "🚀 Running local CI (mirrors GitHub Actions)..."
+	@./scripts/local-ci.sh
+
+ci-quick: ## Quick CI check
+	@echo "🚀 Running quick CI check..."
+	@./scripts/local-ci.sh --quick
+
+ci-full: ## Full CI pipeline with all matrix combinations
+	@echo "🚀 Running full CI pipeline..."
+	@./scripts/local-ci.sh --full
+
+# Release preparation
+release-check: ## Comprehensive check before release
+	@echo "🚀 Running release preparation checks..."
+	@$(MAKE) clean
+	@$(MAKE) full
+	@$(MAKE) security
+	@$(MAKE) coverage
+	@echo "✅ Release checks complete!"
+
+# Help for common workflows
+workflow-help: ## Show common development workflows
+	@echo "Common Development Workflows:"
+	@echo ""
+	@echo "📝 Before committing:"
+	@echo "   make commit-ready"
+	@echo ""
+	@echo "🚀 Before pushing:"
+	@echo "   make push-ready"
+	@echo ""
+	@echo "🔍 Daily development:"
+	@echo "   make quick          # Quick validation"
+	@echo "   make fmt-fix        # Fix formatting"
+	@echo "   make clippy-fix     # Fix linting issues"
+	@echo ""
+	@echo "🧪 Testing:"
+	@echo "   make test           # Basic tests"
+	@echo "   make test-all       # All test combinations"
+	@echo "   make coverage       # Generate coverage report"
+	@echo ""
+	@echo "📚 Documentation:"
+	@echo "   make docs-open      # Generate and open docs"
+	@echo ""
+	@echo "🔒 Security:"
+	@echo "   make security       # Security audit"
+	@echo "   make deps           # Dependency analysis"
+	@echo ""
+	@echo "🎯 Full validation:"
+	@echo "   make ci-local       # Mirror GitHub Actions"
+	@echo "   make release-check  # Pre-release validation"
