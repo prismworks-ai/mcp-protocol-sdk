@@ -43,16 +43,20 @@ jobs:
         run: cargo install cargo-criterion
 
       - name: Run benchmarks
+        id: benchmarks
         run: |
           if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
+            echo "benchmarks_found=true" >> $GITHUB_OUTPUT
             cargo criterion --all-features
           else
+            echo "benchmarks_found=false" >> $GITHUB_OUTPUT
             echo "No benchmarks found, skipping benchmark run"
             mkdir -p target/criterion/reports
             echo "<html><body><h1>No benchmarks found</h1></body></html>" > target/criterion/reports/index.html
           fi
 
       - name: Store benchmark result
+        if: steps.benchmarks.outputs.benchmarks_found == 'true'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'cargo'

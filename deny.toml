@@ -15,31 +15,10 @@ allow = [
     "BSD-3-Clause",
     "ISC",
     "Unicode-DFS-2016",
+    "Unicode-3.0",
 ]
 
-# List of explicitly disallowed licenses
-deny = [
-    "GPL-2.0",
-    "GPL-3.0",
-    "AGPL-1.0",
-    "AGPL-3.0",
-]
-
-# Lint level for when multiple versions of the same license are detected
-multiple-versions = "warn"
-
-# Confidence threshold for detecting a license from a license text.
-# 0.8 is a good default for most cases.
-copyleft = "warn"
-
-# Blanket approval or denial for OSI-approved or FSF Free/Libre licenses
-allow-osi-fsf-free = "both"
-
-# Lint level used when an exception isn't found
-default = "deny"
-
-# The confidence threshold for detecting a license from a license text.
-# 0.8 is a good default for most cases.
+# The `private` setting for workspace crates
 private = { ignore = true }
 
 [bans]
@@ -83,20 +62,6 @@ db-path = "~/.cargo/advisory-db"
 
 # The url(s) of the advisory databases to use
 db-urls = ["https://github.com/rustsec/advisory-db"]
-
-# The lint level for security vulnerabilities
-vulnerability = "deny"
-
-# The lint level for unmaintained crates
-unmaintained = "warn"
-
-# The lint level for crates that have been yanked from their source registry
-yanked = "warn"
-
-# The lint level for crates with security notices. Note that as of
-# 2019-12-17 there are no security notice advisories in
-# https://github.com/rustsec/advisory-db
-notice = "warn"
 
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.

@@ -62,9 +62,7 @@ jobs:
 
       - name: Install scc (Source Code Counter)
         run: |
-          wget -O scc.tar.gz https://github.com/boyter/scc/releases/download/v3.1.0/scc_Linux_x86_64.tar.gz
-          tar -xzf scc.tar.gz
-          sudo mv scc /usr/local/bin/
+          go install github.com/boyter/scc/v3@latest
           sudo apt-get update && sudo apt-get install -y jq
 
       - name: Run complexity analysis
@@ -124,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust: ['1.75.0', '1.76.0']  # Test with current MSRV and newer version
+        rust: ['1.82.0', '1.83.0']  # Test with current MSRV and newer version
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
