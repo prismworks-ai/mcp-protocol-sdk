@@ -64,8 +64,8 @@ impl WebSocketClientTransport {
     /// Result containing the transport or an error
     pub async fn with_config<S: AsRef<str>>(url: S, config: TransportConfig) -> McpResult<Self> {
         let url_str = url.as_ref();
-        
-        // Validate URL format 
+
+        // Validate URL format
         let _url_parsed = Url::parse(url_str)
             .map_err(|e| McpError::WebSocket(format!("Invalid WebSocket URL: {}", e)))?;
 
@@ -201,7 +201,8 @@ impl Transport for WebSocketClientTransport {
 
         tracing::trace!("Sending WebSocket request: {}", request_text);
 
-        self.send_message(Message::Text(request_text.into())).await?;
+        self.send_message(Message::Text(request_text.into()))
+            .await?;
 
         // Wait for response with timeout
         let timeout_duration = Duration::from_millis(self.config.read_timeout_ms.unwrap_or(60_000));
@@ -220,7 +221,8 @@ impl Transport for WebSocketClientTransport {
 
         tracing::trace!("Sending WebSocket notification: {}", notification_text);
 
-        self.send_message(Message::Text(notification_text.into())).await
+        self.send_message(Message::Text(notification_text.into()))
+            .await
     }
 
     async fn receive_notification(&mut self) -> McpResult<Option<JsonRpcNotification>> {
