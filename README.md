@@ -5,8 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 [![Security Audit](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
-<!-- codecov badge will be available once the repository is added to codecov.io -->
-<!-- [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk) -->
+[![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/graph/badge.svg?token=4cf0b67b-246e-45b2-a7e5-b6ffc7747f97)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
 
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
 
