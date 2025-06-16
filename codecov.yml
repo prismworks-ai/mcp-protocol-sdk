@@ -1,5 +1,8 @@
 # Codecov configuration for MCP Protocol SDK
 
+codecov:
+  token: be6df91d-f7df-46e9-8648-b9ae2e1d0abe
+
 coverage:
   precision: 2
   round: down
