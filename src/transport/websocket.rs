@@ -64,7 +64,9 @@ impl WebSocketClientTransport {
     /// Result containing the transport or an error
     pub async fn with_config<S: AsRef<str>>(url: S, config: TransportConfig) -> McpResult<Self> {
         let url_str = url.as_ref();
-        let url_parsed = Url::parse(url_str)
+
+        // Validate URL format
+        let _url_parsed = Url::parse(url_str)
             .map_err(|e| McpError::WebSocket(format!("Invalid WebSocket URL: {}", e)))?;
 
         tracing::debug!("Connecting to WebSocket: {}", url_str);
@@ -72,7 +74,7 @@ impl WebSocketClientTransport {
         // Connect to WebSocket with timeout
         let connect_timeout = Duration::from_millis(config.connect_timeout_ms.unwrap_or(30_000));
 
-        let (ws_stream, _) = timeout(connect_timeout, connect_async(&url_parsed))
+        let (ws_stream, _) = timeout(connect_timeout, connect_async(url_str))
             .await
             .map_err(|_| McpError::WebSocket("Connection timeout".to_string()))?
             .map_err(|e| McpError::WebSocket(format!("Failed to connect: {}", e)))?;
@@ -199,7 +201,8 @@ impl Transport for WebSocketClientTransport {
 
         tracing::trace!("Sending WebSocket request: {}", request_text);
 
-        self.send_message(Message::Text(request_text)).await?;
+        self.send_message(Message::Text(request_text.into()))
+            .await?;
 
         // Wait for response with timeout
         let timeout_duration = Duration::from_millis(self.config.read_timeout_ms.unwrap_or(60_000));
@@ -218,7 +221,8 @@ impl Transport for WebSocketClientTransport {
 
         tracing::trace!("Sending WebSocket notification: {}", notification_text);
 
-        self.send_message(Message::Text(notification_text)).await
+        self.send_message(Message::Text(notification_text.into()))
+            .await
     }
 
     async fn receive_notification(&mut self) -> McpResult<Option<JsonRpcNotification>> {
@@ -431,7 +435,7 @@ impl WebSocketServerTransport {
                                             // Send response back to client
                                             let mut clients_guard = clients.write().await;
                                             if let Some(client) = clients_guard.get_mut(&client_id) {
-                                                if let Err(e) = client.sender.send(Message::Text(response_text)).await {
+                                                if let Err(e) = client.sender.send(Message::Text(response_text.into())).await {
                                                     tracing::error!("Failed to send response to client {}: {}", client_id, e);
                                                     break;
                                                 }
@@ -591,7 +595,7 @@ impl ServerTransport for WebSocketServerTransport {
         for (client_id, client) in clients_guard.iter_mut() {
             if let Err(e) = client
                 .sender
-                .send(Message::Text(notification_text.clone()))
+                .send(Message::Text(notification_text.clone().into()))
                 .await
             {
                 tracing::error!("Failed to send notification to client {}: {}", client_id, e);
