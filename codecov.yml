@@ -1,0 +1,38 @@
+# Codecov configuration for MCP Protocol SDK
+
+coverage:
+  precision: 2
+  round: down
+  range: "80...100"
+
+  status:
+    # Overall project coverage status
+    project:
+      default:
+        target: 80%                   # Target coverage
+        threshold: 5%                 # Allow 5% decrease
+        base: auto
+        informational: false
+    
+    # Patch coverage status (for PRs)
+    patch:
+      default:
+        target: 80%                   # New code should be 80%+ covered
+        threshold: 5%
+        base: auto
+
+# Comment configuration for pull requests
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false            # Always comment
+  require_base: false               # Comment even without base
+  require_head: true                # Require head report
+
+# Ignore certain files/directories from coverage
+ignore:
+  - "examples/**/*"                 # Example code
+  - "tests/**/*"                    # Test files
+  - "benches/**/*"                  # Benchmark code
+  - "docs/**/*"                     # Documentation
+  - "**/main.rs"                    # Binary entry points
