@@ -2,7 +2,7 @@
 name = "mcp-protocol-sdk"
 version = "0.2.3"
 edition = "2021"
-rust-version = "1.75"  # Minimum stable Rust version
+rust-version = "1.82"  # Minimum stable Rust version
 authors = ["MCP Rust Contributors <mcp-rust@users.noreply.github.com>"]
 description = "Production-ready Rust SDK for the Model Context Protocol (MCP) with multiple transport support"
 license = "MIT"
