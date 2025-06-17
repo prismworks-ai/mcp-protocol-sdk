@@ -11,10 +11,7 @@
 
 use mcp_protocol_sdk::{
     core::error::{McpError, McpResult},
-    protocol::types::{
-        JsonRpcNotification, JsonRpcRequest,
-        JsonRpcResponse,
-    },
+    protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse},
     transport::traits::{ReconnectConfig, ServerTransport, Transport, TransportStats},
     transport::{StdioServerTransport, TransportConfig},
 };
