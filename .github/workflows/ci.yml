@@ -141,6 +141,9 @@ jobs:
         run: |
           cargo check --example http_server --features http
           cargo check --example http_client --features http
+          cargo check --example conservative_http_demo --features http,tracing-subscriber
+          cargo check --example transport_benchmark --features http,tracing-subscriber
+          cargo check --example advanced_http_client --features http,tracing-subscriber,chrono,fastrand
 
       - name: Check WebSocket examples
         run: |

@@ -223,8 +223,8 @@ async fn demonstrate_operations(
     {
         let client_guard = client.lock().await;
         let mut args = HashMap::new();
-        args.insert("language".to_string(), json!("Rust"));
-        args.insert("focus".to_string(), json!("security"));
+        args.insert("language".to_string(), "Rust".to_string());
+        args.insert("focus".to_string(), "security".to_string());
 
         match client_guard
             .get_prompt("code-review".to_string(), Some(args))

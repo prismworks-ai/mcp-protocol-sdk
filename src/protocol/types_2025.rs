@@ -690,7 +690,7 @@ pub struct NotificationParams {
 
 /// Base result with annotations support
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Result {
+pub struct BaseResult {
     /// Result annotations (2025-03-26 NEW)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
@@ -824,7 +824,7 @@ impl JsonRpcRequest {
         id: RequestId,
         method: String,
         params: Option<T>,
-    ) -> Result<Self, serde_json::Error> {
+    ) -> std::result::Result<Self, serde_json::Error> {
         let params = match params {
             Some(p) => Some(serde_json::to_value(p)?),
             None => None,
@@ -844,7 +844,7 @@ impl JsonRpcResponse {
     pub fn success<T: Serialize>(
         id: RequestId,
         result: T,
-    ) -> Result<Self, serde_json::Error> {
+    ) -> std::result::Result<Self, serde_json::Error> {
         Ok(Self {
             jsonrpc: JSONRPC_VERSION.to_string(),
             id,
@@ -939,7 +939,10 @@ mod tests {
         assert_eq!(annotations.read_only, Some(true));
         assert_eq!(annotations.destructive, Some(false));
         assert_eq!(annotations.danger, Some(DangerLevel::Safe));
-        assert_eq!(annotations.audience, Some(vec![AnnotationAudience::Developer]));
+        assert_eq!(
+            annotations.audience,
+            Some(vec![AnnotationAudience::Developer])
+        );
     }
 
     #[test]
@@ -954,9 +957,8 @@ mod tests {
 
     #[test]
     fn test_jsonrpc_batching() {
-        let req1 = JsonRpcRequest::new(json!(1), "method1".to_string(), Some(json!({})))
-            .unwrap();
-        let req2 = JsonRpcRequest::new(json!(2), "method2".to_string(), None)
+        let req1 = JsonRpcRequest::new(json!(1), "method1".to_string(), Some(json!({}))).unwrap();
+        let req2 = JsonRpcRequest::new::<serde_json::Value>(json!(2), "method2".to_string(), None)
             .unwrap();
 
         let batch: JsonRpcBatchRequest = vec![
@@ -972,7 +974,9 @@ mod tests {
     #[test]
     fn test_server_capabilities_2025() {
         let caps = ServerCapabilities {
-            tools: Some(ToolsCapability { list_changed: Some(true) }),
+            tools: Some(ToolsCapability {
+                list_changed: Some(true),
+            }),
             completions: Some(CompletionsCapability::default()),
             logging: Some(LoggingCapability::default()),
             experimental: Some(HashMap::new()),

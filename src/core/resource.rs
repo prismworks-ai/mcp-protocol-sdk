@@ -76,6 +76,66 @@ pub trait ResourceHandler: Send + Sync {
     }
 }
 
+/// Legacy trait for backward compatibility with existing tests
+/// This should be used for simple text-based resources
+#[async_trait]
+pub trait LegacyResourceHandler: Send + Sync {
+    /// Read the content of a resource as a string
+    ///
+    /// # Arguments
+    /// * `uri` - URI of the resource to read
+    ///
+    /// # Returns
+    /// Result containing the resource content as a string or an error
+    async fn read(&self, uri: &str) -> McpResult<String>;
+
+    /// List all available resources
+    ///
+    /// # Returns
+    /// Result containing a list of available resources or an error
+    async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
+        // Default implementation returns empty list
+        Ok(vec![])
+    }
+}
+
+/// Adapter to convert LegacyResourceHandler to ResourceHandler
+pub struct LegacyResourceAdapter<T> {
+    inner: T,
+}
+
+impl<T> LegacyResourceAdapter<T>
+where
+    T: LegacyResourceHandler,
+{
+    pub fn new(handler: T) -> Self {
+        Self { inner: handler }
+    }
+}
+
+#[async_trait]
+impl<T> ResourceHandler for LegacyResourceAdapter<T>
+where
+    T: LegacyResourceHandler + Send + Sync,
+{
+    async fn read(
+        &self,
+        uri: &str,
+        _params: &HashMap<String, String>,
+    ) -> McpResult<Vec<ResourceContents>> {
+        let content = self.inner.read(uri).await?;
+        Ok(vec![ResourceContents::Text {
+            uri: uri.to_string(),
+            mime_type: Some("text/plain".to_string()),
+            text: content,
+        }])
+    }
+
+    async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
+        self.inner.list().await
+    }
+}
+
 /// A registered resource with its handler
 pub struct Resource {
     /// Information about the resource

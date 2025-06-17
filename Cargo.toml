@@ -121,6 +121,21 @@ name = "websocket_client"
 path = "examples/websocket_client.rs"
 required-features = ["websocket"]
 
+[[example]]
+name = "conservative_http_demo"
+path = "examples/conservative_http_demo.rs"
+required-features = ["http", "tracing-subscriber"]
+
+[[example]]
+name = "transport_benchmark"
+path = "examples/transport_benchmark.rs"
+required-features = ["http", "tracing-subscriber"]
+
+[[example]]
+name = "advanced_http_client"
+path = "examples/advanced_http_client.rs"
+required-features = ["http", "tracing-subscriber", "chrono", "fastrand"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

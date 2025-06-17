@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::{messages::*, types::*, LATEST_PROTOCOL_VERSION};
+use crate::protocol::{messages::*, methods, types::*, LATEST_PROTOCOL_VERSION};
 
 /// Handler for initialization requests
 pub struct InitializeHandler;
@@ -51,9 +51,9 @@ impl InitializeHandler {
         }
 
         Ok(InitializeResult::new(
-            server_info.clone(),
+            LATEST_PROTOCOL_VERSION.to_string(),
             capabilities.clone(),
-            Some("MCP server ready for protocol 2025-03-26".to_string()),
+            server_info.clone(),
         ))
     }
 }
@@ -344,7 +344,12 @@ impl PromptHandler {
             .get(&params.name)
             .ok_or_else(|| McpError::PromptNotFound(params.name.clone()))?;
 
-        let arguments = params.arguments.unwrap_or_default();
+        let arguments = params
+            .arguments
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(k, v)| (k, serde_json::Value::String(v)))
+            .collect();
         let result = prompt.handler.get(arguments).await?;
 
         Ok(GetPromptResult {
@@ -503,7 +508,7 @@ pub mod notifications {
     pub fn resource_updated(uri: String) -> McpResult<JsonRpcNotification> {
         Ok(JsonRpcNotification::new(
             methods::RESOURCES_UPDATED.to_string(),
-            Some(ResourceUpdatedParams { uri, meta: None }),
+            Some(ResourceUpdatedParams { uri }),
         )?)
     }
 
@@ -511,7 +516,7 @@ pub mod notifications {
     pub fn progress(
         progress_token: String,
         progress: f32,
-        total: Option<u32>,
+        total: Option<f32>,
     ) -> McpResult<JsonRpcNotification> {
         Ok(JsonRpcNotification::new(
             methods::PROGRESS.to_string(),
@@ -520,7 +525,6 @@ pub mod notifications {
                 progress: progress.into(),
                 total,
                 message: None,
-                meta: None,
             }),
         )?)
     }
@@ -537,7 +541,6 @@ pub mod notifications {
                 level,
                 logger,
                 data,
-                meta: None,
             }),
         )?)
     }
@@ -599,7 +602,7 @@ mod tests {
         assert!(notifications::resources_list_changed().is_ok());
         assert!(notifications::prompts_list_changed().is_ok());
         assert!(notifications::resource_updated("file:///test".to_string()).is_ok());
-        assert!(notifications::progress("token".to_string(), 0.5, Some(100)).is_ok());
+        assert!(notifications::progress("token".to_string(), 0.5, Some(100.0)).is_ok());
         assert!(notifications::log_message(
             LoggingLevel::Info,
             Some("test".to_string()),

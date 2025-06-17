@@ -13,10 +13,10 @@ Add the SDK to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.1.0"
+mcp-protocol-sdk = "0.2.3"
 
 # Choose only the features you need:
-# mcp-protocol-sdk = { version = "0.1.0", features = ["stdio", "http", "websocket"] }
+# mcp-protocol-sdk = { version = "0.2.3", features = ["stdio", "http", "websocket"] }
 ```
 
 ## 5-Minute Server Example
@@ -144,7 +144,7 @@ Minimize your binary size by choosing only the features you need:
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.1.0", 
+    version = "0.2.3", 
     default-features = false,
     features = ["stdio"]  # Only STDIO transport
 }

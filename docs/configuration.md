@@ -23,7 +23,7 @@ For the smallest binary size, disable default features:
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.1.0", 
+    version = "0.2.3", 
     default-features = false,
     features = ["stdio"]  # Only what you need
 }
@@ -34,7 +34,7 @@ mcp-protocol-sdk = {
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.1.0", 
+    version = "0.2.3", 
     features = ["stdio", "validation", "tracing-subscriber"]
 }
 ```
@@ -44,7 +44,7 @@ mcp-protocol-sdk = {
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.1.0", 
+    version = "0.2.3", 
     features = ["http", "websocket"]
 }
 ```
@@ -53,7 +53,7 @@ mcp-protocol-sdk = {
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.1.0"  # All features enabled
+mcp-protocol-sdk = "0.2.3"  # All features enabled
 ```
 
 ## Environment Configuration

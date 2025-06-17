@@ -147,6 +147,26 @@ impl McpError {
         Self::Timeout(message.into())
     }
 
+    /// Create a connection error (compatibility method)
+    pub fn connection_error<S: Into<String>>(message: S) -> Self {
+        Self::Connection(message.into())
+    }
+
+    /// Create a protocol error (compatibility method)
+    pub fn protocol_error<S: Into<String>>(message: S) -> Self {
+        Self::Protocol(message.into())
+    }
+
+    /// Create a validation error (compatibility method)
+    pub fn validation_error<S: Into<String>>(message: S) -> Self {
+        Self::Validation(message.into())
+    }
+
+    /// Create a timeout error (compatibility method)
+    pub fn timeout_error() -> Self {
+        Self::Timeout("Operation timed out".to_string())
+    }
+
     /// Check if this error is recoverable
     pub fn is_recoverable(&self) -> bool {
         match self {

@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::{messages::*, types::*, validation::*};
+use crate::protocol::{messages::*, methods, types::*, validation::*};
 use crate::transport::traits::Transport;
 
 /// Configuration for the MCP client
@@ -179,7 +179,11 @@ impl McpClient {
 
     /// Initialize the connection with the server
     async fn initialize(&self) -> McpResult<InitializeResult> {
-        let params = InitializeParams::new(self.info.clone(), self.capabilities.clone());
+        let params = InitializeParams::new(
+            crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
+            self.capabilities.clone(),
+            self.info.clone(),
+        );
 
         let request = JsonRpcRequest::new(
             Value::from(self.next_request_id().await),
@@ -238,7 +242,11 @@ impl McpClient {
     ) -> McpResult<CallToolResult> {
         self.ensure_connected().await?;
 
-        let params = CallToolParams::new(name, arguments);
+        let params = if let Some(args) = arguments {
+            CallToolParams::new_with_arguments(name, args)
+        } else {
+            CallToolParams::new(name)
+        };
 
         if self.config.validate_requests {
             validate_call_tool_params(&params)?;
@@ -346,11 +354,15 @@ impl McpClient {
     pub async fn get_prompt(
         &self,
         name: String,
-        arguments: Option<HashMap<String, Value>>,
+        arguments: Option<HashMap<String, String>>,
     ) -> McpResult<GetPromptResult> {
         self.ensure_connected().await?;
 
-        let params = GetPromptParams::new(name, arguments);
+        let params = if let Some(args) = arguments {
+            GetPromptParams::new_with_arguments(name, args)
+        } else {
+            GetPromptParams::new(name)
+        };
 
         if self.config.validate_requests {
             validate_get_prompt_params(&params)?;
@@ -640,12 +652,12 @@ mod tests {
     #[tokio::test]
     async fn test_mock_connection() {
         let init_result = InitializeResult::new(
+            crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
+            ServerCapabilities::default(),
             ServerInfo {
                 name: "test-server".to_string(),
                 version: "1.0.0".to_string(),
             },
-            ServerCapabilities::default(),
-            Some("Test client for MCP 2025-03-26".to_string()),
         );
 
         let init_response = JsonRpcResponse::success(Value::from(1), init_result.clone()).unwrap();
@@ -662,12 +674,12 @@ mod tests {
     #[tokio::test]
     async fn test_disconnect() {
         let init_result = InitializeResult::new(
+            crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
+            ServerCapabilities::default(),
             ServerInfo {
                 name: "test-server".to_string(),
                 version: "1.0.0".to_string(),
             },
-            ServerCapabilities::default(),
-            Some("Test client for MCP 2025-03-26".to_string()),
         );
 
         let init_response = JsonRpcResponse::success(Value::from(1), init_result).unwrap();

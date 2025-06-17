@@ -16,7 +16,7 @@ use crate::core::{
     tool::{Tool, ToolHandler},
     PromptInfo, ResourceInfo, ToolInfo,
 };
-use crate::protocol::{error_codes::*, messages::*, types::*, validation::*};
+use crate::protocol::{error_codes::*, messages::*, methods, types::*, validation::*};
 use crate::transport::traits::ServerTransport;
 
 /// Configuration for the MCP server
@@ -127,6 +127,16 @@ impl McpServer {
     /// Get server information
     pub fn info(&self) -> &ServerInfo {
         &self.info
+    }
+
+    /// Get server name (for compatibility with tests)
+    pub fn name(&self) -> &str {
+        &self.info.name
+    }
+
+    /// Get server version (for compatibility with tests)
+    pub fn version(&self) -> &str {
+        &self.info.version
     }
 
     /// Get server capabilities
@@ -579,9 +589,9 @@ impl McpServer {
         validate_initialize_params(&params)?;
 
         let result = InitializeResult::new(
-            self.info.clone(),
+            crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
             self.capabilities.clone(),
-            None, // instructions
+            self.info.clone(),
         );
 
         Ok(serde_json::to_value(result)?)
@@ -722,7 +732,12 @@ impl McpServer {
 
         validate_get_prompt_params(&params)?;
 
-        let result = self.get_prompt(&params.name, params.arguments).await?;
+        let arguments = params.arguments.map(|args| {
+            args.into_iter()
+                .map(|(k, v)| (k, serde_json::Value::String(v)))
+                .collect()
+        });
+        let result = self.get_prompt(&params.name, arguments).await?;
         Ok(serde_json::to_value(result)?)
     }
 
@@ -856,11 +871,12 @@ mod tests {
         let server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
 
         let init_params = InitializeParams::new(
+            crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
+            ClientCapabilities::default(),
             ClientInfo {
                 name: "test-client".to_string(),
                 version: "1.0.0".to_string(),
             },
-            ClientCapabilities::default(),
         );
 
         let request =

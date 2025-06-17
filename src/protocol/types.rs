@@ -14,6 +14,9 @@ use std::collections::HashMap;
 pub const LATEST_PROTOCOL_VERSION: &str = "2025-03-26";
 pub const JSONRPC_VERSION: &str = "2.0";
 
+// Legacy constant for compatibility
+pub const PROTOCOL_VERSION: &str = LATEST_PROTOCOL_VERSION;
+
 // ============================================================================
 // Type Aliases
 // ============================================================================
@@ -26,6 +29,33 @@ pub type Cursor = String;
 
 /// Request ID for JSON-RPC correlation
 pub type RequestId = serde_json::Value; // string | number | null
+
+/// JSON-RPC ID type for better type safety
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum JsonRpcId {
+    String(String),
+    Number(i64),
+    Null,
+}
+
+impl From<i64> for JsonRpcId {
+    fn from(value: i64) -> Self {
+        JsonRpcId::Number(value)
+    }
+}
+
+impl From<String> for JsonRpcId {
+    fn from(value: String) -> Self {
+        JsonRpcId::String(value)
+    }
+}
+
+impl From<&str> for JsonRpcId {
+    fn from(value: &str) -> Self {
+        JsonRpcId::String(value.to_string())
+    }
+}
 
 // ============================================================================
 // Core Implementation Info
@@ -922,6 +952,24 @@ impl JsonRpcNotification {
             method,
             params,
         })
+    }
+}
+
+impl SamplingMessage {
+    /// Create a user text message
+    pub fn user_text<S: Into<String>>(text: S) -> Self {
+        Self {
+            role: Role::User,
+            content: Content::text(text),
+        }
+    }
+
+    /// Create an assistant text message
+    pub fn assistant_text<S: Into<String>>(text: S) -> Self {
+        Self {
+            role: Role::Assistant,
+            content: Content::text(text),
+        }
     }
 }
 

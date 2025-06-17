@@ -6,6 +6,10 @@ pub mod handlers;
 pub mod lifecycle;
 pub mod mcp_server;
 
+// Test types for comprehensive testing
+#[cfg(test)]
+pub mod test_types;
+
 // HTTP-specific server implementation (when HTTP feature is enabled)
 #[cfg(feature = "http")]
 pub mod http_server;

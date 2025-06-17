@@ -5,8 +5,7 @@
 //! including support for audio content, annotations, and enhanced capabilities.
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::messages::*;
-use crate::protocol::types::*;
+use crate::protocol::{messages::*, methods, types::*};
 use serde_json::Value;
 
 /// Validates that a JSON-RPC message conforms to the specification
@@ -763,6 +762,7 @@ mod tests {
             system_prompt: None,
             include_context: None,
             max_tokens: 100,
+            temperature: None,
             stop_sequences: None,
             metadata: None,
             meta: None,
@@ -775,6 +775,7 @@ mod tests {
             system_prompt: None,
             include_context: None,
             max_tokens: 0, // Invalid max_tokens
+            temperature: None,
             stop_sequences: None,
             metadata: None,
             meta: None,

@@ -10,12 +10,14 @@ use tokio::time::{sleep, timeout};
 
 use crate::client::mcp_client::McpClient;
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::{messages::*, types::*};
+use crate::protocol::{messages::*, methods, types::*};
 use crate::transport::traits::Transport;
 
 /// Session state
 #[derive(Debug, Clone, PartialEq)]
 pub enum SessionState {
+    /// Session is idle (ready but not actively processing)
+    Idle,
     /// Session is disconnected
     Disconnected,
     /// Session is connecting
@@ -53,6 +55,18 @@ pub struct SessionConfig {
     pub heartbeat_interval_ms: u64,
     /// Heartbeat timeout in milliseconds
     pub heartbeat_timeout_ms: u64,
+
+    // Additional fields for test compatibility
+    /// Session timeout duration
+    pub session_timeout: Duration,
+    /// Request timeout duration
+    pub request_timeout: Duration,
+    /// Maximum concurrent requests
+    pub max_concurrent_requests: u32,
+    /// Enable compression
+    pub enable_compression: bool,
+    /// Buffer size for operations
+    pub buffer_size: usize,
 }
 
 impl Default for SessionConfig {
@@ -66,6 +80,11 @@ impl Default for SessionConfig {
             connection_timeout_ms: 10000,
             heartbeat_interval_ms: 30000,
             heartbeat_timeout_ms: 5000,
+            session_timeout: Duration::from_secs(300),
+            request_timeout: Duration::from_secs(30),
+            max_concurrent_requests: 10,
+            enable_compression: false,
+            buffer_size: 8192,
         }
     }
 }
@@ -491,7 +510,7 @@ impl NotificationHandler for ProgressHandler {
                     (self.callback)(
                         progress_params.progress_token.to_string(),
                         progress_params.progress as f32,
-                        progress_params.total,
+                        progress_params.total.map(|t| t as u32),
                     );
                 }
             }
@@ -549,12 +568,12 @@ mod tests {
         async fn send_request(&mut self, _request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
             // Return a successful initialize response
             let init_result = InitializeResult::new(
+                crate::protocol::LATEST_PROTOCOL_VERSION.to_string(),
+                ServerCapabilities::default(),
                 ServerInfo {
                     name: "test-server".to_string(),
                     version: "1.0.0".to_string(),
                 },
-                ServerCapabilities::default(),
-                Some("MCP client session for 2025-03-26".to_string()),
             );
             JsonRpcResponse::success(serde_json::Value::from(1), init_result)
                 .map_err(|e| McpError::Serialization(e.to_string()))

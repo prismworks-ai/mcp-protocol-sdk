@@ -8,7 +8,7 @@
 [![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 [![Security Audit](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 
-**[📚 Documentation](https://mcp-rust.github.io/mcp-protocol-sdk/)** | **[📦 Crates.io](https://crates.io/crates/mcp-protocol-sdk)** | **[🔧 Examples](https://github.com/mcp-rust/mcp-protocol-sdk/tree/main/examples)**
+**[📚 Documentation](./README.md)** | **[📦 Crates.io](https://crates.io/crates/mcp-protocol-sdk)** | **[🔧 Examples](https://github.com/mcp-rust/mcp-protocol-sdk/tree/main/examples)**
 
 ---
 
@@ -31,7 +31,7 @@ The **Model Context Protocol (MCP)** enables AI assistants to seamlessly connect
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.1.0"
+mcp-protocol-sdk = "0.2.3"
 ```
 
 ### Build a Tool Server (2 minutes)
@@ -161,13 +161,13 @@ Optimize binary size by selecting only needed features:
 
 ```toml
 # Minimal STDIO-only build
-mcp-protocol-sdk = { version = "0.1.0", default-features = false, features = ["stdio"] }
+mcp-protocol-sdk = { version = "0.2.3", default-features = false, features = ["stdio"] }
 
 # Full-featured build
-mcp-protocol-sdk = { version = "0.1.0", features = ["full"] }
+mcp-protocol-sdk = { version = "0.2.3", features = ["full"] }
 
 # Custom feature set
-mcp-protocol-sdk = { version = "0.1.0", features = ["stdio", "http", "validation"] }
+mcp-protocol-sdk = { version = "0.2.3", features = ["stdio", "http", "validation"] }
 ```
 
 | Feature | Size Impact | Description |
@@ -180,10 +180,10 @@ mcp-protocol-sdk = { version = "0.1.0", features = ["stdio", "http", "validation
 ## 📚 Documentation & Resources
 
 ### 📖 Complete Guides
-- **[Getting Started Guide](https://mcp-rust.github.io/mcp-protocol-sdk/getting-started.html)** - Your first MCP server in 5 minutes
-- **[Architecture Overview](https://mcp-rust.github.io/mcp-protocol-sdk/architecture.html)** - Understanding the SDK design
-- **[Transport Guide](https://mcp-rust.github.io/mcp-protocol-sdk/transports.html)** - STDIO, HTTP, and WebSocket transports
-- **[Advanced Features](https://mcp-rust.github.io/mcp-protocol-sdk/examples.html)** - Production patterns and best practices
+- **[Getting Started Guide](./getting-started.md)** - Your first MCP server in 5 minutes
+- **[Architecture Overview](./architecture.md)** - Understanding the SDK design
+- **[Transport Guide](./transports.md)** - STDIO, HTTP, and WebSocket transports
+- **[Advanced Features](./examples.md)** - Production patterns and best practices
 
 ### 🔗 API References
 - **[Rust API Docs](https://docs.rs/mcp-protocol-sdk)** - Complete API reference
