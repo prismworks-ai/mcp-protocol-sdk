@@ -83,6 +83,6 @@ impl HttpMcpServer {
 
     /// Check if the server is running
     pub fn is_running(&self) -> bool {
-        self.transport.as_ref().map_or(false, |t| t.is_running())
+        self.transport.as_ref().is_some_and(|t| t.is_running())
     }
 }
