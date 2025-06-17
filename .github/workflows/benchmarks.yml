@@ -40,7 +40,12 @@ jobs:
           key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-criterion
-        run: cargo install cargo-criterion
+        run: |
+          if ! command -v cargo-criterion >/dev/null 2>&1; then
+            cargo install cargo-criterion
+          else
+            echo "cargo-criterion is already installed"
+          fi
 
       - name: Run benchmarks
         id: benchmarks
