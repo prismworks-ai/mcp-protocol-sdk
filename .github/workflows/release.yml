@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+# Allow only one release workflow at a time to prevent conflicts
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
 

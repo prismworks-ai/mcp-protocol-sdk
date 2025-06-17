@@ -7,6 +7,11 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:  # Allow manual trigger
 
+# Cancel previous runs if a new push occurs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
@@ -163,7 +168,9 @@ jobs:
           components: rustfmt
 
       - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+        run: |
+          # Format and check all Rust source files, excluding scripts and generated files
+          cargo fmt --all -- --check
 
   clippy:
     name: Clippy

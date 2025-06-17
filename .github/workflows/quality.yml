@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 6 * * 1'  # Run weekly on Monday
 
+# Cancel previous runs if a new push occurs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -36,7 +41,9 @@ jobs:
           key: ${{ runner.os }}-cargo-quality-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check formatting
-        run: cargo fmt --all -- --check
+        run: |
+          # Format and check all Rust source files, excluding scripts and generated files  
+          cargo fmt --all -- --check
 
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -W clippy::all -A unused_imports -A unused_variables -A dead_code -A unused_mut -A private_interfaces -A clippy::redundant_closure -A clippy::redundant_pattern_matching -A clippy::should_implement_trait -A clippy::manual_strip -A clippy::type_complexity
