@@ -95,8 +95,7 @@ pub struct ListParams {
 }
 
 /// Parameters for list tools request
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ListToolsParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -107,8 +106,7 @@ pub struct ListToolsParams {
 }
 
 /// Parameters for list resources request
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ListResourcesParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -119,8 +117,7 @@ pub struct ListResourcesParams {
 }
 
 /// Parameters for list prompts request
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ListPromptsParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,8 +128,7 @@ pub struct ListPromptsParams {
 }
 
 /// Parameters for ping request
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct PingParams {
     /// Request metadata
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
@@ -586,7 +582,3 @@ impl Root {
 // ============================================================================
 // Default Implementations
 // ============================================================================
-
-
-
-
