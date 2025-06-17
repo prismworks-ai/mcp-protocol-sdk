@@ -12,7 +12,7 @@
 use mcp_protocol_sdk::{
     core::error::{McpError, McpResult},
     protocol::types::{
-        error_codes, ErrorObject, JsonRpcError, JsonRpcNotification, JsonRpcRequest,
+        JsonRpcNotification, JsonRpcRequest,
         JsonRpcResponse,
     },
     transport::traits::{ReconnectConfig, ServerTransport, Transport, TransportStats},

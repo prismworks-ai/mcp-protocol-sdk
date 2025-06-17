@@ -3,13 +3,9 @@
 
 //! Tests for protocol types and validation
 
-use mcp_protocol_sdk::{
-    core::error::{McpError, McpResult},
-    protocol::{types::*, validation::*},
-};
-use serde_json::{json, Value};
+use mcp_protocol_sdk::protocol::{types::*, validation::*};
+use serde_json::json;
 use std::collections::HashMap;
-use tokio;
 
 #[cfg(test)]
 mod protocol_types_tests {

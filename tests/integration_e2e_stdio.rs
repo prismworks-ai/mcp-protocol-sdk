@@ -116,11 +116,11 @@ mod e2e_stdio_tests {
     #[tokio::test]
     async fn test_stdio_server_creation() {
         // Test STDIO server creation and basic properties
-        let mut server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
+        let server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
 
         // Test that we can create tools and add them
-        let tool_handler = TestToolHandler::new();
-        let resource_handler = TestResourceHandler::new();
+        let _tool_handler = TestToolHandler::new();
+        let _resource_handler = TestResourceHandler::new();
 
         // Test basic server operations
         assert_eq!(server.name(), "test-server");

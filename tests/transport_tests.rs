@@ -520,6 +520,7 @@ mod stdio_transport_tests {
 
         // Test that we can transition between states logically
         let mut current_state = ConnectionState::Disconnected;
+        assert_eq!(current_state, ConnectionState::Disconnected);
 
         // Disconnected -> Connecting
         current_state = ConnectionState::Connecting;

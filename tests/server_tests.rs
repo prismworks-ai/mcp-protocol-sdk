@@ -3,16 +3,12 @@
 
 //! Tests for server components
 
-use async_trait::async_trait;
 use mcp_protocol_sdk::{
-    core::{
-        error::{McpError, McpResult},
-        tool::{EchoTool, Tool, ToolHandler},
-    },
-    protocol::types::{Content, ServerCapabilities, ToolResult},
+    core::tool::{EchoTool, ToolHandler},
+    protocol::types::ServerCapabilities,
     server::McpServer,
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use tokio;
 
@@ -22,14 +18,14 @@ mod server_tests {
 
     #[tokio::test]
     async fn test_server_creation() {
-        let server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
+        let _server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
         // Basic test that server can be created
         assert!(true);
     }
 
     #[tokio::test]
     async fn test_server_with_tool() {
-        let mut server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
+        let server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
 
         // Add tool using the correct method signature
         server
@@ -64,7 +60,7 @@ mod server_tests {
 
     #[test]
     fn test_server_capabilities() {
-        let capabilities = ServerCapabilities::default();
+        let _capabilities = ServerCapabilities::default();
         // Test that capabilities can be created
         assert!(true);
     }

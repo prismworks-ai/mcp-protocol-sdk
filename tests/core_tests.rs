@@ -9,7 +9,7 @@ use mcp_protocol_sdk::{
         error::{McpError, McpResult},
         tool::{AdditionTool, EchoTool, Tool, ToolHandler},
     },
-    protocol::types::{CallToolResult, Content, ToolResult},
+    protocol::types::{Content, ToolResult},
     utils::uri::*,
 };
 use serde_json::{json, Value};

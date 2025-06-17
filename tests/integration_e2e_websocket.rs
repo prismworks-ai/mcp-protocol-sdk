@@ -6,7 +6,6 @@
 //! This test suite validates complete client-server communication workflows
 //! using the WebSocket transport with real-time bidirectional communication.
 
-use async_trait::async_trait;
 #[cfg(feature = "websocket")]
 use mcp_protocol_sdk::{
     core::{
@@ -21,12 +20,6 @@ use mcp_protocol_sdk::{
     },
     server::McpServer,
     transport::TransportConfig,
-};
-use serde_json::{json, Value};
-use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::{
-    sync::{mpsc, Mutex},
-    time::sleep,
 };
 
 #[cfg(all(test, feature = "websocket"))]

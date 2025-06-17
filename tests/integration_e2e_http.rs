@@ -21,9 +21,6 @@ use mcp_protocol_sdk::{
     server::McpServer,
     transport::TransportConfig,
 };
-use serde_json::{json, Value};
-use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
-use tokio::{net::TcpListener, sync::Mutex, time::sleep};
 
 #[cfg(all(test, feature = "http"))]
 mod e2e_http_tests {
