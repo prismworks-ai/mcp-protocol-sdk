@@ -25,6 +25,10 @@ use mcp_protocol_sdk::{
 #[cfg(all(test, feature = "http"))]
 mod e2e_http_tests {
     use super::*;
+    use std::{collections::HashMap, sync::Arc, time::Duration};
+    use async_trait::async_trait;
+    use serde_json::{json, Value};
+    use tokio::{sync::Mutex, time::sleep};
 
     // Reuse the test handlers from stdio tests
     struct TestToolHandler {
@@ -52,7 +56,7 @@ mod e2e_http_tests {
         }
     }
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl ToolHandler for TestToolHandler {
         async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
             {
@@ -135,7 +139,7 @@ mod e2e_http_tests {
         }
     }
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl ResourceHandler for TestResourceHandler {
         async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
             Ok(vec![
