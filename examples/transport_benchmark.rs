@@ -5,15 +5,15 @@
 //!
 //! Run with: cargo run --example transport_benchmark --all-features
 
+use futures;
 use mcp_protocol_sdk::prelude::*;
 use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
 use reqwest::Client;
 use serde_json::json;
-use std::time::{Duration, Instant};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 use tokio::time::sleep;
 use tracing::{info, warn};
-use futures;
 
 const BENCHMARK_REQUESTS: usize = 50; // Reduced for simpler demo
 const CONCURRENT_REQUESTS: usize = 5;
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Start demo server
-    let server_task = tokio::spawn(async { 
+    let server_task = tokio::spawn(async {
         if let Err(e) = demo_benchmark_server().await {
             eprintln!("Demo server error: {}", e);
         }
@@ -81,7 +81,7 @@ fn create_fast_config() -> TransportConfig {
         read_timeout_ms: Some(5_000),
         write_timeout_ms: Some(5_000),
         max_message_size: Some(1024 * 1024), // 1MB
-        keep_alive_ms: Some(60_000), // 1 minute
+        keep_alive_ms: Some(60_000),         // 1 minute
         compression: false,
         headers: std::collections::HashMap::new(),
     }
@@ -93,7 +93,7 @@ fn create_conservative_config() -> TransportConfig {
         read_timeout_ms: Some(30_000),
         write_timeout_ms: Some(30_000),
         max_message_size: Some(512 * 1024), // 512KB
-        keep_alive_ms: Some(300_000), // 5 minutes
+        keep_alive_ms: Some(300_000),       // 5 minutes
         compression: true,
         headers: std::collections::HashMap::new(),
     }
@@ -130,23 +130,29 @@ async fn benchmark_http_transport(
     // Run concurrent benchmark requests (simplified version)
     for batch in 0..(BENCHMARK_REQUESTS / CONCURRENT_REQUESTS) {
         let mut batch_futures = Vec::new();
-        
+
         for _ in 0..CONCURRENT_REQUESTS {
             let mut params = HashMap::new();
             params.insert("batch".to_string(), json!(batch));
-            params.insert("timestamp".to_string(), json!(std::time::Instant::now().elapsed().as_millis()));
-            
+            params.insert(
+                "timestamp".to_string(),
+                json!(std::time::Instant::now().elapsed().as_millis()),
+            );
+
             let future = client.call_tool("benchmark_tool".to_string(), Some(params));
             batch_futures.push(future);
         }
 
         // Wait for this batch to complete
         let results = futures::future::join_all(batch_futures).await;
-        
-        for (result, request_start) in results.into_iter().zip(std::iter::repeat(std::time::Instant::now())) {
+
+        for (result, request_start) in results
+            .into_iter()
+            .zip(std::iter::repeat(std::time::Instant::now()))
+        {
             let latency = request_start.elapsed();
             latencies.push(latency);
-            
+
             if result.is_err() {
                 errors += 1;
             }
@@ -162,10 +168,7 @@ async fn benchmark_http_transport(
     let success_rate = (BENCHMARK_REQUESTS - errors) as f64 / BENCHMARK_REQUESTS as f64;
 
     Ok(BenchmarkResult {
-        name: format!(
-            "HTTP ({:?}ms timeout)",
-            config.read_timeout_ms.unwrap_or(0)
-        ),
+        name: format!("HTTP ({:?}ms timeout)", config.read_timeout_ms.unwrap_or(0)),
         total_requests: BENCHMARK_REQUESTS,
         total_time,
         average_latency,

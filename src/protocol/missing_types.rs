@@ -663,7 +663,7 @@ impl TaskHandle {
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     /// Check if the task is finished
     pub fn is_finished(&self) -> bool {
         self.handle.is_finished()

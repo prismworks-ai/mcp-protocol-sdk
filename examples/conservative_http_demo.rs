@@ -9,8 +9,8 @@
 use mcp_protocol_sdk::prelude::*;
 use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
 use serde_json::json;
-use std::time::Duration;
 use std::collections::HashMap;
+use std::time::Duration;
 use tracing::{error, info, warn};
 
 #[tokio::main]
@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create conservative configuration for production use
     let config = TransportConfig {
         connect_timeout_ms: Some(10_000),   // 10 seconds
-        read_timeout_ms: Some(30_000),      // 30 seconds 
+        read_timeout_ms: Some(30_000),      // 30 seconds
         write_timeout_ms: Some(30_000),     // 30 seconds
         max_message_size: Some(512 * 1024), // 512KB
         keep_alive_ms: Some(300_000),       // 5 minutes
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("  - Compression: enabled");
 
     // Start a demo server in the background (would normally be a separate process)
-    let server_task = tokio::spawn(async { 
+    let server_task = tokio::spawn(async {
         if let Err(e) = demo_server().await {
             eprintln!("Demo server error: {}", e);
         }
@@ -87,8 +87,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Try to call a tool (this will fail if no server, but shows retry behavior)
     let mut params = HashMap::new();
     params.insert("test".to_string(), json!("value"));
-    
-    match client.call_tool("demo_tool".to_string(), Some(params)).await {
+
+    match client
+        .call_tool("demo_tool".to_string(), Some(params))
+        .await
+    {
         Ok(result) => info!("Tool call successful: {:?}", result),
         Err(e) => info!("Tool call failed (expected): {}", e),
     }

@@ -11,13 +11,13 @@
 //!
 //! Run with: cargo run --example advanced_http_client --features http
 
+use futures;
 use mcp_protocol_sdk::prelude::*;
 use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
 use serde_json::json;
-use std::time::Duration;
 use std::collections::HashMap;
+use std::time::Duration;
 use tracing::{error, info, warn};
-use futures;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         read_timeout_ms: Some(30_000),
         write_timeout_ms: Some(30_000),
         max_message_size: Some(1024 * 1024), // 1MB
-        keep_alive_ms: Some(60_000), // 1 minute
+        keep_alive_ms: Some(60_000),         // 1 minute
         compression: true,
         headers: {
             let mut headers = std::collections::HashMap::new();
@@ -44,13 +44,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     info!("HTTP Configuration:");
-    info!("  🔗 Connect timeout: {}ms", config.connect_timeout_ms.unwrap());
+    info!(
+        "  🔗 Connect timeout: {}ms",
+        config.connect_timeout_ms.unwrap()
+    );
     info!("  ⏱️  Read timeout: {}ms", config.read_timeout_ms.unwrap());
-    info!("  📦 Max message size: {} bytes", config.max_message_size.unwrap());
+    info!(
+        "  📦 Max message size: {} bytes",
+        config.max_message_size.unwrap()
+    );
     info!("  📦 Compression: enabled");
 
     // Start demo server
-    let server_task = tokio::spawn(async { 
+    let server_task = tokio::spawn(async {
         if let Err(e) = demo_server().await {
             eprintln!("Demo server error: {}", e);
         }
@@ -106,8 +112,11 @@ async fn demonstrate_basic_requests(client: &McpClient) {
     for i in 0..5 {
         let mut params = HashMap::new();
         params.insert("request".to_string(), json!(i));
-        
-        match client.call_tool("basic_test".to_string(), Some(params)).await {
+
+        match client
+            .call_tool("basic_test".to_string(), Some(params))
+            .await
+        {
             Ok(_) => info!("✅ Request {} completed", i + 1),
             Err(e) => warn!("⚠️  Request {} failed: {}", i + 1, e),
         }
@@ -122,7 +131,10 @@ async fn demonstrate_error_handling(client: &McpClient) {
     let mut params = HashMap::new();
     params.insert("cause_failure".to_string(), json!(true));
 
-    match client.call_tool("failing_tool".to_string(), Some(params)).await {
+    match client
+        .call_tool("failing_tool".to_string(), Some(params))
+        .await
+    {
         Ok(_) => info!("✅ Request succeeded (possibly after retries)"),
         Err(e) => info!("❌ Request ultimately failed: {}", e),
     }
@@ -146,7 +158,7 @@ async fn demonstrate_concurrent_requests(client: &McpClient) {
     // Wait for all requests to complete
     let results = futures::future::join_all(futures).await;
     let mut successful = 0;
-    
+
     for (i, result) in results.into_iter().enumerate() {
         match result {
             Ok(_) => {
