@@ -117,6 +117,12 @@ pub struct HealthChecker {
     checks: HashMap<String, Box<dyn Fn() -> Result<HealthStatus, McpError> + Send + Sync>>,
 }
 
+impl Default for HealthChecker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HealthChecker {
     pub fn new() -> Self {
         Self {
@@ -259,6 +265,12 @@ pub struct LifecycleManager {
     hooks: HashMap<String, Vec<Box<dyn Fn() -> Result<(), McpError> + Send + Sync>>>,
 }
 
+impl Default for LifecycleManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LifecycleManager {
     pub fn new() -> Self {
         Self {
@@ -291,14 +303,14 @@ impl LifecycleManager {
     pub fn on_start(&mut self, callback: Box<dyn Fn() -> Result<(), McpError> + Send + Sync>) {
         self.listeners
             .entry("start".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(callback);
     }
 
     pub fn on_stop(&mut self, callback: Box<dyn Fn() -> Result<(), McpError> + Send + Sync>) {
         self.listeners
             .entry("stop".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(callback);
     }
 
@@ -312,7 +324,7 @@ impl LifecycleManager {
     ) {
         self.hooks
             .entry("pre_start".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hook);
     }
 
@@ -322,14 +334,14 @@ impl LifecycleManager {
     ) {
         self.hooks
             .entry("post_start".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hook);
     }
 
     pub fn add_pre_stop_hook(&mut self, hook: Box<dyn Fn() -> Result<(), McpError> + Send + Sync>) {
         self.hooks
             .entry("pre_stop".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hook);
     }
 
@@ -339,7 +351,7 @@ impl LifecycleManager {
     ) {
         self.hooks
             .entry("post_stop".to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hook);
     }
 
@@ -382,6 +394,12 @@ pub struct ShutdownSignalHandler {
     shutdown_config: Option<GracefulShutdownConfig>,
 }
 
+impl Default for ShutdownSignalHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShutdownSignalHandler {
     pub fn new() -> Self {
         Self {
@@ -410,6 +428,12 @@ impl ShutdownSignalHandler {
 /// Resource cleanup manager
 pub struct ResourceCleanupManager {
     cleanup_tasks: HashMap<String, Box<dyn Fn() -> Result<(), McpError> + Send + Sync>>,
+}
+
+impl Default for ResourceCleanupManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ResourceCleanupManager {
@@ -464,6 +488,12 @@ pub struct MetricsStats {
     pub active_connections: u64,
     pub average_response_time: Duration,
     pub uptime: Duration,
+}
+
+impl Default for ServerMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ServerMetrics {
@@ -543,6 +573,12 @@ pub struct ConfigurationManager {
     current_config: Option<ServerConfig>,
 }
 
+impl Default for ConfigurationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigurationManager {
     pub fn new() -> Self {
         Self {
@@ -572,6 +608,12 @@ impl ConfigurationManager {
 /// State persistence manager
 pub struct StatePersistenceManager {
     stored_state: Option<ServerPersistentState>,
+}
+
+impl Default for StatePersistenceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StatePersistenceManager {
@@ -608,6 +650,12 @@ pub trait Plugin: Send + Sync {
 /// Plugin manager
 pub struct PluginManager {
     plugins: Vec<Box<dyn Plugin>>,
+}
+
+impl Default for PluginManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PluginManager {
@@ -673,6 +721,12 @@ impl TaskHandle {
 /// Async task manager
 pub struct AsyncTaskManager {
     tasks: HashMap<String, TaskHandle>,
+}
+
+impl Default for AsyncTaskManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AsyncTaskManager {

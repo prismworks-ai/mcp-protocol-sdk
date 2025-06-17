@@ -522,7 +522,7 @@ pub mod notifications {
             methods::PROGRESS.to_string(),
             Some(ProgressParams {
                 progress_token: serde_json::Value::String(progress_token),
-                progress: progress.into(),
+                progress,
                 total,
                 message: None,
             }),

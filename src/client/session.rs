@@ -509,7 +509,7 @@ impl NotificationHandler for ProgressHandler {
                 if let Ok(progress_params) = serde_json::from_value::<ProgressParams>(params) {
                     (self.callback)(
                         progress_params.progress_token.to_string(),
-                        progress_params.progress as f32,
+                        progress_params.progress,
                         progress_params.total.map(|t| t as u32),
                     );
                 }

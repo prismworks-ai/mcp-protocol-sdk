@@ -96,6 +96,7 @@ pub struct ListParams {
 
 /// Parameters for list tools request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default)]
 pub struct ListToolsParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -107,6 +108,7 @@ pub struct ListToolsParams {
 
 /// Parameters for list resources request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default)]
 pub struct ListResourcesParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -118,6 +120,7 @@ pub struct ListResourcesParams {
 
 /// Parameters for list prompts request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default)]
 pub struct ListPromptsParams {
     /// Pagination cursor
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -129,6 +132,7 @@ pub struct ListPromptsParams {
 
 /// Parameters for ping request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default)]
 pub struct PingParams {
     /// Request metadata
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
@@ -583,35 +587,6 @@ impl Root {
 // Default Implementations
 // ============================================================================
 
-impl Default for ListToolsParams {
-    fn default() -> Self {
-        Self {
-            cursor: None,
-            meta: None,
-        }
-    }
-}
 
-impl Default for ListResourcesParams {
-    fn default() -> Self {
-        Self {
-            cursor: None,
-            meta: None,
-        }
-    }
-}
 
-impl Default for ListPromptsParams {
-    fn default() -> Self {
-        Self {
-            cursor: None,
-            meta: None,
-        }
-    }
-}
 
-impl Default for PingParams {
-    fn default() -> Self {
-        Self { meta: None }
-    }
-}
