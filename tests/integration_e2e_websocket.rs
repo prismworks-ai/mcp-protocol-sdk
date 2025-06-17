@@ -25,9 +25,9 @@ use mcp_protocol_sdk::{
 #[cfg(all(test, feature = "websocket"))]
 mod e2e_websocket_tests {
     use super::*;
+    use std::{collections::HashMap, sync::Arc, time::Duration};
     use async_trait::async_trait;
     use serde_json::{json, Value};
-    use std::{collections::HashMap, sync::Arc, time::Duration};
     use tokio::{
         sync::{mpsc, Mutex},
         time::sleep,
