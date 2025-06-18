@@ -30,6 +30,7 @@ jobs:
         with:
           ruby-version: '3.1'
           bundler-cache: true
+          working-directory: docs
           
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -55,12 +56,6 @@ jobs:
           mkdir -p docs/rust-docs
           cp -r target/doc/* docs/rust-docs/
         
-      - name: Install Jekyll dependencies
-        run: |
-          cd docs
-          gem install bundler
-          bundle install
-          
       - name: Build with Jekyll
         run: |
           cd docs
