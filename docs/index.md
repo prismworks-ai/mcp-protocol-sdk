@@ -1,5 +1,3 @@
-# MCP Protocol SDK
-
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
 
 [![Crates.io](https://img.shields.io/crates/v/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
