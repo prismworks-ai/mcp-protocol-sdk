@@ -80,34 +80,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use mcp_protocol_sdk::transport::http_advanced::{
-    AdvancedHttpClientTransport, AdvancedHttpConfig
-};
+use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Connect with advanced HTTP transport (45% faster!)
-    let config = AdvancedHttpConfig::conservative(); // or ::aggressive()
-    let transport = AdvancedHttpClientTransport::with_config(
+    let config = TransportConfig {
+        connect_timeout_ms: Some(5_000),
+        read_timeout_ms: Some(30_000),
+        write_timeout_ms: Some(30_000),
+        max_message_size: Some(1024 * 1024), // 1MB
+        keep_alive_ms: Some(60_000),         // 1 minute
+        compression: true,
+        ..Default::default()
+    };
+    
+    let transport = HttpClientTransport::with_config(
         "http://localhost:3000",
         None,
         config,
     ).await?;
     
-    let client = McpClient::new()
-        .with_name("my-client")
-        .build();
+    let client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
     
     client.connect(transport).await?;
     client.initialize().await?;
     
     // Use server capabilities
     let tools = client.list_tools().await?;
-    let result = client.call_tool("add", json!({"a": 5, "b": 3})).await?;
+    let result = client.call_tool("add".to_string(), Some(json!({"a": 5, "b": 3}).as_object().unwrap().clone())).await?;
     
-    // Monitor performance
-    let metrics = transport.get_metrics().await;
-    println!("Requests/sec: {:.0}", metrics.timing.requests_per_second);
+    println!("Available tools: {:?}", tools);
+    println!("Result: {:?}", result);
     
     Ok(())
 }

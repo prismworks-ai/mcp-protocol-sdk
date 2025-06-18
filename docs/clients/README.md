@@ -20,18 +20,16 @@ use mcp_protocol_sdk::prelude::*;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create client
-    let client = McpClient::new()
-        .with_name("my-ai-client")
-        .with_version("1.0.0")
-        .with_timeout(Duration::from_secs(30))
-        .build();
+    let mut client = McpClient::new("my-ai-client".to_string(), "1.0.0".to_string());
     
-    // Connect to server
-    let transport = StdioClientTransport::new();
-    client.connect(transport).await?;
+    // Connect to server with transport
+    let transport = StdioClientTransport::new("./my-server", vec!["--config", "prod.json"]).await?;
+    let init_result = client.connect(transport).await?;
     
-    // Initialize session
-    client.initialize().await?;
+    // Client is now connected and initialized
+    println!("Connected to: {} v{}", 
+        init_result.server_info.name, 
+        init_result.server_info.version);
     
     // Use the client...
     interact_with_server(&client).await?;
@@ -44,36 +42,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 async fn discover_capabilities(client: &McpClient) -> Result<(), Box<dyn std::error::Error>> {
-    // Get server info
-    let server_info = client.get_server_info().await?;
-    println!("Connected to: {} v{}", server_info.name, server_info.version);
+    // Get server info (available after connection)
+    if let Some(server_info) = client.server_info().await {
+        println!("Connected to: {} v{}", server_info.name, server_info.version);
+    }
     
     // List available tools
-    let tools = client.list_tools().await?;
+    let tools_result = client.list_tools(None).await?;
     println!("Available tools:");
-    for tool in &tools {
+    for tool in &tools_result.tools {
         println!("  - {}: {}", tool.name, tool.description);
-        for param in &tool.parameters {
-            println!("    {} ({}): {}", 
-                param.name, 
-                if param.required { "required" } else { "optional" },
-                param.description
-            );
+        if let Some(input_schema) = &tool.input_schema {
+            if let Some(properties) = input_schema.get("properties") {
+                println!("    Parameters: {}", serde_json::to_string_pretty(properties)?);
+            }
         }
     }
     
     // List available resources
-    let resources = client.list_resources().await?;
+    let resources_result = client.list_resources(None).await?;
     println!("Available resources:");
-    for resource in &resources {
-        println!("  - {}: {}", resource.uri, resource.description);
+    for resource in &resources_result.resources {
+        println!("  - {}: {}", resource.uri, resource.name);
+        if let Some(description) = &resource.description {
+            println!("    Description: {}", description);
+        }
     }
     
     // List available prompts
-    let prompts = client.list_prompts().await?;
+    let prompts_result = client.list_prompts(None).await?;
     println!("Available prompts:");
-    for prompt in &prompts {
-        println!("  - {}: {}", prompt.name, prompt.description);
+    for prompt in &prompts_result.prompts {
+        println!("  - {}: {}", prompt.name, prompt.description.as_ref().unwrap_or(&"No description".to_string()));
     }
     
     Ok(())
@@ -85,26 +85,31 @@ async fn discover_capabilities(client: &McpClient) -> Result<(), Box<dyn std::er
 ```rust
 async fn execute_tools(client: &McpClient) -> Result<(), Box<dyn std::error::Error>> {
     // Simple tool call
-    let result = client.call_tool(
-        "calculate",
-        json!({
-            "expression": "10 + 5 * 2",
-            "precision": 2
-        })
-    ).await?;
+    let mut arguments = std::collections::HashMap::new();
+    arguments.insert("expression".to_string(), serde_json::json!("10 + 5 * 2"));
+    arguments.insert("precision".to_string(), serde_json::json!(2));
     
-    println!("Calculation result: {}", result);
+    let result = client.call_tool("calculate".to_string(), Some(arguments)).await?;
     
-    // Batch tool calls
-    let batch_results = client.call_tools_batch(vec![
-        ToolCall::new("read_file", json!({"path": "config.json"})),
-        ToolCall::new("read_file", json!({"path": "data.csv"})),
-        ToolCall::new("calculate", json!({"expression": "100 / 4"})),
-    ]).await?;
+    println!("Calculation result: {:?}", result.content);
     
-    for (i, result) in batch_results.iter().enumerate() {
-        println!("Batch result {}: {:?}", i, result);
-    }
+    // Multiple individual tool calls
+    let mut args1 = std::collections::HashMap::new();
+    args1.insert("path".to_string(), serde_json::json!("config.json"));
+    
+    let mut args2 = std::collections::HashMap::new();
+    args2.insert("path".to_string(), serde_json::json!("data.csv"));
+    
+    let mut args3 = std::collections::HashMap::new();
+    args3.insert("expression".to_string(), serde_json::json!("100 / 4"));
+    
+    let result1 = client.call_tool("read_file".to_string(), Some(args1)).await?;
+    let result2 = client.call_tool("read_file".to_string(), Some(args2)).await?;
+    let result3 = client.call_tool("calculate".to_string(), Some(args3)).await?;
+    
+    println!("File 1 result: {:?}", result1.content);
+    println!("File 2 result: {:?}", result2.content);
+    println!("Calculation result: {:?}", result3.content);
     
     Ok(())
 }
@@ -115,13 +120,18 @@ async fn execute_tools(client: &McpClient) -> Result<(), Box<dyn std::error::Err
 ```rust
 async fn access_resources(client: &McpClient) -> Result<(), Box<dyn std::error::Error>> {
     // Read a specific resource
-    let content = client.read_resource("file://config.json").await?;
-    match content {
-        ResourceContent::Text(text) => {
-            println!("Config content: {}", text);
-        }
-        ResourceContent::Binary(data) => {
-            println!("Binary data, {} bytes", data.len());
+    let result = client.read_resource("file://config.json".to_string()).await?;
+    
+    for content_item in &result.contents {
+        match &content_item.text {
+            Some(text) => {
+                println!("Config content: {}", text);
+            }
+            None => {
+                if let Some(blob) = &content_item.blob {
+                    println!("Binary data, {} bytes", blob.len());
+                }
+            }
         }
     }
     
@@ -133,8 +143,10 @@ async fn access_resources(client: &McpClient) -> Result<(), Box<dyn std::error::
     ];
     
     for uri in resources {
-        match client.read_resource(uri).await {
-            Ok(content) => println!("Successfully read: {}", uri),
+        match client.read_resource(uri.to_string()).await {
+            Ok(result) => {
+                println!("Successfully read: {} ({} items)", uri, result.contents.len());
+            }
             Err(e) => println!("Failed to read {}: {}", uri, e),
         }
     }
@@ -148,20 +160,34 @@ async fn access_resources(client: &McpClient) -> Result<(), Box<dyn std::error::
 ```rust
 async fn work_with_prompts(client: &McpClient) -> Result<(), Box<dyn std::error::Error>> {
     // Get a prompt with parameters
-    let prompt = client.get_prompt(
-        "code_review",
-        json!({
-            "code": "fn main() { println!(\"Hello\"); }",
-            "language": "rust",
-            "style": "thorough"
-        })
+    let mut arguments = std::collections::HashMap::new();
+    arguments.insert("code".to_string(), "fn main() { println!(\"Hello\"); }".to_string());
+    arguments.insert("language".to_string(), "rust".to_string());
+    arguments.insert("style".to_string(), "thorough".to_string());
+    
+    let prompt_result = client.get_prompt(
+        "code_review".to_string(),
+        Some(arguments)
     ).await?;
     
-    println!("Generated prompt: {}", prompt.content);
+    // Display the prompt messages
+    for message in &prompt_result.messages {
+        match &message.content {
+            Some(content) => {
+                if let Some(text) = &content.text {
+                    println!("Generated prompt content: {}", text);
+                }
+            }
+            None => {
+                println!("Empty message content");
+            }
+        }
+    }
     
     // Use prompt in AI conversation
-    let ai_response = send_to_ai_model(&prompt).await?;
-    println!("AI response: {}", ai_response);
+    // (This would be implementation-specific for your AI model)
+    // let ai_response = send_to_ai_model(&prompt_result).await?;
+    // println!("AI response: {}", ai_response);
     
     Ok(())
 }
@@ -188,14 +214,11 @@ impl MultiServerClient {
     pub async fn connect_server(
         &mut self, 
         name: &str, 
-        transport: impl Transport
+        transport: impl Transport + 'static
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let client = McpClient::new()
-            .with_name("multi-client")
-            .build();
+        let mut client = McpClient::new("multi-client".to_string(), "1.0.0".to_string());
             
         client.connect(transport).await?;
-        client.initialize().await?;
         
         self.clients.insert(name.to_string(), client);
         Ok(())
@@ -205,12 +228,12 @@ impl MultiServerClient {
         &self,
         server_name: &str,
         tool_name: &str,
-        params: Value
-    ) -> Result<Value, Box<dyn std::error::Error>> {
+        params: Option<std::collections::HashMap<String, serde_json::Value>>
+    ) -> Result<crate::protocol::messages::CallToolResult, Box<dyn std::error::Error>> {
         let client = self.clients.get(server_name)
             .ok_or(format!("Server {} not connected", server_name))?;
             
-        client.call_tool(tool_name, params).await
+        client.call_tool(tool_name.to_string(), params).await.map_err(|e| e.into())
     }
 }
 ```
@@ -219,27 +242,21 @@ impl MultiServerClient {
 
 ```rust
 async fn resilient_client_connection() -> Result<(), Box<dyn std::error::Error>> {
-    let client = McpClient::new()
-        .with_retry_config(RetryConfig {
-            max_retries: 3,
-            initial_delay: Duration::from_millis(100),
-            max_delay: Duration::from_secs(5),
-            backoff_multiplier: 2.0,
-        })
-        .with_heartbeat_interval(Duration::from_secs(30))
-        .build();
+    let config = ClientConfig {
+        request_timeout_ms: 30000,
+        max_retries: 3,
+        retry_delay_ms: 1000,
+        validate_requests: true,
+        validate_responses: true,
+    };
     
-    // Auto-reconnection on failure
-    client.set_connection_error_handler(|error| async move {
-        eprintln!("Connection lost: {}. Attempting reconnection...", error);
-        // Custom reconnection logic
-    });
+    let client = McpClient::with_config("resilient-client".to_string(), "1.0.0".to_string(), config);
     
-    // Monitor connection health
-    client.set_health_check_handler(|| async move {
-        // Custom health check logic
-        Ok(true)
-    });
+    // Connect with custom transport
+    let transport = HttpClientTransport::new("http://localhost:3000/mcp", None).await?;
+    client.connect(transport).await?;
+    
+    // Connection is now active with timeout and retry configuration
     
     Ok(())
 }
@@ -253,10 +270,10 @@ async fn resilient_client_connection() -> Result<(), Box<dyn std::error::Error>>
 use mcp_protocol_sdk::transport::StdioClientTransport;
 
 // Connect to external process
-let transport = StdioClientTransport::new_process("./my-server", &["--config", "prod.json"])?;
+let transport = StdioClientTransport::new("./my-server", vec!["--config", "prod.json"]).await?;
 
-// Or use existing stdio streams
-let transport = StdioClientTransport::new();
+// Or connect to a simple executable
+let transport = StdioClientTransport::new("./my-server", vec![]).await?;
 ```
 
 ### HTTP Client
@@ -264,10 +281,7 @@ let transport = StdioClientTransport::new();
 ```rust
 use mcp_protocol_sdk::transport::HttpClientTransport;
 
-let transport = HttpClientTransport::new("http://localhost:3000/mcp")
-    .with_timeout(Duration::from_secs(30))
-    .with_auth_token("your-api-key")
-    .with_user_agent("MyClient/1.0");
+let transport = HttpClientTransport::new("http://localhost:3000/mcp", None).await?;
 ```
 
 ### WebSocket Client
@@ -275,9 +289,7 @@ let transport = HttpClientTransport::new("http://localhost:3000/mcp")
 ```rust
 use mcp_protocol_sdk::transport::WebSocketClientTransport;
 
-let transport = WebSocketClientTransport::new("ws://localhost:8080/mcp")
-    .with_heartbeat_interval(Duration::from_secs(30))
-    .with_max_reconnect_attempts(5);
+let transport = WebSocketClientTransport::new("ws://localhost:8080/mcp").await?;
 ```
 
 ## Advanced Client Patterns
@@ -481,23 +493,69 @@ pub fn create_app(mcp_client: McpClient) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mcp_protocol_sdk::testing::MockServer;
+    use async_trait::async_trait;
+    
+    // Mock transport for testing
+    struct MockTransport {
+        responses: Vec<JsonRpcResponse>,
+        current: usize,
+    }
+    
+    impl MockTransport {
+        fn new(responses: Vec<JsonRpcResponse>) -> Self {
+            Self { responses, current: 0 }
+        }
+    }
+    
+    #[async_trait]
+    impl Transport for MockTransport {
+        async fn send_request(&mut self, _request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
+            if self.current < self.responses.len() {
+                let response = self.responses[self.current].clone();
+                self.current += 1;
+                Ok(response)
+            } else {
+                Err(McpError::Transport("No more responses".to_string()))
+            }
+        }
+        
+        async fn send_notification(&mut self, _notification: JsonRpcNotification) -> McpResult<()> {
+            Ok(())
+        }
+        
+        async fn receive_notification(&mut self) -> McpResult<Option<JsonRpcNotification>> {
+            Ok(None)
+        }
+        
+        async fn close(&mut self) -> McpResult<()> {
+            Ok(())
+        }
+    }
     
     #[tokio::test]
     async fn test_tool_calling() {
-        // Create mock server
-        let mut mock_server = MockServer::new();
-        mock_server.expect_tool_call("calculate")
-            .with_params(json!({"expression": "2+2"}))
-            .return_result(json!({"result": 4}));
+        let tool_result = CallToolResult {
+            content: vec![ToolContent::Text {
+                text: "4".to_string(),
+            }],
+        };
         
-        // Connect client to mock
-        let client = McpClient::new().build();
-        client.connect(mock_server.transport()).await.unwrap();
+        let response = JsonRpcResponse::success(
+            serde_json::Value::from(1), 
+            tool_result
+        ).unwrap();
+        
+        let transport = MockTransport::new(vec![response]);
+        
+        let mut client = McpClient::new("test-client".to_string(), "1.0.0".to_string());
+        client.connect(transport).await.unwrap();
         
         // Test tool call
-        let result = client.call_tool("calculate", json!({"expression": "2+2"})).await.unwrap();
-        assert_eq!(result["result"], 4);
+        let mut args = std::collections::HashMap::new();
+        args.insert("expression".to_string(), serde_json::json!("2+2"));
+        
+        let result = client.call_tool("calculate".to_string(), Some(args)).await.unwrap();
+        assert_eq!(result.content.len(), 1);
     }
 }
 ```
@@ -505,27 +563,34 @@ mod tests {
 ## Error Handling Best Practices
 
 ```rust
-use mcp_protocol_sdk::errors::{McpError, ErrorCategory};
+use mcp_protocol_sdk::core::error::McpError;
 
-async fn robust_tool_calling(client: &McpClient) -> Result<Value, McpError> {
-    match client.call_tool("my_tool", json!({})).await {
+async fn robust_tool_calling(client: &McpClient) -> Result<CallToolResult, McpError> {
+    let mut args = std::collections::HashMap::new();
+    args.insert("param".to_string(), serde_json::json!("value"));
+    
+    match client.call_tool("my_tool".to_string(), Some(args.clone())).await {
         Ok(result) => Ok(result),
         Err(McpError::Transport(_)) => {
             // Handle connection issues
-            client.reconnect().await?;
-            client.call_tool("my_tool", json!({})).await
+            log::error!("Transport error, connection may be lost");
+            // Attempt reconnection would require reconnection logic
+            Err(McpError::Transport("Connection lost".to_string()))
         }
         Err(McpError::Protocol(msg)) => {
             // Handle protocol errors
             log::error!("Protocol error: {}", msg);
             Err(McpError::Protocol(msg))
         }
-        Err(McpError::ToolNotFound(tool)) => {
-            // Handle missing tools gracefully
-            log::warn!("Tool {} not available, using fallback", tool);
-            Ok(json!({"error": "Tool not available"}))
+        Err(McpError::Serialization(msg)) => {
+            // Handle serialization errors
+            log::warn!("Serialization error: {}", msg);
+            Err(McpError::Serialization(msg))
         }
-        Err(e) => Err(e),
+        Err(e) => {
+            log::error!("Unexpected error: {}", e);
+            Err(e)
+        }
     }
 }
 ```

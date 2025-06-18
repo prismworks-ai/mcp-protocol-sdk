@@ -39,18 +39,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use mcp_protocol_sdk::{
-    client::{McpClient, ClientSession},
+    client::mcp_client::McpClient,
     transport::stdio::StdioClientTransport,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = McpClient::new("stdio-client".to_string(), "1.0.0".to_string());
-    let session = ClientSession::new(client);
+    let mut client = McpClient::new("stdio-client".to_string(), "1.0.0".to_string());
     
     // Connect to server executable
-    let transport = StdioClientTransport::new("./my-server".to_string()).await?;
-    let init_result = session.connect(transport).await?;
+    let transport = StdioClientTransport::new("./my-server".to_string(), vec![]).await?;
+    let init_result = client.connect(transport).await?;
+    
+    println!("Connected to: {}", init_result.server_info.name);
     
     // Use the client...
     
@@ -61,19 +62,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Configuration
 
 ```rust
-use mcp_protocol_sdk::transport::stdio::StdioConfig;
+use mcp_protocol_sdk::transport::TransportConfig;
 
-let config = StdioConfig {
-    buffer_size: 8192,
-    timeout_ms: Some(30_000),
-    working_directory: Some("/path/to/working/dir".to_string()),
-    environment: [
-        ("VAR1".to_string(), "value1".to_string()),
-        ("VAR2".to_string(), "value2".to_string()),
-    ].into(),
+let config = TransportConfig {
+    read_timeout_ms: Some(30_000),
+    write_timeout_ms: Some(30_000),
+    connect_timeout_ms: Some(30_000),
+    ..Default::default()
 };
 
-let transport = StdioClientTransport::with_config("./server".to_string(), config).await?;
+let transport = StdioClientTransport::with_config("./server".to_string(), vec![], config).await?;
 ```
 
 ## HTTP Transport
@@ -113,17 +111,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use mcp_protocol_sdk::{
-    client::{McpClient, ClientSession},
+    client::mcp_client::McpClient,
     transport::http::HttpClientTransport,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = McpClient::new("http-client".to_string(), "1.0.0".to_string());
-    let session = ClientSession::new(client);
+    let mut client = McpClient::new("http-client".to_string(), "1.0.0".to_string());
     
-    let transport = HttpClientTransport::new("http://localhost:3000/mcp").await?;
-    let init_result = session.connect(transport).await?;
+    let transport = HttpClientTransport::new("http://localhost:3000/mcp", None).await?;
+    let init_result = client.connect(transport).await?;
+    
+    println!("Connected to: {}", init_result.server_info.name);
     
     // Use the client...
     
@@ -159,40 +158,22 @@ curl -N http://localhost:3000/mcp/events
 #### Configuration
 
 ```rust
-use mcp_protocol_sdk::transport::http::{HttpServerConfig, HttpClientConfig};
-
-// Server configuration
-let server_config = HttpServerConfig {
-    bind_address: "0.0.0.0:3000".to_string(),
-    max_connections: 1000,
-    request_timeout_ms: 30_000,
-    keep_alive_timeout_ms: 60_000,
-    max_request_size: 1024 * 1024, // 1MB
-    cors_enabled: true,
-    cors_origins: vec!["https://myapp.com".to_string()],
-    compression: true,
-    headers: [
-        ("Server".to_string(), "MCP-Rust-SDK/1.0".to_string()),
-    ].into(),
-};
-
-let transport = HttpServerTransport::with_config(server_config);
+use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
 
 // Client configuration
-let client_config = HttpClientConfig {
-    base_url: "http://localhost:3000/mcp".to_string(),
-    timeout_ms: 30_000,
-    max_retries: 3,
-    retry_delay_ms: 1000,
+let config = TransportConfig {
+    read_timeout_ms: Some(30_000),
+    write_timeout_ms: Some(30_000),
+    connect_timeout_ms: Some(30_000),
+    compression: true,
     headers: [
         ("User-Agent".to_string(), "MyApp/1.0".to_string()),
         ("Authorization".to_string(), "Bearer token123".to_string()),
     ].into(),
-    compression: true,
-    follow_redirects: true,
+    ..Default::default()
 };
 
-let transport = HttpClientTransport::with_config(client_config).await?;
+let transport = HttpClientTransport::with_config("http://localhost:3000/mcp", None, config).await?;
 ```
 
 ## WebSocket Transport
@@ -230,17 +211,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use mcp_protocol_sdk::{
-    client::{McpClient, ClientSession},
+    client::mcp_client::McpClient,
     transport::websocket::WebSocketClientTransport,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = McpClient::new("ws-client".to_string(), "1.0.0".to_string());
-    let session = ClientSession::new(client);
+    let mut client = McpClient::new("ws-client".to_string(), "1.0.0".to_string());
     
     let transport = WebSocketClientTransport::new("ws://localhost:8080").await?;
-    let init_result = session.connect(transport).await?;
+    let init_result = client.connect(transport).await?;
+    
+    println!("Connected to: {}", init_result.server_info.name);
     
     // Use the client...
     
@@ -251,41 +233,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Configuration
 
 ```rust
-use mcp_protocol_sdk::transport::websocket::{WebSocketServerConfig, WebSocketClientConfig};
-
-// Server configuration
-let server_config = WebSocketServerConfig {
-    bind_address: "0.0.0.0:8080".to_string(),
-    max_connections: 10000,
-    max_frame_size: 64 * 1024 * 1024, // 64MB
-    max_message_size: 16 * 1024 * 1024, // 16MB
-    compression: true,
-    ping_interval_ms: Some(30_000),
-    pong_timeout_ms: 10_000,
-    headers: [
-        ("Server".to_string(), "MCP-Rust-SDK/1.0".to_string()),
-    ].into(),
-};
-
-let transport = WebSocketServerTransport::with_config(server_config);
+use mcp_protocol_sdk::transport::{WebSocketClientTransport, TransportConfig};
 
 // Client configuration
-let client_config = WebSocketClientConfig {
-    url: "ws://localhost:8080".to_string(),
-    timeout_ms: 30_000,
-    max_retries: 5,
-    retry_delay_ms: 2000,
-    max_frame_size: 64 * 1024 * 1024, // 64MB
-    max_message_size: 16 * 1024 * 1024, // 16MB
+let config = TransportConfig {
+    read_timeout_ms: Some(30_000),
+    write_timeout_ms: Some(30_000),
+    connect_timeout_ms: Some(30_000),
+    max_message_size: Some(16 * 1024 * 1024), // 16MB
     compression: true,
-    ping_interval_ms: Some(30_000),
     headers: [
         ("User-Agent".to_string(), "MyApp/1.0".to_string()),
     ].into(),
-    subprotocols: vec!["mcp".to_string()],
+    ..Default::default()
 };
 
-let transport = WebSocketClientTransport::with_config(client_config).await?;
+let transport = WebSocketClientTransport::with_config("ws://localhost:8080", config).await?;
 ```
 
 ## Transport Abstractions

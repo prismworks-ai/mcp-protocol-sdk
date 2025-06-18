@@ -65,12 +65,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Connect as a Client
 
 ```rust
-use mcp_protocol_sdk::{client::McpClient, transport::http::HttpClientTransport};
+use mcp_protocol_sdk::{client::McpClient, transport::HttpClientTransport};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = McpClient::new("my-client", "1.0.0");
-    let transport = HttpClientTransport::new("http://localhost:3000").await?;
+    let client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
+    let transport = HttpClientTransport::new("http://localhost:3000", None).await?;
     
     client.connect(transport).await?;
     client.initialize().await?;
