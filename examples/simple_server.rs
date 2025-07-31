@@ -59,6 +59,7 @@ impl ToolHandler for CalculatorHandler {
                     return Ok(ToolResult {
                         content: vec![Content::text("Error: Division by zero")],
                         is_error: Some(true),
+                        structured_content: None,
                         meta: None,
                     });
                 }
@@ -71,6 +72,7 @@ impl ToolHandler for CalculatorHandler {
                         operation
                     ))],
                     is_error: Some(true),
+                    structured_content: None,
                     meta: None,
                 });
             }
@@ -82,6 +84,7 @@ impl ToolHandler for CalculatorHandler {
                 a, operation, b, result
             ))],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -117,6 +120,7 @@ impl ToolHandler for EchoHandler {
         Ok(ToolResult {
             content: vec![Content::text(formatted_message)],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -175,6 +179,7 @@ impl ResourceHandler for FileSystemHandler {
                 uri: uri.to_string(),
                 mime_type,
                 text: content.clone(),
+                meta: None,
             }])
         } else {
             Err(McpError::ResourceNotFound(uri.to_string()))
@@ -198,11 +203,13 @@ impl ResourceHandler for FileSystemHandler {
 
                 ResourceInfo {
                     uri: uri.clone(),
-                    name: Some(name.to_string()),
+                    name: name.to_string(),
+                    title: Some(format!("Demo file: {}", name)),
                     description: Some(format!("Demo file: {}", name)),
                     mime_type,
                     annotations: None,
                     size: None,
+                    meta: None,
                 }
             })
             .collect())
@@ -416,11 +423,13 @@ async fn main() -> McpResult<()> {
         .add_resource_detailed(
             ResourceInfo {
                 uri: "file:///".to_string(),
-                name: Some("Demo File System".to_string()),
+                name: "Demo File System".to_string(),
+                title: Some("Demo File System".to_string()),
                 description: Some("Demo file system with sample files".to_string()),
                 mime_type: Some("inode/directory".to_string()),
                 annotations: None,
                 size: None,
+                meta: None,
             },
             fs_handler,
         )
@@ -434,14 +443,18 @@ async fn main() -> McpResult<()> {
             PromptInfo {
                 name: "code-review".to_string(),
                 description: Some("Generate code review prompts".to_string()),
+                title: Some("Code Review Assistant".to_string()),
+                meta: None,
                 arguments: Some(vec![
                     PromptArgument {
                         name: "language".to_string(),
+                        title: Some("Programming Language".to_string()),
                         description: Some("Programming language".to_string()),
                         required: Some(false),
                     },
                     PromptArgument {
                         name: "focus".to_string(),
+                        title: Some("Review Focus".to_string()),
                         description: Some(
                             "Review focus (security, performance, style, general)".to_string(),
                         ),
@@ -458,14 +471,18 @@ async fn main() -> McpResult<()> {
             PromptInfo {
                 name: "documentation".to_string(),
                 description: Some("Generate documentation prompts".to_string()),
+                title: Some("Documentation Generator".to_string()),
+                meta: None,
                 arguments: Some(vec![
                     PromptArgument {
                         name: "type".to_string(),
+                        title: Some("Documentation Type".to_string()),
                         description: Some("Documentation type (api, class, function)".to_string()),
                         required: Some(false),
                     },
                     PromptArgument {
                         name: "language".to_string(),
+                        title: Some("Programming Language".to_string()),
                         description: Some("Programming language".to_string()),
                         required: Some(false),
                     },

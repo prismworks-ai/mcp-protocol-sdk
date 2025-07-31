@@ -59,16 +59,58 @@ impl From<&str> for JsonRpcId {
 }
 
 // ============================================================================
+// BaseMetadata Interface (2025-06-18)
+// ============================================================================
+
+/// Base interface for metadata with name (identifier) and title (display name) properties.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BaseMetadata {
+    /// Intended for programmatic or logical use, but used as a display name in past specs or fallback (if title isn't present).
+    pub name: String,
+    /// Intended for UI and end-user contexts — optimized to be human-readable and easily understood,
+    /// even by those unfamiliar with domain-specific terminology.
+    /// 
+    /// If not provided, the name should be used for display (except for Tool,
+    /// where `annotations.title` should be given precedence over using `name`, if present).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+}
+
+// ============================================================================
 // Core Implementation Info
 // ============================================================================
 
-/// Information about an MCP implementation
+/// Information about an MCP implementation (2025-06-18 with title support)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Implementation {
-    /// Name of the implementation
+    /// Intended for programmatic or logical use, but used as a display name in past specs or fallback (if title isn't present).
     pub name: String,
     /// Version of the implementation
     pub version: String,
+    /// Intended for UI and end-user contexts — optimized to be human-readable and easily understood,
+    /// even by those unfamiliar with domain-specific terminology.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+}
+
+impl Implementation {
+    /// Create a new implementation with name and version
+    pub fn new<S: Into<String>>(name: S, version: S) -> Self {
+        Self {
+            name: name.into(),
+            version: version.into(),
+            title: None,
+        }
+    }
+
+    /// Create implementation with title
+    pub fn with_title<S: Into<String>>(name: S, version: S, title: S) -> Self {
+        Self {
+            name: name.into(),
+            version: version.into(),
+            title: Some(title.into()),
+        }
+    }
 }
 
 // Type aliases for compatibility
@@ -76,10 +118,10 @@ pub type ServerInfo = Implementation;
 pub type ClientInfo = Implementation;
 
 // ============================================================================
-// Capabilities (2025-03-26)
+// Capabilities (2025-06-18)
 // ============================================================================
 
-/// Server capabilities for 2025-03-26
+/// Server capabilities for 2025-06-18
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ServerCapabilities {
     /// Prompt-related capabilities
@@ -91,30 +133,33 @@ pub struct ServerCapabilities {
     /// Tool-related capabilities
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<ToolsCapability>,
-    /// Sampling-related capabilities
+    /// Sampling-related capabilities (client to server)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sampling: Option<SamplingCapability>,
-    /// Logging capabilities (2025-03-26)
+    /// Logging capabilities (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logging: Option<LoggingCapability>,
-    /// Autocompletion capabilities (2025-03-26)
+    /// Autocompletion capabilities (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completions: Option<CompletionsCapability>,
-    /// Experimental capabilities (2025-03-26)
+    /// Experimental capabilities (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub experimental: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Client capabilities for 2025-03-26
+/// Client capabilities for 2025-06-18
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ClientCapabilities {
     /// Sampling-related capabilities
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sampling: Option<SamplingCapability>,
-    /// Roots listing capabilities (2025-03-26)
+    /// Roots listing capabilities (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub roots: Option<RootsCapability>,
-    /// Experimental capabilities (2025-03-26)
+    /// Elicitation support (2025-06-18 NEW)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub elicitation: Option<ElicitationCapability>,
+    /// Experimental capabilities (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub experimental: Option<HashMap<String, serde_json::Value>>,
 }
@@ -170,7 +215,7 @@ pub struct CompletionsCapability {
     pub additional_properties: HashMap<String, serde_json::Value>,
 }
 
-/// Roots capability for clients (2025-03-26)
+/// Roots capability for clients (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct RootsCapability {
     /// Whether the client supports notifications for changes to the roots list
@@ -178,57 +223,45 @@ pub struct RootsCapability {
     pub list_changed: Option<bool>,
 }
 
+/// Elicitation capabilities (2025-06-18 NEW)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct ElicitationCapability {
+    /// Additional properties for elicitation capability
+    #[serde(flatten)]
+    pub additional_properties: HashMap<String, serde_json::Value>,
+}
+
 // ============================================================================
-// Annotations (2025-03-26 NEW)
+// Annotations (2025-06-18 Enhanced)
 // ============================================================================
 
-/// Tool behavior annotations (2025-03-26)
+/// Optional annotations for the client. The client can use annotations to inform how objects are used or displayed.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Annotations {
-    /// Target audience for this tool
+    /// Describes who the intended customer of this object or data is.
+    /// 
+    /// It can include multiple entries to indicate content useful for multiple audiences (e.g., `["user", "assistant"]`).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub audience: Option<Vec<AnnotationAudience>>,
-    /// Danger level of this tool
+    pub audience: Option<Vec<Role>>,
+    /// Describes how important this data is for operating the server.
+    /// 
+    /// A value of 1 means "most important," and indicates that the data is
+    /// effectively required, while 0 means "least important," and indicates that
+    /// the data is entirely optional.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub danger: Option<DangerLevel>,
-    /// Whether this tool performs destructive operations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub destructive: Option<bool>,
-    /// Whether this tool is read-only (no side effects)
-    #[serde(rename = "readOnly", skip_serializing_if = "Option::is_none")]
-    pub read_only: Option<bool>,
-}
-
-/// Target audience for tool usage
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum AnnotationAudience {
-    /// For general users
-    User,
-    /// For developers and technical users
-    Developer,
-    /// For administrative operations
-    Admin,
-}
-
-/// Danger level classification for tools
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum DangerLevel {
-    /// Safe operations with no risk
-    Safe,
-    /// Low risk operations
-    Low,
-    /// Medium risk operations
-    Medium,
-    /// High risk operations
-    High,
-    /// Critical operations
-    Critical,
+    pub priority: Option<f64>,
+    /// The moment the resource was last modified, as an ISO 8601 formatted string.
+    /// 
+    /// Should be an ISO 8601 formatted string (e.g., "2025-01-12T15:00:58Z").
+    /// 
+    /// Examples: last activity timestamp in an open file, timestamp when the resource
+    /// was attached, etc.
+    #[serde(rename = "lastModified", skip_serializing_if = "Option::is_none")]
+    pub last_modified: Option<String>,
 }
 
 // ============================================================================
-// Content Types (2025-03-26 with Audio Support)
+// Content Types (2025-06-18 with ResourceLink)
 // ============================================================================
 
 /// Text content
@@ -239,9 +272,12 @@ pub struct TextContent {
     pub content_type: String, // "text"
     /// The text content
     pub text: String,
-    /// Content annotations (2025-03-26)
+    /// Content annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Image content
@@ -255,12 +291,15 @@ pub struct ImageContent {
     /// MIME type of the image
     #[serde(rename = "mimeType")]
     pub mime_type: String,
-    /// Content annotations (2025-03-26)
+    /// Content annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Audio content (2025-03-26 NEW)
+/// Audio content (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AudioContent {
     /// Content type identifier
@@ -271,43 +310,75 @@ pub struct AudioContent {
     /// MIME type of the audio
     #[serde(rename = "mimeType")]
     pub mime_type: String,
-    /// Content annotations (2025-03-26)
+    /// Content annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Embedded resource content (2025-03-26)
+/// ResourceLink content (2025-06-18 NEW)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ResourceLink {
+    /// Content type identifier
+    #[serde(rename = "type")]
+    pub content_type: String, // "resource_link"
+    /// URI of the resource
+    pub uri: String,
+    /// Human-readable name of the resource
+    pub name: String,
+    /// Description of the resource
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// MIME type of the resource
+    #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    /// Size of the resource in bytes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+    /// Title for UI display
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Content annotations (2025-06-18)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<Annotations>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
+}
+
+/// Embedded resource content (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EmbeddedResource {
     /// Content type identifier
     #[serde(rename = "type")]
     pub content_type: String, // "resource"
-    /// Resource reference
-    pub resource: ResourceReference,
-    /// Content annotations (2025-03-26)
+    /// Resource contents
+    pub resource: ResourceContents,
+    /// Content annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Resource reference for embedded resources
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ResourceReference {
-    /// URI of the resource
-    pub uri: String,
-}
-
-/// Unified content type (2025-03-26 complete)
+/// ContentBlock union type (2025-06-18 complete with ResourceLink)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type")]
-pub enum Content {
+pub enum ContentBlock {
     /// Text content
     #[serde(rename = "text")]
     Text {
         /// The text content
         text: String,
-        /// Content annotations (2025-03-26)
+        /// Content annotations (2025-06-18)
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
     /// Image content
     #[serde(rename = "image")]
@@ -317,11 +388,14 @@ pub enum Content {
         /// MIME type of the image
         #[serde(rename = "mimeType")]
         mime_type: String,
-        /// Content annotations (2025-03-26)
+        /// Content annotations (2025-06-18)
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
-    /// Audio content (2025-03-26 NEW)
+    /// Audio content (2025-06-18)
     #[serde(rename = "audio")]
     Audio {
         /// Base64-encoded audio data
@@ -329,29 +403,209 @@ pub enum Content {
         /// MIME type of the audio
         #[serde(rename = "mimeType")]
         mime_type: String,
-        /// Content annotations (2025-03-26)
+        /// Content annotations (2025-06-18)
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
-    /// Embedded resource content (2025-03-26 NEW)
+    /// ResourceLink content (2025-06-18 NEW)
+    #[serde(rename = "resource_link")]
+    ResourceLink {
+        /// URI of the resource
+        uri: String,
+        /// Human-readable name of the resource
+        name: String,
+        /// Description of the resource
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        /// MIME type of the resource
+        #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+        mime_type: Option<String>,
+        /// Size of the resource in bytes
+        #[serde(skip_serializing_if = "Option::is_none")]
+        size: Option<u64>,
+        /// Title for UI display
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        /// Content annotations (2025-06-18)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
+    },
+    /// Embedded resource content (2025-06-18)
     #[serde(rename = "resource")]
     Resource {
-        /// Resource reference
-        resource: ResourceReference,
-        /// Content annotations (2025-03-26)
+        /// Resource contents
+        resource: ResourceContents,
+        /// Content annotations (2025-06-18)
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
 }
 
+// Legacy alias for backwards compatibility
+pub type Content = ContentBlock;
+
 // ============================================================================
-// Tool Types (2025-03-26 with Annotations)
+// Tool Types (2025-06-18 with Title and Structured Content)
 // ============================================================================
 
-/// Tool definition with annotations (2025-03-26)
+/// Tool-specific annotations (2025-06-18 Schema Compliance)
+/// 
+/// NOTE: all properties in ToolAnnotations are **hints**.
+/// They are not guaranteed to provide a faithful description of
+/// tool behavior (including descriptive properties like `title`).
+/// 
+/// Clients should never make tool use decisions based on ToolAnnotations
+/// received from untrusted servers.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ToolAnnotations {
+    /// A human-readable title for the tool
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    
+    /// If true, the tool does not modify its environment
+    /// Default: false
+    #[serde(rename = "readOnlyHint", skip_serializing_if = "Option::is_none")]
+    pub read_only_hint: Option<bool>,
+    
+    /// If true, the tool may perform destructive updates to its environment
+    /// If false, the tool performs only additive updates
+    /// (This property is meaningful only when `readOnlyHint == false`)
+    /// Default: true
+    #[serde(rename = "destructiveHint", skip_serializing_if = "Option::is_none")]
+    pub destructive_hint: Option<bool>,
+    
+    /// If true, calling the tool repeatedly with the same arguments
+    /// will have no additional effect on its environment
+    /// (This property is meaningful only when `readOnlyHint == false`)
+    /// Default: false
+    #[serde(rename = "idempotentHint", skip_serializing_if = "Option::is_none")]
+    pub idempotent_hint: Option<bool>,
+    
+    /// If true, this tool may interact with an "open world" of external entities
+    /// If false, the tool's domain of interaction is closed
+    /// For example, the world of a web search tool is open, whereas that
+    /// of a memory tool is not
+    /// Default: true
+    #[serde(rename = "openWorldHint", skip_serializing_if = "Option::is_none")]
+    pub open_world_hint: Option<bool>,
+}
+
+impl Default for ToolAnnotations {
+    fn default() -> Self {
+        Self {
+            title: None,
+            read_only_hint: None,
+            destructive_hint: None,
+            idempotent_hint: None,
+            open_world_hint: None,
+        }
+    }
+}
+
+impl ToolAnnotations {
+    /// Create new empty tool annotations
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Set the human-readable title for the tool
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+    
+    /// Mark tool as read-only (does not modify environment)
+    pub fn read_only(mut self) -> Self {
+        self.read_only_hint = Some(true);
+        self
+    }
+    
+    /// Mark tool as destructive (may perform destructive updates)
+    pub fn destructive(mut self) -> Self {
+        self.destructive_hint = Some(true);
+        self
+    }
+    
+    /// Mark tool as idempotent (same input produces same result)
+    pub fn idempotent(mut self) -> Self {
+        self.idempotent_hint = Some(true);
+        self
+    }
+    
+    /// Mark tool as interacting with open world of external entities
+    pub fn open_world(mut self) -> Self {
+        self.open_world_hint = Some(true);
+        self
+    }
+    
+    /// Mark tool as interacting with closed world (limited domain)
+    pub fn closed_world(mut self) -> Self {
+        self.open_world_hint = Some(false);
+        self
+    }
+}
+
+
+// ============================================================================
+// Tool Annotations Integration with Enhanced Metadata
+// ============================================================================
+
+impl From<&crate::core::tool_metadata::ToolBehaviorHints> for ToolAnnotations {
+    fn from(hints: &crate::core::tool_metadata::ToolBehaviorHints) -> Self {
+        Self {
+            title: None, // Title should be set separately at tool level
+            read_only_hint: hints.read_only,
+            destructive_hint: hints.destructive,
+            idempotent_hint: hints.idempotent,
+            // Map open_world_hint: if requires_auth or resource_intensive, likely open world
+            open_world_hint: if hints.requires_auth.unwrap_or(false) || hints.resource_intensive.unwrap_or(false) {
+                Some(true)
+            } else {
+                None
+            },
+        }
+    }
+}
+
+impl From<&crate::core::tool_metadata::EnhancedToolMetadata> for ToolAnnotations {
+    fn from(metadata: &crate::core::tool_metadata::EnhancedToolMetadata) -> Self {
+        ToolAnnotations::from(&metadata.behavior_hints)
+    }
+}
+
+impl ToolAnnotations {
+    /// Create ToolAnnotations from enhanced metadata with explicit title override
+    pub fn from_enhanced_metadata(
+        metadata: &crate::core::tool_metadata::EnhancedToolMetadata,
+        title_override: Option<String>,
+    ) -> Self {
+        let mut annotations = Self::from(metadata);
+        if let Some(title) = title_override {
+            annotations.title = Some(title);
+        }
+        annotations
+    }
+    
+    /// Create minimal ToolAnnotations from behavior hints
+    pub fn from_behavior_hints(hints: &crate::core::tool_metadata::ToolBehaviorHints) -> Self {
+        Self::from(hints)
+    }
+}
+
+
+/// Tool definition with annotations and title (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tool {
-    /// Name of the tool
+    /// Intended for programmatic or logical use
     pub name: String,
     /// Description of what the tool does
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -359,9 +613,15 @@ pub struct Tool {
     /// JSON Schema describing the tool's input parameters
     #[serde(rename = "inputSchema")]
     pub input_schema: ToolInputSchema,
-    /// Tool behavior annotations (2025-03-26 NEW)
+    /// Tool behavior annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub annotations: Option<Annotations>,
+    pub annotations: Option<ToolAnnotations>,
+    /// Intended for UI and end-user contexts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Tool input schema
@@ -381,15 +641,18 @@ pub struct ToolInputSchema {
     pub additional_properties: HashMap<String, serde_json::Value>,
 }
 
-/// Result of a tool execution (2025-03-26 with metadata)
+/// Result of a tool execution (2025-06-18 with structured content)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CallToolResult {
     /// Content returned by the tool
-    pub content: Vec<Content>,
+    pub content: Vec<ContentBlock>,
     /// Whether this result represents an error
     #[serde(rename = "isError", skip_serializing_if = "Option::is_none")]
     pub is_error: Option<bool>,
-    /// Result metadata (2025-03-26 NEW)
+    /// An optional JSON object that represents the structured result of the tool call
+    #[serde(rename = "structuredContent", skip_serializing_if = "Option::is_none")]
+    pub structured_content: Option<serde_json::Value>,
+    /// Result metadata (2025-06-18)
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
@@ -399,7 +662,7 @@ pub type ToolInfo = Tool;
 pub type ToolResult = CallToolResult;
 
 // ============================================================================
-// Resource Types (2025-03-26)
+// Resource Types (2025-06-18)
 // ============================================================================
 
 /// Resource definition
@@ -407,21 +670,26 @@ pub type ToolResult = CallToolResult;
 pub struct Resource {
     /// URI of the resource
     pub uri: String,
-    /// Human-readable name of the resource
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    /// Intended for programmatic or logical use, but used as a display name in past specs or fallback (if title isn't present).
+    pub name: String,
     /// Description of the resource
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// MIME type of the resource
     #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
-    /// Resource annotations (2025-03-26)
+    /// Resource annotations (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<Annotations>,
-    /// Resource size in bytes (2025-03-26)
+    /// Resource size in bytes (2025-06-18)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    /// Intended for UI and end-user contexts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Resource template for URI patterns
@@ -430,18 +698,26 @@ pub struct ResourceTemplate {
     /// URI template with variables
     #[serde(rename = "uriTemplate")]
     pub uri_template: String,
-    /// Human-readable name
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    /// Intended for programmatic or logical use
+    pub name: String,
     /// Description of the resource template
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// MIME type of resources from this template
     #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
+    /// Resource annotations (2025-06-18)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<Annotations>,
+    /// Intended for UI and end-user contexts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Content of a resource
+/// Content of a resource (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ResourceContents {
@@ -454,6 +730,9 @@ pub enum ResourceContents {
         mime_type: Option<String>,
         /// Text content
         text: String,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
     /// Binary resource content
     Blob {
@@ -464,6 +743,9 @@ pub enum ResourceContents {
         mime_type: Option<String>,
         /// Base64-encoded binary data
         blob: String,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
     },
 }
 
@@ -471,13 +753,13 @@ pub enum ResourceContents {
 pub type ResourceInfo = Resource;
 
 // ============================================================================
-// Prompt Types (2025-03-26)
+// Prompt Types (2025-06-18)
 // ============================================================================
 
 /// Prompt definition
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Prompt {
-    /// Name of the prompt
+    /// Intended for programmatic or logical use
     pub name: String,
     /// Description of what the prompt does
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -485,12 +767,18 @@ pub struct Prompt {
     /// Arguments that the prompt accepts
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arguments: Option<Vec<PromptArgument>>,
+    /// Intended for UI and end-user contexts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Metadata field for future extensions
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Argument for a prompt
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PromptArgument {
-    /// Name of the argument
+    /// Intended for programmatic or logical use
     pub name: String,
     /// Description of the argument
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -498,6 +786,9 @@ pub struct PromptArgument {
     /// Whether this argument is required
     #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<bool>,
+    /// Intended for UI and end-user contexts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 /// Message role
@@ -508,16 +799,16 @@ pub enum Role {
     Assistant,
 }
 
-/// Message in a prompt result (2025-03-26 with audio support)
+/// Message in a prompt result (2025-06-18 with ContentBlock support)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PromptMessage {
     /// Role of the message
     pub role: Role,
-    /// Content of the message (supports all content types)
-    pub content: Content,
+    /// Content of the message (supports all content types including resource_link)
+    pub content: ContentBlock,
 }
 
-/// Result of prompt execution (2025-03-26 with metadata)
+/// Result of prompt execution (2025-06-18 with metadata)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GetPromptResult {
     /// Description of the prompt result
@@ -525,7 +816,7 @@ pub struct GetPromptResult {
     pub description: Option<String>,
     /// Messages generated by the prompt
     pub messages: Vec<PromptMessage>,
-    /// Result metadata (2025-03-26 NEW)
+    /// Result metadata (2025-06-18)
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
@@ -535,45 +826,109 @@ pub type PromptInfo = Prompt;
 pub type PromptResult = GetPromptResult;
 
 // ============================================================================
-// Sampling Types (2025-03-26)
+// Sampling Types (2025-06-18)
 // ============================================================================
 
-/// A message in a sampling conversation (2025-03-26 with audio)
+/// A message in a sampling conversation (2025-06-18 with ContentBlock)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SamplingMessage {
     /// Role of the message
     pub role: Role,
-    /// Content of the message (text, image, or audio)
-    pub content: Content,
+    /// Content of the message (text, image, or audio only - no resource_link in sampling)
+    pub content: SamplingContent,
 }
 
-/// Model preferences for sampling
+/// Content types allowed in sampling (subset of ContentBlock)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type")]
+pub enum SamplingContent {
+    /// Text content
+    #[serde(rename = "text")]
+    Text {
+        /// The text content
+        text: String,
+        /// Content annotations (2025-06-18)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
+    },
+    /// Image content
+    #[serde(rename = "image")]
+    Image {
+        /// Base64-encoded image data
+        data: String,
+        /// MIME type of the image
+        #[serde(rename = "mimeType")]
+        mime_type: String,
+        /// Content annotations (2025-06-18)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
+    },
+    /// Audio content (2025-06-18)
+    #[serde(rename = "audio")]
+    Audio {
+        /// Base64-encoded audio data
+        data: String,
+        /// MIME type of the audio
+        #[serde(rename = "mimeType")]
+        mime_type: String,
+        /// Content annotations (2025-06-18)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        annotations: Option<Annotations>,
+        /// Metadata field for future extensions
+        #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+        meta: Option<HashMap<String, serde_json::Value>>,
+    },
+}
+
+/// Model hint for model selection (2025-06-18)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelHint {
+    /// A hint for a model name.
+    /// 
+    /// The client SHOULD treat this as a substring of a model name; for example:
+    /// - `claude-3-5-sonnet` should match `claude-3-5-sonnet-20241022`
+    /// - `sonnet` should match `claude-3-5-sonnet-20241022`, `claude-3-sonnet-20240229`, etc.
+    /// - `claude` should match any Claude model
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+/// Model preferences for sampling (2025-06-18 enhanced)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ModelPreferences {
-    /// Hints about cost constraints
+    /// How much to prioritize cost when selecting a model
     #[serde(rename = "costPriority", skip_serializing_if = "Option::is_none")]
-    pub cost_priority: Option<f32>,
-    /// Hints about speed constraints
+    pub cost_priority: Option<f64>,
+    /// How much to prioritize sampling speed (latency) when selecting a model
     #[serde(rename = "speedPriority", skip_serializing_if = "Option::is_none")]
-    pub speed_priority: Option<f32>,
-    /// Hints about quality constraints
-    #[serde(rename = "qualityPriority", skip_serializing_if = "Option::is_none")]
-    pub quality_priority: Option<f32>,
+    pub speed_priority: Option<f64>,
+    /// How much to prioritize intelligence and capabilities when selecting a model
+    #[serde(rename = "intelligencePriority", skip_serializing_if = "Option::is_none")]
+    pub intelligence_priority: Option<f64>,
+    /// Optional hints to use for model selection
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hints: Option<Vec<ModelHint>>,
 }
 
-/// Result of sampling/createMessage (2025-03-26)
+/// Result of sampling/createMessage (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CreateMessageResult {
     /// Role of the generated message
     pub role: Role,
     /// Content of the generated message
-    pub content: Content,
+    pub content: SamplingContent,
     /// Model used for generation
     pub model: String,
     /// Stop reason
     #[serde(rename = "stopReason", skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<StopReason>,
-    /// Result metadata (2025-03-26 NEW)
+    /// Result metadata (2025-06-18)
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
@@ -590,10 +945,93 @@ pub enum StopReason {
 }
 
 // ============================================================================
-// Logging Types (2025-03-26)
+// Elicitation Types (2025-06-18 NEW)
 // ============================================================================
 
-/// Logging level enumeration (2025-03-26)
+/// Primitive schema definition for elicitation
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type")]
+pub enum PrimitiveSchemaDefinition {
+    #[serde(rename = "string")]
+    String {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        #[serde(rename = "minLength", skip_serializing_if = "Option::is_none")]
+        min_length: Option<u32>,
+        #[serde(rename = "maxLength", skip_serializing_if = "Option::is_none")]
+        max_length: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        format: Option<String>,
+        #[serde(rename = "enum", skip_serializing_if = "Option::is_none")]
+        enum_values: Option<Vec<String>>,
+        #[serde(rename = "enumNames", skip_serializing_if = "Option::is_none")]
+        enum_names: Option<Vec<String>>,
+    },
+    #[serde(rename = "number")]
+    Number {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        minimum: Option<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        maximum: Option<i32>,
+    },
+    #[serde(rename = "integer")]
+    Integer {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        minimum: Option<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        maximum: Option<i32>,
+    },
+    #[serde(rename = "boolean")]
+    Boolean {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        default: Option<bool>,
+    },
+}
+
+/// Restricted schema for elicitation (only top-level properties allowed)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ElicitationSchema {
+    /// Schema type (always "object")
+    #[serde(rename = "type")]
+    pub schema_type: String,
+    /// Top-level properties
+    pub properties: HashMap<String, PrimitiveSchemaDefinition>,
+    /// Required properties
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<Vec<String>>,
+}
+
+/// Elicitation user action
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ElicitationAction {
+    /// User submitted the form/confirmed the action
+    Accept,
+    /// User explicitly declined the action
+    Decline,
+    /// User dismissed without making an explicit choice
+    Cancel,
+}
+
+// ============================================================================
+// Logging Types (2025-06-18)
+// ============================================================================
+
+/// Logging level enumeration (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum LoggingLevel {
@@ -761,12 +1199,13 @@ pub struct PaginatedResult {
 // Helper Constructors
 // ============================================================================
 
-impl Content {
+impl ContentBlock {
     /// Create text content
     pub fn text<S: Into<String>>(text: S) -> Self {
         Self::Text {
             text: text.into(),
             annotations: None,
+            meta: None,
         }
     }
 
@@ -776,23 +1215,71 @@ impl Content {
             data: data.into(),
             mime_type: mime_type.into(),
             annotations: None,
+            meta: None,
         }
     }
 
-    /// Create audio content (2025-03-26 NEW)
+    /// Create audio content (2025-06-18)
     pub fn audio<S: Into<String>>(data: S, mime_type: S) -> Self {
         Self::Audio {
             data: data.into(),
             mime_type: mime_type.into(),
             annotations: None,
+            meta: None,
         }
     }
 
-    /// Create embedded resource content (2025-03-26 NEW)
-    pub fn resource<S: Into<String>>(uri: S) -> Self {
-        Self::Resource {
-            resource: ResourceReference { uri: uri.into() },
+    /// Create resource link content (2025-06-18 NEW)
+    pub fn resource_link<S: Into<String>>(uri: S, name: S) -> Self {
+        Self::ResourceLink {
+            uri: uri.into(),
+            name: name.into(),
+            description: None,
+            mime_type: None,
+            size: None,
+            title: None,
             annotations: None,
+            meta: None,
+        }
+    }
+
+    /// Create embedded resource content (2025-06-18)
+    pub fn embedded_resource(resource: ResourceContents) -> Self {
+        Self::Resource {
+            resource,
+            annotations: None,
+            meta: None,
+        }
+    }
+}
+
+impl SamplingContent {
+    /// Create text content for sampling
+    pub fn text<S: Into<String>>(text: S) -> Self {
+        Self::Text {
+            text: text.into(),
+            annotations: None,
+            meta: None,
+        }
+    }
+
+    /// Create image content for sampling
+    pub fn image<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self::Image {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+            meta: None,
+        }
+    }
+
+    /// Create audio content for sampling
+    pub fn audio<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self::Audio {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+            meta: None,
         }
     }
 }
@@ -802,36 +1289,26 @@ impl Annotations {
     pub fn new() -> Self {
         Self {
             audience: None,
-            danger: None,
-            destructive: None,
-            read_only: None,
+            priority: None,
+            last_modified: None,
         }
     }
 
-    /// Mark as read-only tool
-    pub fn read_only(mut self) -> Self {
-        self.read_only = Some(true);
-        self.destructive = Some(false);
-        self
-    }
-
-    /// Mark as destructive tool
-    pub fn destructive(mut self, danger: DangerLevel) -> Self {
-        self.destructive = Some(true);
-        self.read_only = Some(false);
-        self.danger = Some(danger);
+    /// Set priority (0.0 = least important, 1.0 = most important)
+    pub fn with_priority(mut self, priority: f64) -> Self {
+        self.priority = Some(priority.clamp(0.0, 1.0));
         self
     }
 
     /// Set audience
-    pub fn for_audience(mut self, audience: Vec<AnnotationAudience>) -> Self {
+    pub fn for_audience(mut self, audience: Vec<Role>) -> Self {
         self.audience = Some(audience);
         self
     }
 
-    /// Set danger level
-    pub fn with_danger_level(mut self, danger: DangerLevel) -> Self {
-        self.danger = Some(danger);
+    /// Set last modified timestamp (ISO 8601 format)
+    pub fn with_last_modified<S: Into<String>>(mut self, timestamp: S) -> Self {
+        self.last_modified = Some(timestamp.into());
         self
     }
 }
@@ -849,12 +1326,145 @@ impl Tool {
                 additional_properties: HashMap::new(),
             },
             annotations: None,
+            title: None,
+            meta: None,
         }
     }
 
+    /// Add title to the tool
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
     /// Add annotations to the tool
-    pub fn with_annotations(mut self, annotations: Annotations) -> Self {
+    pub fn with_annotations(mut self, annotations: ToolAnnotations) -> Self {
         self.annotations = Some(annotations);
+        self
+    }
+}
+
+impl Resource {
+    /// Create a new resource
+    pub fn new<S: Into<String>>(uri: S, name: S) -> Self {
+        Self {
+            uri: uri.into(),
+            name: name.into(),
+            description: None,
+            mime_type: None,
+            annotations: None,
+            size: None,
+            title: None,
+            meta: None,
+        }
+    }
+
+    /// Create a resource from legacy format (name was optional)
+    pub fn from_legacy<S: Into<String>>(uri: S, name: Option<S>) -> Self {
+        Self {
+            uri: uri.into(),
+            name: name.map(|n| n.into()).unwrap_or_else(|| "Unnamed Resource".to_string()),
+            description: None,
+            mime_type: None,
+            annotations: None,
+            size: None,
+            title: None,
+            meta: None,
+        }
+    }
+
+    /// Add title to the resource
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// Add description to the resource
+    pub fn with_description<S: Into<String>>(mut self, description: S) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+}
+
+impl ResourceTemplate {
+    /// Create a new resource template
+    pub fn new<S: Into<String>>(uri_template: S, name: S) -> Self {
+        Self {
+            uri_template: uri_template.into(),
+            name: name.into(),
+            description: None,
+            mime_type: None,
+            annotations: None,
+            title: None,
+            meta: None,
+        }
+    }
+
+    /// Create a resource template from legacy format (name was optional)
+    pub fn from_legacy<S: Into<String>>(uri_template: S, name: Option<S>) -> Self {
+        Self {
+            uri_template: uri_template.into(),
+            name: name.map(|n| n.into()).unwrap_or_else(|| "Unnamed Template".to_string()),
+            description: None,
+            mime_type: None,
+            annotations: None,
+            title: None,
+            meta: None,
+        }
+    }
+
+    /// Add title to the resource template
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+}
+
+impl Prompt {
+    /// Create a new prompt
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Self {
+            name: name.into(),
+            description: None,
+            arguments: None,
+            title: None,
+            meta: None,
+        }
+    }
+
+    /// Add title to the prompt
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// Add description to the prompt
+    pub fn with_description<S: Into<String>>(mut self, description: S) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+}
+
+impl PromptArgument {
+    /// Create a new prompt argument
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Self {
+            name: name.into(),
+            description: None,
+            required: None,
+            title: None,
+        }
+    }
+
+    /// Add title to the prompt argument
+    pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// Mark as required
+    pub fn required(mut self, required: bool) -> Self {
+        self.required = Some(required);
         self
     }
 }
@@ -938,7 +1548,7 @@ impl SamplingMessage {
     pub fn user_text<S: Into<String>>(text: S) -> Self {
         Self {
             role: Role::User,
-            content: Content::text(text),
+            content: SamplingContent::text(text),
         }
     }
 
@@ -946,7 +1556,23 @@ impl SamplingMessage {
     pub fn assistant_text<S: Into<String>>(text: S) -> Self {
         Self {
             role: Role::Assistant,
-            content: Content::text(text),
+            content: SamplingContent::text(text),
+        }
+    }
+
+    /// Create a user image message
+    pub fn user_image<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self {
+            role: Role::User,
+            content: SamplingContent::image(data, mime_type),
+        }
+    }
+
+    /// Create a user audio message
+    pub fn user_audio<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self {
+            role: Role::User,
+            content: SamplingContent::audio(data, mime_type),
         }
     }
 }
@@ -981,61 +1607,59 @@ mod tests {
 
     #[test]
     fn test_protocol_version() {
-        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-03-26");
+        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-06-18");
         assert_eq!(JSONRPC_VERSION, "2.0");
     }
 
     #[test]
-    fn test_content_types() {
+    fn test_content_block_types() {
         // Test text content
-        let text = Content::text("Hello, world!");
+        let text = ContentBlock::text("Hello, world!");
         let json = serde_json::to_value(&text).unwrap();
         assert_eq!(json["type"], "text");
         assert_eq!(json["text"], "Hello, world!");
 
-        // Test audio content (new in 2025-03-26)
-        let audio = Content::audio("base64data", "audio/wav");
+        // Test audio content (2025-06-18)
+        let audio = ContentBlock::audio("base64data", "audio/wav");
         let json = serde_json::to_value(&audio).unwrap();
         assert_eq!(json["type"], "audio");
         assert_eq!(json["data"], "base64data");
         assert_eq!(json["mimeType"], "audio/wav");
 
-        // Test resource content (new in 2025-03-26)
-        let resource = Content::resource("file:///test.txt");
-        let json = serde_json::to_value(&resource).unwrap();
-        assert_eq!(json["type"], "resource");
-        assert_eq!(json["resource"]["uri"], "file:///test.txt");
+        // Test resource link content (new in 2025-06-18)
+        let resource_link = ContentBlock::resource_link("file:///test.txt", "test file");
+        let json = serde_json::to_value(&resource_link).unwrap();
+        assert_eq!(json["type"], "resource_link");
+        assert_eq!(json["uri"], "file:///test.txt");
+        assert_eq!(json["name"], "test file");
     }
 
     #[test]
     fn test_annotations() {
         let annotations = Annotations::new()
-            .read_only()
-            .for_audience(vec![AnnotationAudience::Developer])
-            .with_danger_level(DangerLevel::Safe);
+            .with_priority(0.8)
+            .for_audience(vec![Role::User, Role::Assistant])
+            .with_last_modified("2025-01-12T15:00:58Z");
 
-        assert_eq!(annotations.read_only, Some(true));
-        assert_eq!(annotations.destructive, Some(false));
-        assert_eq!(annotations.danger, Some(DangerLevel::Safe));
-        assert_eq!(
-            annotations.audience,
-            Some(vec![AnnotationAudience::Developer])
-        );
+        assert_eq!(annotations.priority, Some(0.8));
+        assert_eq!(annotations.audience, Some(vec![Role::User, Role::Assistant]));
+        assert_eq!(annotations.last_modified, Some("2025-01-12T15:00:58Z".to_string()));
     }
 
     #[test]
-    fn test_tool_with_annotations() {
-        let tool = Tool::new("safe_reader", "Read file safely")
-            .with_annotations(Annotations::new().read_only());
+    fn test_tool_with_title() {
+        let tool = Tool::new("file_reader", "Read files safely")
+            .with_title("File Reader Tool")
+            .with_annotations(Annotations::new().with_priority(0.9));
 
-        assert_eq!(tool.name, "safe_reader");
+        assert_eq!(tool.name, "file_reader");
+        assert_eq!(tool.title, Some("File Reader Tool".to_string()));
         assert!(tool.annotations.is_some());
-        assert_eq!(tool.annotations.unwrap().read_only, Some(true));
+        assert_eq!(tool.annotations.unwrap().priority, Some(0.9));
     }
 
-
     #[test]
-    fn test_server_capabilities_2025() {
+    fn test_server_capabilities_2025_06_18() {
         let caps = ServerCapabilities {
             tools: Some(ToolsCapability {
                 list_changed: Some(true),
@@ -1051,5 +1675,77 @@ mod tests {
         assert!(json["completions"].is_object());
         assert!(json["logging"].is_object());
         assert!(json["experimental"].is_object());
+    }
+
+    #[test]
+    fn test_client_capabilities_with_elicitation() {
+        let caps = ClientCapabilities {
+            elicitation: Some(ElicitationCapability::default()),
+            roots: Some(RootsCapability {
+                list_changed: Some(true),
+            }),
+            ..Default::default()
+        };
+
+        let json = serde_json::to_value(&caps).unwrap();
+        assert!(json["elicitation"].is_object());
+        assert!(json["roots"]["listChanged"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_implementation_with_title() {
+        let impl_info = Implementation::with_title("my-server", "1.0.0", "My Awesome Server");
+        
+        assert_eq!(impl_info.name, "my-server");
+        assert_eq!(impl_info.version, "1.0.0");
+        assert_eq!(impl_info.title, Some("My Awesome Server".to_string()));
+    }
+
+    #[test]
+    fn test_model_preferences_enhanced() {
+        let prefs = ModelPreferences {
+            cost_priority: Some(0.3),
+            speed_priority: Some(0.7),
+            intelligence_priority: Some(0.9),
+            hints: Some(vec![ModelHint { name: Some("claude".to_string()) }]),
+        };
+
+        let json = serde_json::to_value(&prefs).unwrap();
+        assert_eq!(json["costPriority"], 0.3);
+        assert_eq!(json["speedPriority"], 0.7);
+        assert_eq!(json["intelligencePriority"], 0.9);
+        assert!(json["hints"].is_array());
+    }
+
+    #[test]
+    fn test_call_tool_result_with_structured_content() {
+        let result = CallToolResult {
+            content: vec![ContentBlock::text("Operation completed")],
+            is_error: Some(false),
+            structured_content: Some(json!({"status": "success", "count": 42})),
+            meta: None,
+        };
+
+        let json = serde_json::to_value(&result).unwrap();
+        assert!(json["content"].is_array());
+        assert_eq!(json["isError"], false);
+        assert_eq!(json["structuredContent"]["status"], "success");
+        assert_eq!(json["structuredContent"]["count"], 42);
+    }
+
+    #[test]
+    fn test_sampling_content_types() {
+        // Test that SamplingContent doesn't include resource_link
+        let text = SamplingContent::text("Hello");
+        let image = SamplingContent::image("data", "image/png");
+        let audio = SamplingContent::audio("data", "audio/wav");
+
+        let text_json = serde_json::to_value(&text).unwrap();
+        let image_json = serde_json::to_value(&image).unwrap();
+        let audio_json = serde_json::to_value(&audio).unwrap();
+
+        assert_eq!(text_json["type"], "text");
+        assert_eq!(image_json["type"], "image");
+        assert_eq!(audio_json["type"], "audio");
     }
 }

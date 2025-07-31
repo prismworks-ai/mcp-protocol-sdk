@@ -84,6 +84,8 @@ impl ToolHandler {
                     description: tool.info.description.clone(),
                     input_schema: tool.info.input_schema.clone(),
                     annotations: None,
+                    title: None,
+                    meta: None,
                 }
             })
             .collect();
@@ -133,6 +135,7 @@ impl ToolHandler {
         Ok(CallToolResult {
             content: result.content,
             is_error: result.is_error,
+            structured_content: None,
             meta: None,
         })
     }
@@ -166,6 +169,8 @@ impl ResourceHandler {
                     mime_type: resource.info.mime_type.clone(),
                     annotations: None,
                     size: None,
+                    title: None,
+                    meta: None,
                 }
             })
             .collect();
@@ -305,9 +310,12 @@ impl PromptHandler {
                                 name: arg.name.clone(),
                                 description: arg.description.clone(),
                                 required: arg.required,
+                                title: None,
                             })
                             .collect()
                     }),
+                    title: None,
+                    meta: None,
                 }
             })
             .collect();
@@ -362,16 +370,18 @@ impl PromptHandler {
                     PromptMessage {
                         role: msg.role,
                         content: match msg.content {
-                            Content::Text { text, .. } => Content::Text {
+                            ContentBlock::Text { text, .. } => ContentBlock::Text {
                                 text,
                                 annotations: None,
+                                meta: None,
                             },
-                            Content::Image {
+                            ContentBlock::Image {
                                 data, mime_type, ..
-                            } => Content::Image {
+                            } => ContentBlock::Image {
                                 data,
                                 mime_type,
                                 annotations: None,
+                                meta: None,
                             },
                             other => other,
                         },

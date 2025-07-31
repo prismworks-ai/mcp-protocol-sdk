@@ -85,7 +85,7 @@ impl McpServer {
     /// Create a new MCP server with the given name and version
     pub fn new(name: String, version: String) -> Self {
         Self {
-            info: ServerInfo { name, version },
+            info: ServerInfo::new(name, version),
             capabilities: ServerCapabilities {
                 prompts: Some(PromptsCapability {
                     list_changed: Some(true),
@@ -160,11 +160,13 @@ impl McpServer {
     {
         let resource_info = ResourceInfo {
             uri: uri.clone(),
-            name: Some(name.clone()),
+            name: name.clone(),
             description: None,
             mime_type: None,
             annotations: None,
             size: None,
+            title: None,
+            meta: None,
         };
 
         validate_resource_info(&resource_info)?;
@@ -276,6 +278,8 @@ impl McpServer {
             description,
             input_schema: tool_schema,
             annotations: None,
+            title: None,
+            meta: None,
         };
 
         validate_tool_info(&tool_info)?;

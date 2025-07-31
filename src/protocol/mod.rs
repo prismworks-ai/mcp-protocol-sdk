@@ -1,15 +1,17 @@
-//! MCP protocol implementation (2025-03-26)
+//! MCP protocol implementation (2025-06-18)
 //!
 //! This module contains the core protocol types and message handling for the
-//! Model Context Protocol version 2025-03-26, including JSON-RPC message
-//! serialization, validation, and new features like audio content, annotations,
-//! and enhanced capabilities.
+//! Model Context Protocol version 2025-06-18, including JSON-RPC message
+//! serialization, validation, and new features like enhanced content system,
+//! annotations, and improved capabilities.
 
 pub mod messages;
 pub mod methods;
 pub mod missing_types;
 pub mod types;
-pub mod types_2025;
+// NOTE: types_2025 is temporarily disabled to resolve ContentBlock duplication conflicts
+// during schema upgrade to 2025-06-18. Will be removed after consolidation.
+// pub mod types_2025;
 pub mod validation;
 
 // Re-export commonly used types and constants
@@ -27,12 +29,13 @@ pub use methods::{
     SAMPLING_CREATE_MESSAGE, TOOLS_CALL, TOOLS_LIST, TOOLS_LIST_CHANGED,
 };
 
-// Re-export 2025-03-26 specific constants and error codes
+// Re-export 2025-06-18 specific constants and error codes
 pub use types::error_codes;
 pub use types::{JSONRPC_VERSION, LATEST_PROTOCOL_VERSION};
 
 // Legacy constant for compatibility
 pub const MCP_PROTOCOL_VERSION: &str = LATEST_PROTOCOL_VERSION;
 
+// NOTE: types_2025 re-export disabled during consolidation
 // Export types_2025 for comprehensive tests
-pub use types_2025 as types_2025_comprehensive;
+// pub use types_2025 as types_2025_comprehensive;

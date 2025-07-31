@@ -278,6 +278,7 @@ impl PromptBuilder {
             name: name.into(),
             description: description.map(|d| d.into()),
             required: Some(true),
+            title: None,
         });
         self
     }
@@ -288,6 +289,7 @@ impl PromptBuilder {
             name: name.into(),
             description: description.map(|d| d.into()),
             required: Some(false),
+            title: None,
         });
         self
     }
@@ -305,6 +307,8 @@ impl PromptBuilder {
             } else {
                 Some(self.arguments)
             },
+            title: None,
+            meta: None,
         };
 
         Prompt::new(info, handler)
@@ -317,6 +321,7 @@ pub fn required_arg<S: Into<String>>(name: S, description: Option<S>) -> PromptA
         name: name.into(),
         description: description.map(|d| d.into()),
         required: Some(true),
+        title: None,
     }
 }
 
@@ -326,6 +331,7 @@ pub fn optional_arg<S: Into<String>>(name: S, description: Option<S>) -> PromptA
         name: name.into(),
         description: description.map(|d| d.into()),
         required: Some(false),
+        title: None,
     }
 }
 
@@ -383,7 +389,10 @@ mod tests {
                 name: "arg1".to_string(),
                 description: Some("First argument".to_string()),
                 required: Some(true),
+                title: None,
             }]),
+            title: None,
+            meta: None,
         };
 
         let prompt = Prompt::new(info.clone(), GreetingPrompt);
@@ -400,7 +409,10 @@ mod tests {
                 name: "required_arg".to_string(),
                 description: None,
                 required: Some(true),
+                title: None,
             }]),
+            title: None,
+            meta: None,
         };
 
         let prompt = Prompt::new(info, GreetingPrompt);

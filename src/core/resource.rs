@@ -128,6 +128,7 @@ where
             uri: uri.to_string(),
             mime_type: Some("text/plain".to_string()),
             text: content,
+            meta: None,
         }])
     }
 
@@ -177,11 +178,13 @@ impl Resource {
     {
         let info = ResourceInfo {
             uri: template.uri_template.clone(),
-            name: Some(template.name.clone()),
+            name: template.name.clone(),
             description: template.description.clone(),
             mime_type: template.mime_type.clone(),
             annotations: None,
             size: None,
+            title: None,
+            meta: None,
         };
 
         Self {
@@ -223,7 +226,7 @@ impl Resource {
         if !self.enabled {
             return Err(McpError::validation(format!(
                 "Resource '{}' is disabled",
-                self.info.name.as_deref().unwrap_or("unknown")
+                self.info.name.as_str()
             )));
         }
 
@@ -244,7 +247,7 @@ impl Resource {
         if !self.enabled {
             return Err(McpError::validation(format!(
                 "Resource '{}' is disabled",
-                self.info.name.as_deref().unwrap_or("unknown")
+                self.info.name.as_str()
             )));
         }
 
@@ -256,7 +259,7 @@ impl Resource {
         if !self.enabled {
             return Err(McpError::validation(format!(
                 "Resource '{}' is disabled",
-                self.info.name.as_deref().unwrap_or("unknown")
+                self.info.name.as_str()
             )));
         }
 
@@ -314,6 +317,7 @@ impl ResourceHandler for TextResource {
             uri: uri.to_string(),
             mime_type: Some(self.mime_type.clone()),
             text: self.content.clone(),
+            meta: None,
         }])
     }
 
@@ -409,6 +413,7 @@ impl ResourceHandler for FileSystemResource {
             uri: uri.to_string(),
             mime_type: Some(mime_type),
             text: content,
+            meta: None,
         }])
     }
 
@@ -438,11 +443,13 @@ impl ResourceHandler for FileSystemResource {
 
                     resources.push(ResourceInfo {
                         uri,
-                        name: Some(name),
+                        name,
                         description: None,
                         mime_type: Some(self.get_mime_type(&path)),
                         annotations: None,
                         size: None,
+                        title: None,
+                        meta: None,
                     });
                 }
             }
@@ -490,11 +497,13 @@ impl ResourceBuilder {
     {
         let info = ResourceInfo {
             uri: self.uri,
-            name: Some(self.name),
+            name: self.name,
             description: self.description,
             mime_type: self.mime_type,
             annotations: None,
             size: None,
+            title: None,
+            meta: None,
         };
 
         Resource::new(info, handler)
@@ -528,11 +537,13 @@ mod tests {
     fn test_resource_creation() {
         let info = ResourceInfo {
             uri: "test://resource".to_string(),
-            name: Some("Test Resource".to_string()),
+            name: "Test Resource".to_string(),
             description: Some("A test resource".to_string()),
             mime_type: Some("text/plain".to_string()),
             annotations: None,
             size: None,
+            title: None,
+            meta: None,
         };
 
         let resource = Resource::new(info.clone(), TextResource::new("test".to_string(), None));

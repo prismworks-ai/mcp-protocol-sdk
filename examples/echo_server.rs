@@ -46,6 +46,7 @@ impl ToolHandler for EchoHandler {
         Ok(ToolResult {
             content: vec![Content::text(result)],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }

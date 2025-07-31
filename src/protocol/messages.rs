@@ -210,6 +210,20 @@ pub struct SetLoggingLevelParams {
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
+/// Parameters for elicitation request (2025-06-18 NEW)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ElicitParams {
+    /// Message to present to the user
+    pub message: String,
+    /// Schema describing the requested form fields
+    #[serde(rename = "requestedSchema")]
+    pub requested_schema: ElicitationSchema,
+    /// Request metadata
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
+}
+
+
 // ============================================================================
 // Response Result Types
 // ============================================================================
@@ -344,6 +358,20 @@ pub struct SetLoggingLevelResult {
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
+
+/// Result for elicitation request (2025-06-18 NEW)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ElicitResult {
+    /// User action in response to elicitation
+    pub action: ElicitationAction,
+    /// Submitted form data (only present when action is "accept")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<HashMap<String, serde_json::Value>>,
+    /// Response metadata
+    #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<HashMap<String, serde_json::Value>>,
+}
+
 
 /// Result for subscribe resource request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

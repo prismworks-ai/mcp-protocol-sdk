@@ -175,7 +175,7 @@ pub fn validate_resource_info(resource: &Resource) -> McpResult<()> {
         ));
     }
 
-    if resource.name.as_ref().map_or(true, |name| name.is_empty()) {
+    if resource.name.is_empty() {
         return Err(McpError::Validation(
             "Resource name cannot be empty".to_string(),
         ));
@@ -295,7 +295,7 @@ pub fn validate_sampling_messages(messages: &[SamplingMessage]) -> McpResult<()>
 
     for message in messages {
         // Role is an enum, so it can't be empty - validate content instead
-        validate_content(&message.content)?;
+        validate_sampling_content(&message.content)?;
     }
 
     Ok(())
@@ -320,10 +320,10 @@ pub fn validate_create_message_params(params: &CreateMessageParams) -> McpResult
     Ok(())
 }
 
-/// Validates content (2025-03-26 with audio support)
-pub fn validate_content(content: &Content) -> McpResult<()> {
+/// Validates sampling content (2025-06-18)
+pub fn validate_sampling_content(content: &SamplingContent) -> McpResult<()> {
     match content {
-        Content::Text { text, annotations } => {
+        SamplingContent::Text { text, annotations, .. } => {
             if text.is_empty() {
                 return Err(McpError::Validation(
                     "Text content cannot be empty".to_string(),
@@ -333,10 +333,68 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Image {
+        SamplingContent::Image {
             data,
             mime_type,
             annotations,
+            ..
+        } => {
+            if data.is_empty() {
+                return Err(McpError::Validation(
+                    "Image data cannot be empty".to_string(),
+                ));
+            }
+            if !mime_type.starts_with("image/") {
+                return Err(McpError::Validation(
+                    "Image MIME type must start with 'image/'".to_string(),
+                ));
+            }
+            if let Some(annotations) = annotations {
+                validate_annotations(annotations)?;
+            }
+        }
+        SamplingContent::Audio {
+            data,
+            mime_type,
+            annotations,
+            ..
+        } => {
+            if data.is_empty() {
+                return Err(McpError::Validation(
+                    "Audio data cannot be empty".to_string(),
+                ));
+            }
+            if !mime_type.starts_with("audio/") {
+                return Err(McpError::Validation(
+                    "Audio MIME type must start with 'audio/'".to_string(),
+                ));
+            }
+            if let Some(annotations) = annotations {
+                validate_annotations(annotations)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Validates content (2025-06-18 with ContentBlock)
+pub fn validate_content(content: &ContentBlock) -> McpResult<()> {
+    match content {
+        ContentBlock::Text { text, annotations, .. } => {
+            if text.is_empty() {
+                return Err(McpError::Validation(
+                    "Text content cannot be empty".to_string(),
+                ));
+            }
+            if let Some(annotations) = annotations {
+                validate_annotations(annotations)?;
+            }
+        }
+        ContentBlock::Image {
+            data,
+            mime_type,
+            annotations,
+            ..
         } => {
             if data.is_empty() {
                 return Err(McpError::Validation(
@@ -357,10 +415,11 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Audio {
+        ContentBlock::Audio {
             data,
             mime_type,
             annotations,
+            ..
         } => {
             if data.is_empty() {
                 return Err(McpError::Validation(
@@ -381,16 +440,61 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
                 validate_annotations(annotations)?;
             }
         }
-        Content::Resource {
+        ContentBlock::Resource {
             resource,
             annotations,
+            ..
         } => {
-            if resource.uri.is_empty() {
+            // For embedded resource, validate the ResourceContents
+            match resource {
+                ResourceContents::Text { uri, text, .. } => {
+                    if uri.is_empty() {
+                        return Err(McpError::Validation(
+                            "Resource URI cannot be empty".to_string(),
+                        ));
+                    }
+                    if text.is_empty() {
+                        return Err(McpError::Validation(
+                            "Text resource content cannot be empty".to_string(),
+                        ));
+                    }
+                    validate_uri(uri)?;
+                }
+                ResourceContents::Blob { uri, blob, .. } => {
+                    if uri.is_empty() {
+                        return Err(McpError::Validation(
+                            "Resource URI cannot be empty".to_string(),
+                        ));
+                    }
+                    if blob.is_empty() {
+                        return Err(McpError::Validation(
+                            "Blob resource content cannot be empty".to_string(),
+                        ));
+                    }
+                    validate_uri(uri)?;
+                }
+            }
+            if let Some(annotations) = annotations {
+                validate_annotations(annotations)?;
+            }
+        }
+        ContentBlock::ResourceLink {
+            uri,
+            name,
+            annotations,
+            ..
+        } => {
+            if uri.is_empty() {
                 return Err(McpError::Validation(
-                    "Resource URI cannot be empty".to_string(),
+                    "Resource link URI cannot be empty".to_string(),
                 ));
             }
-            validate_uri(&resource.uri)?;
+            if name.is_empty() {
+                return Err(McpError::Validation(
+                    "Resource link name cannot be empty".to_string(),
+                ));
+            }
+            validate_uri(uri)?;
             if let Some(annotations) = annotations {
                 validate_annotations(annotations)?;
             }
@@ -400,15 +504,33 @@ pub fn validate_content(content: &Content) -> McpResult<()> {
     Ok(())
 }
 
-/// Validates annotations (2025-03-26 NEW)
-pub fn validate_annotations(_annotations: &Annotations) -> McpResult<()> {
-    // All annotation fields are optional and have valid enum values
-    // No additional validation needed for current fields
+/// Validates annotations (2025-06-18)
+pub fn validate_annotations(annotations: &Annotations) -> McpResult<()> {
+    // Validate priority is in valid range
+    if let Some(priority) = annotations.priority {
+        if priority < 0.0 || priority > 1.0 {
+            return Err(McpError::Validation(
+                "Annotation priority must be between 0.0 and 1.0".to_string(),
+            ));
+        }
+    }
+    
+    // Validate lastModified is a valid ISO 8601 timestamp (basic check)
+    if let Some(last_modified) = &annotations.last_modified {
+        if last_modified.is_empty() {
+            return Err(McpError::Validation(
+                "Annotation lastModified cannot be empty".to_string(),
+            ));
+        }
+        // Could add more sophisticated ISO 8601 validation here
+    }
+    
+    // Audience validation - all Role enum values are valid
     Ok(())
 }
 
-/// Validates tool annotations (2025-03-26 NEW)
-pub fn validate_tool_annotations(_annotations: &Annotations) -> McpResult<()> {
+/// Validates tool annotations (2025-06-18 Updated for ToolAnnotations)
+pub fn validate_tool_annotations(_annotations: &crate::protocol::types::ToolAnnotations) -> McpResult<()> {
     // All tool annotation fields are optional hints, so any values are valid
     // Future versions might add specific validation rules
     Ok(())
@@ -498,10 +620,10 @@ pub fn validate_model_preferences(preferences: &ModelPreferences) -> McpResult<(
         }
     }
 
-    if let Some(quality) = preferences.quality_priority {
-        if !(0.0..=1.0).contains(&quality) {
+    if let Some(intelligence) = preferences.intelligence_priority {
+        if !(0.0..=1.0).contains(&intelligence) {
             return Err(McpError::Validation(
-                "Quality priority must be between 0.0 and 1.0".to_string(),
+                "Intelligence priority must be between 0.0 and 1.0".to_string(),
             ));
         }
     }

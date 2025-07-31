@@ -71,6 +71,7 @@ impl ToolHandler for StoreHandler {
         Ok(ToolResult {
             content: vec![Content::text(message)],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -103,12 +104,14 @@ impl ToolHandler for RetrieveHandler {
                 Ok(ToolResult {
                     content: vec![Content::text(serde_json::to_string_pretty(&response)?)],
                     is_error: None,
+                    structured_content: None,
                     meta: None,
                 })
             }
             None => Ok(ToolResult {
                 content: vec![Content::text(format!("No record found with ID: {}", id))],
                 is_error: Some(true),
+                structured_content: None,
                 meta: None,
             }),
         }
@@ -152,6 +155,7 @@ impl ToolHandler for ListHandler {
         Ok(ToolResult {
             content: vec![Content::text(serde_json::to_string_pretty(&response)?)],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -176,11 +180,13 @@ impl ToolHandler for DeleteHandler {
             Some(_) => Ok(ToolResult {
                 content: vec![Content::text(format!("Deleted record with ID: {}", id))],
                 is_error: None,
+                structured_content: None,
                 meta: None,
             }),
             None => Ok(ToolResult {
                 content: vec![Content::text(format!("No record found with ID: {}", id))],
                 is_error: Some(true),
+                structured_content: None,
                 meta: None,
             }),
         }
@@ -210,6 +216,7 @@ impl ResourceHandler for DatabaseResourceHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: content,
+                    meta: None,
                 }])
             }
             "db:///schema" => {
@@ -240,6 +247,7 @@ impl ResourceHandler for DatabaseResourceHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: serde_json::to_string_pretty(&schema)?,
+                    meta: None,
                 }])
             }
             _ if uri.starts_with("db:///record/") => {
@@ -253,6 +261,7 @@ impl ResourceHandler for DatabaseResourceHandler {
                             uri: uri.to_string(),
                             mime_type: Some("application/json".to_string()),
                             text: content,
+                            meta: None,
                         }])
                     }
                     None => Err(McpError::ResourceNotFound(uri.to_string())),
@@ -267,19 +276,23 @@ impl ResourceHandler for DatabaseResourceHandler {
         let mut resources = vec![
             ResourceInfo {
                 uri: "db:///all".to_string(),
-                name: Some("All Records".to_string()),
+                name: "All Records".to_string(),
                 description: Some("All records in the database".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: Some("All Records".to_string()),
+                meta: None,
             },
             ResourceInfo {
                 uri: "db:///schema".to_string(),
-                name: Some("Database Schema".to_string()),
+                name: "Database Schema".to_string(),
                 description: Some("JSON schema for database records".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: Some("Database Schema".to_string()),
+                meta: None,
             },
         ];
 
@@ -287,11 +300,13 @@ impl ResourceHandler for DatabaseResourceHandler {
         for id in db.keys() {
             resources.push(ResourceInfo {
                 uri: format!("db:///record/{}", id),
-                name: Some(format!("Record: {}", id)),
+                name: format!("Record: {}", id),
                 description: Some(format!("Individual database record with ID: {}", id)),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: Some(format!("Record: {}", id)),
+                meta: None,
             });
         }
 
@@ -405,11 +420,13 @@ async fn main() -> McpResult<()> {
         .add_resource_detailed(
             ResourceInfo {
                 uri: "db:///".to_string(),
-                name: Some("Database".to_string()),
+                name: "Database".to_string(),
                 description: Some("In-memory database with JSON records".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: Some("Database".to_string()),
+                meta: None,
             },
             DatabaseResourceHandler { db: db.clone() },
         )

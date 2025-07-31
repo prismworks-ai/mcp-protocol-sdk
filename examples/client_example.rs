@@ -160,7 +160,7 @@ async fn demonstrate_operations(
         for resource in &resources_result.resources {
             tracing::info!(
                 "  - {}: {} ({})",
-                resource.name.as_deref().unwrap_or("Unknown"),
+                resource.name.as_str(),
                 resource.uri,
                 resource.mime_type.as_deref().unwrap_or("unknown type")
             );

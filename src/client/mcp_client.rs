@@ -64,7 +64,7 @@ impl McpClient {
     /// Create a new MCP client with the given name and version
     pub fn new(name: String, version: String) -> Self {
         Self {
-            info: ClientInfo { name, version },
+            info: ClientInfo::new(name, version),
             capabilities: ClientCapabilities::default(),
             config: ClientConfig::default(),
             transport: Arc::new(Mutex::new(None)),

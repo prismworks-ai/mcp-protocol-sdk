@@ -74,7 +74,7 @@ chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 
 [features]
-default = ["stdio", "tracing-subscriber"]
+default = ["stdio", "tracing-subscriber", "chrono"]
 full = ["stdio", "http", "websocket", "validation", "tracing-subscriber", "chrono"]
 stdio = []  # Uses tokio::process from main tokio crate
 http = ["axum", "tower", "tower-http", "reqwest", "chrono", "tokio-stream", "futures", "fastrand"]
