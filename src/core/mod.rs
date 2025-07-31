@@ -15,13 +15,15 @@ pub mod validation;
 pub use error::{McpError, McpResult};
 pub use prompt::{Prompt, PromptHandler};
 pub use resource::{Resource, ResourceHandler, ResourceTemplate};
-pub use tool::{Tool, ToolHandler, ToolBuilder};
-pub use tool_discovery::{ToolRegistry, DiscoveryCriteria, DiscoveryResult, GlobalToolStats, DeprecationCleanupPolicy};
-pub use tool_metadata::{
-    EnhancedToolMetadata, ToolBehaviorHints, ToolCategory, ToolDeprecation, 
-    CategoryFilter, DeprecationSeverity
+pub use tool::{Tool, ToolBuilder, ToolHandler};
+pub use tool_discovery::{
+    DeprecationCleanupPolicy, DiscoveryCriteria, DiscoveryResult, GlobalToolStats, ToolRegistry,
 };
-pub use validation::{ParameterValidator, ValidationConfig, ParameterType};
+pub use tool_metadata::{
+    CategoryFilter, DeprecationSeverity, EnhancedToolMetadata, ToolBehaviorHints, ToolCategory,
+    ToolDeprecation,
+};
+pub use validation::{ParameterType, ParameterValidator, ValidationConfig};
 
 // Re-export protocol types through core for convenience
 pub use crate::protocol::types::{

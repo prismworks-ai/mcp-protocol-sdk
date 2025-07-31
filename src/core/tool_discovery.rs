@@ -4,12 +4,14 @@
 //! based on the enhanced metadata system. It allows for intelligent tool selection,
 //! categorization, performance monitoring, and lifecycle management.
 
-use crate::core::tool::Tool;
-use crate::core::tool_metadata::{CategoryFilter, DeprecationSeverity, EnhancedToolMetadata, ToolBehaviorHints};
 use crate::core::error::{McpError, McpResult};
+use crate::core::tool::Tool;
+use crate::core::tool_metadata::{
+    CategoryFilter, DeprecationSeverity, EnhancedToolMetadata, ToolBehaviorHints,
+};
+use chrono::Utc;
 use std::collections::HashMap;
 use std::time::Duration;
-use chrono::Utc;
 
 /// Tool discovery and management system
 pub struct ToolRegistry {
@@ -107,9 +109,12 @@ impl ToolRegistry {
     /// Register a tool in the registry
     pub fn register_tool(&mut self, tool: Tool) -> McpResult<()> {
         let name = tool.info.name.clone();
-        
+
         if self.tools.contains_key(&name) {
-            return Err(McpError::validation(format!("Tool '{}' is already registered", name)));
+            return Err(McpError::validation(format!(
+                "Tool '{}' is already registered",
+                name
+            )));
         }
 
         self.tools.insert(name, tool);
@@ -119,9 +124,11 @@ impl ToolRegistry {
 
     /// Unregister a tool from the registry
     pub fn unregister_tool(&mut self, name: &str) -> McpResult<Tool> {
-        let tool = self.tools.remove(name)
+        let tool = self
+            .tools
+            .remove(name)
             .ok_or_else(|| McpError::validation(format!("Tool '{}' not found", name)))?;
-        
+
         self.update_global_stats();
         Ok(tool)
     }
@@ -152,7 +159,11 @@ impl ToolRegistry {
         }
 
         // Sort by match score (descending)
-        results.sort_by(|a, b| b.match_score.partial_cmp(&a.match_score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.match_score
+                .partial_cmp(&a.match_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         results
     }
@@ -185,7 +196,9 @@ impl ToolRegistry {
     }
 
     /// Get performance report for all tools
-    pub fn get_performance_report(&self) -> HashMap<String, crate::core::tool_metadata::ToolPerformanceMetrics> {
+    pub fn get_performance_report(
+        &self,
+    ) -> HashMap<String, crate::core::tool_metadata::ToolPerformanceMetrics> {
         self.tools
             .iter()
             .map(|(name, tool)| (name.clone(), tool.performance_metrics()))
@@ -198,9 +211,13 @@ impl ToolRegistry {
     }
 
     /// Recommend best tool for a specific use case
-    pub fn recommend_tool(&self, use_case: &str, criteria: &DiscoveryCriteria) -> Option<DiscoveryResult> {
+    pub fn recommend_tool(
+        &self,
+        use_case: &str,
+        criteria: &DiscoveryCriteria,
+    ) -> Option<DiscoveryResult> {
         let mut enhanced_criteria = criteria.clone();
-        
+
         // Add text search based on use case
         enhanced_criteria.text_search = Some(use_case.to_string());
 
@@ -213,7 +230,8 @@ impl ToolRegistry {
         let mut removed_tools = Vec::new();
         let current_time = Utc::now();
 
-        let tools_to_remove: Vec<String> = self.tools
+        let tools_to_remove: Vec<String> = self
+            .tools
             .iter()
             .filter(|(_, tool)| {
                 if let Some(ref deprecation) = tool.enhanced_metadata.deprecation {
@@ -297,7 +315,8 @@ impl ToolRegistry {
         }
 
         if stats.total_executions > 0 {
-            stats.overall_success_rate = (stats.total_successes as f64 / stats.total_executions as f64) * 100.0;
+            stats.overall_success_rate =
+                (stats.total_successes as f64 / stats.total_executions as f64) * 100.0;
         }
 
         stats.most_used_tool = most_used;
@@ -306,7 +325,12 @@ impl ToolRegistry {
     }
 
     /// Evaluate how well a tool matches the discovery criteria
-    fn evaluate_tool_match(&self, name: &str, tool: &Tool, criteria: &DiscoveryCriteria) -> Option<DiscoveryResult> {
+    fn evaluate_tool_match(
+        &self,
+        name: &str,
+        tool: &Tool,
+        criteria: &DiscoveryCriteria,
+    ) -> Option<DiscoveryResult> {
         let mut score = 0.0f64;
         let mut reasons = Vec::new();
 
@@ -356,10 +380,13 @@ impl ToolRegistry {
         if let Some(ref search_text) = criteria.text_search {
             let search_lower = search_text.to_lowercase();
             let name_match = name.to_lowercase().contains(&search_lower);
-            let desc_match = tool.info.description.as_ref()
+            let desc_match = tool
+                .info
+                .description
+                .as_ref()
                 .map(|d| d.to_lowercase().contains(&search_lower))
                 .unwrap_or(false);
-            
+
             if name_match || desc_match {
                 score += if name_match { 0.4 } else { 0.2 };
                 reasons.push("matches text search".to_string());
@@ -372,7 +399,8 @@ impl ToolRegistry {
             score += 0.2;
             reasons.push("read-only as required".to_string());
         }
-        if criteria.required_hints.idempotent.unwrap_or(false) && hints.idempotent.unwrap_or(false) {
+        if criteria.required_hints.idempotent.unwrap_or(false) && hints.idempotent.unwrap_or(false)
+        {
             score += 0.2;
             reasons.push("idempotent as required".to_string());
         }
@@ -386,7 +414,8 @@ impl ToolRegistry {
             score += 0.1;
             reasons.push("preferred: read-only".to_string());
         }
-        if criteria.preferred_hints.idempotent.unwrap_or(false) && hints.idempotent.unwrap_or(false) {
+        if criteria.preferred_hints.idempotent.unwrap_or(false) && hints.idempotent.unwrap_or(false)
+        {
             score += 0.1;
             reasons.push("preferred: idempotent".to_string());
         }
@@ -396,7 +425,7 @@ impl ToolRegistry {
             // Success rate bonus
             let success_bonus = (metrics.success_rate / 100.0) * 0.2;
             score += success_bonus;
-            
+
             // Usage frequency bonus (logarithmic scale)
             let usage_bonus = (metrics.execution_count as f64).ln() * 0.05;
             score += usage_bonus.min(0.15);
@@ -465,7 +494,10 @@ mod tests {
 
     #[async_trait]
     impl ToolHandler for MockHandler {
-        async fn call(&self, _args: HashMap<String, Value>) -> McpResult<crate::protocol::types::ToolResult> {
+        async fn call(
+            &self,
+            _args: HashMap<String, Value>,
+        ) -> McpResult<crate::protocol::types::ToolResult> {
             Ok(crate::protocol::types::ToolResult {
                 content: vec![crate::protocol::types::ContentBlock::Text {
                     text: self.result.clone(),
@@ -485,7 +517,9 @@ mod tests {
 
         let tool = ToolBuilder::new("test_tool")
             .description("A test tool")
-            .build(MockHandler { result: "test".to_string() })
+            .build(MockHandler {
+                result: "test".to_string(),
+            })
             .unwrap();
 
         // Register tool
@@ -495,7 +529,9 @@ mod tests {
 
         // Try to register duplicate - should fail
         let duplicate_tool = ToolBuilder::new("test_tool")
-            .build(MockHandler { result: "duplicate".to_string() })
+            .build(MockHandler {
+                result: "duplicate".to_string(),
+            })
             .unwrap();
         assert!(registry.register_tool(duplicate_tool).is_err());
 
@@ -513,13 +549,17 @@ mod tests {
         let file_tool = ToolBuilder::new("file_reader")
             .category_simple("file".to_string(), Some("read".to_string()))
             .tag("filesystem".to_string())
-            .build(MockHandler { result: "file".to_string() })
+            .build(MockHandler {
+                result: "file".to_string(),
+            })
             .unwrap();
 
         let network_tool = ToolBuilder::new("http_client")
             .category_simple("network".to_string(), Some("http".to_string()))
             .tag("client".to_string())
-            .build(MockHandler { result: "network".to_string() })
+            .build(MockHandler {
+                result: "network".to_string(),
+            })
             .unwrap();
 
         registry.register_tool(file_tool).unwrap();
@@ -547,19 +587,25 @@ mod tests {
             .read_only()
             .idempotent()
             .cacheable()
-            .build(MockHandler { result: "read".to_string() })
+            .build(MockHandler {
+                result: "read".to_string(),
+            })
             .unwrap();
 
         let destructive_tool = ToolBuilder::new("deleter")
             .description("Deletes data")
             .destructive()
-            .build(MockHandler { result: "delete".to_string() })
+            .build(MockHandler {
+                result: "delete".to_string(),
+            })
             .unwrap();
 
         let deprecated_tool = ToolBuilder::new("old_tool")
             .description("Old tool")
             .deprecated_simple("Use new_tool instead")
-            .build(MockHandler { result: "old".to_string() })
+            .build(MockHandler {
+                result: "old".to_string(),
+            })
             .unwrap();
 
         registry.register_tool(read_only_tool).unwrap();
@@ -605,12 +651,16 @@ mod tests {
         let mut registry = ToolRegistry::new();
 
         let tool1 = ToolBuilder::new("tool1")
-            .build(MockHandler { result: "1".to_string() })
+            .build(MockHandler {
+                result: "1".to_string(),
+            })
             .unwrap();
 
         let tool2 = ToolBuilder::new("tool2")
             .deprecated_simple("Old tool")
-            .build(MockHandler { result: "2".to_string() })
+            .build(MockHandler {
+                result: "2".to_string(),
+            })
             .unwrap();
 
         registry.register_tool(tool1).unwrap();
@@ -630,13 +680,17 @@ mod tests {
             .description("Processes files efficiently")
             .category_simple("file".to_string(), Some("process".to_string()))
             .read_only()
-            .build(MockHandler { result: "processed".to_string() })
+            .build(MockHandler {
+                result: "processed".to_string(),
+            })
             .unwrap();
 
         let network_tool = ToolBuilder::new("network_handler")
             .description("Handles network requests")
             .category_simple("network".to_string(), None)
-            .build(MockHandler { result: "handled".to_string() })
+            .build(MockHandler {
+                result: "handled".to_string(),
+            })
             .unwrap();
 
         registry.register_tool(file_tool).unwrap();
@@ -659,19 +713,29 @@ mod tests {
 
         // Add tools with different deprecation states
         let normal_tool = ToolBuilder::new("normal")
-            .build(MockHandler { result: "normal".to_string() })
+            .build(MockHandler {
+                result: "normal".to_string(),
+            })
             .unwrap();
 
         let deprecated_tool = ToolBuilder::new("deprecated")
-            .deprecated(ToolDeprecation::new("Old version".to_string())
-                .with_severity(DeprecationSeverity::Low))
-            .build(MockHandler { result: "deprecated".to_string() })
+            .deprecated(
+                ToolDeprecation::new("Old version".to_string())
+                    .with_severity(DeprecationSeverity::Low),
+            )
+            .build(MockHandler {
+                result: "deprecated".to_string(),
+            })
             .unwrap();
 
         let critical_tool = ToolBuilder::new("critical")
-            .deprecated(ToolDeprecation::new("Security issue".to_string())
-                .with_severity(DeprecationSeverity::Critical))
-            .build(MockHandler { result: "critical".to_string() })
+            .deprecated(
+                ToolDeprecation::new("Security issue".to_string())
+                    .with_severity(DeprecationSeverity::Critical),
+            )
+            .build(MockHandler {
+                result: "critical".to_string(),
+            })
             .unwrap();
 
         registry.register_tool(normal_tool).unwrap();

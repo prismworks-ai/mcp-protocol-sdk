@@ -223,7 +223,6 @@ pub struct ElicitParams {
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
 
-
 // ============================================================================
 // Response Result Types
 // ============================================================================
@@ -371,7 +370,6 @@ pub struct ElicitResult {
     #[serde(rename = "_meta", skip_serializing_if = "Option::is_none")]
     pub meta: Option<HashMap<String, serde_json::Value>>,
 }
-
 
 /// Result for subscribe resource request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

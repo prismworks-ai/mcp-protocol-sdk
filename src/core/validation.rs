@@ -74,7 +74,9 @@ impl ParameterValidator {
 
     /// Validate and optionally coerce parameters
     pub fn validate_and_coerce(&self, params: &mut HashMap<String, Value>) -> McpResult<()> {
-        let schema_obj = self.schema.as_object()
+        let schema_obj = self
+            .schema
+            .as_object()
             .ok_or_else(|| McpError::validation("Schema must be an object"))?;
 
         // Check type
@@ -119,11 +121,13 @@ impl ParameterValidator {
         params: &HashMap<String, Value>,
         required: &Value,
     ) -> McpResult<()> {
-        let required_array = required.as_array()
+        let required_array = required
+            .as_array()
             .ok_or_else(|| McpError::validation("Required field must be an array"))?;
 
         for req in required_array {
-            let prop_name = req.as_str()
+            let prop_name = req
+                .as_str()
                 .ok_or_else(|| McpError::validation("Required property names must be strings"))?;
 
             if !params.contains_key(prop_name) {
@@ -143,7 +147,8 @@ impl ParameterValidator {
         params: &mut HashMap<String, Value>,
         properties: &Value,
     ) -> McpResult<()> {
-        let props_obj = properties.as_object()
+        let props_obj = properties
+            .as_object()
             .ok_or_else(|| McpError::validation("Properties must be an object"))?;
 
         for (prop_name, value) in params.iter_mut() {
@@ -162,14 +167,13 @@ impl ParameterValidator {
         schema: &Value,
         field_name: &str,
     ) -> McpResult<()> {
-        let schema_obj = schema.as_object()
-            .ok_or_else(|| McpError::validation(format!(
-                "Schema for '{}' must be an object",
-                field_name
-            )))?;
+        let schema_obj = schema.as_object().ok_or_else(|| {
+            McpError::validation(format!("Schema for '{}' must be an object", field_name))
+        })?;
 
         // Get expected type
-        let expected_type = schema_obj.get("type")
+        let expected_type = schema_obj
+            .get("type")
             .and_then(|t| t.as_str())
             .unwrap_or("any");
 
@@ -211,11 +215,9 @@ impl ParameterValidator {
             }
         }
 
-        let string_val = value.as_str()
-            .ok_or_else(|| McpError::validation(format!(
-                "Parameter '{}' must be a string",
-                field_name
-            )))?;
+        let string_val = value.as_str().ok_or_else(|| {
+            McpError::validation(format!("Parameter '{}' must be a string", field_name))
+        })?;
 
         // Length validation
         if let Some(max_len) = self.config.max_string_length {
@@ -287,20 +289,16 @@ impl ParameterValidator {
             }
         }
 
-        let num_val = value.as_f64()
-            .ok_or_else(|| McpError::validation(format!(
-                "Parameter '{}' must be a number",
-                field_name
-            )))?;
+        let num_val = value.as_f64().ok_or_else(|| {
+            McpError::validation(format!("Parameter '{}' must be a number", field_name))
+        })?;
 
         // Range validation
         if let Some(minimum) = schema.get("minimum").and_then(|v| v.as_f64()) {
             if num_val < minimum {
                 return Err(McpError::validation(format!(
                     "Number '{}' too small: {} < {}",
-                    field_name,
-                    num_val,
-                    minimum
+                    field_name, num_val, minimum
                 )));
             }
         }
@@ -309,9 +307,7 @@ impl ParameterValidator {
             if num_val > maximum {
                 return Err(McpError::validation(format!(
                     "Number '{}' too large: {} > {}",
-                    field_name,
-                    num_val,
-                    maximum
+                    field_name, num_val, maximum
                 )));
             }
         }
@@ -365,11 +361,9 @@ impl ParameterValidator {
         schema: &Map<String, Value>,
         field_name: &str,
     ) -> McpResult<()> {
-        let array = value.as_array_mut()
-            .ok_or_else(|| McpError::validation(format!(
-                "Parameter '{}' must be an array",
-                field_name
-            )))?;
+        let array = value.as_array_mut().ok_or_else(|| {
+            McpError::validation(format!("Parameter '{}' must be an array", field_name))
+        })?;
 
         // Length validation
         if let Some(max_len) = self.config.max_array_length {
@@ -423,11 +417,9 @@ impl ParameterValidator {
         _schema: &Map<String, Value>,
         field_name: &str,
     ) -> McpResult<()> {
-        let obj = value.as_object()
-            .ok_or_else(|| McpError::validation(format!(
-                "Parameter '{}' must be an object",
-                field_name
-            )))?;
+        let obj = value.as_object().ok_or_else(|| {
+            McpError::validation(format!("Parameter '{}' must be an object", field_name))
+        })?;
 
         // Object size validation
         if let Some(max_props) = self.config.max_object_properties {
@@ -457,14 +449,14 @@ impl ParameterValidator {
 
     /// Validate enum constraints
     fn validate_enum(&self, value: &Value, enum_values: &Value, field_name: &str) -> McpResult<()> {
-        let enum_array = enum_values.as_array()
+        let enum_array = enum_values
+            .as_array()
             .ok_or_else(|| McpError::validation("Enum must be an array"))?;
 
         if !enum_array.contains(value) {
             return Err(McpError::validation(format!(
                 "Parameter '{}' must be one of: {:?}",
-                field_name,
-                enum_array
+                field_name, enum_array
             )));
         }
 
@@ -542,7 +534,7 @@ impl ParameterValidator {
 pub trait ParameterType {
     /// Create a JSON schema for this parameter type
     fn to_schema() -> Value;
-    
+
     /// Validate and extract value from parameters
     fn from_params(params: &HashMap<String, Value>, name: &str) -> McpResult<Self>
     where
@@ -618,64 +610,64 @@ macro_rules! param_schema {
     (string $name:expr) => {
         ($name, serde_json::json!({"type": "string"}))
     };
-    
+
     // String with constraints
     (string $name:expr, min: $min:expr) => {
         ($name, serde_json::json!({"type": "string", "minLength": $min}))
     };
-    
+
     (string $name:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "string", "maxLength": $max}))
     };
-    
+
     (string $name:expr, min: $min:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "string", "minLength": $min, "maxLength": $max}))
     };
-    
+
     // Number parameter
     (number $name:expr) => {
         ($name, serde_json::json!({"type": "number"}))
     };
-    
+
     (number $name:expr, min: $min:expr) => {
         ($name, serde_json::json!({"type": "number", "minimum": $min}))
     };
-    
+
     (number $name:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "number", "maximum": $max}))
     };
-    
+
     (number $name:expr, min: $min:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "number", "minimum": $min, "maximum": $max}))
     };
-    
+
     // Integer parameter
     (integer $name:expr) => {
         ($name, serde_json::json!({"type": "integer"}))
     };
-    
+
     (integer $name:expr, min: $min:expr) => {
         ($name, serde_json::json!({"type": "integer", "minimum": $min}))
     };
-    
+
     (integer $name:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "integer", "maximum": $max}))
     };
-    
+
     (integer $name:expr, min: $min:expr, max: $max:expr) => {
         ($name, serde_json::json!({"type": "integer", "minimum": $min, "maximum": $max}))
     };
-    
+
     // Boolean parameter
     (boolean $name:expr) => {
         ($name, serde_json::json!({"type": "boolean"}))
     };
-    
+
     // Array parameter
     (array $name:expr, items: $items:expr) => {
         ($name, serde_json::json!({"type": "array", "items": $items}))
     };
-    
+
     // Enum parameter
     (enum $name:expr, values: [$($val:expr),*]) => {
         ($name, serde_json::json!({"type": "string", "enum": [$($val),*]}))
@@ -683,16 +675,13 @@ macro_rules! param_schema {
 }
 
 /// Helper function to create tool schemas from parameter definitions
-pub fn create_tool_schema(
-    params: Vec<(&str, Value)>,
-    required: Vec<&str>,
-) -> Value {
+pub fn create_tool_schema(params: Vec<(&str, Value)>, required: Vec<&str>) -> Value {
     let mut properties = Map::new();
-    
+
     for (name, schema) in params {
         properties.insert(name.to_string(), schema);
     }
-    
+
     serde_json::json!({
         "type": "object",
         "properties": properties,
@@ -716,17 +705,17 @@ mod tests {
         });
 
         let validator = ParameterValidator::new(schema);
-        
+
         // Valid string
         let mut params = HashMap::new();
         params.insert("name".to_string(), json!("test"));
         assert!(validator.validate_and_coerce(&mut params).is_ok());
-        
+
         // String too short
         let mut params = HashMap::new();
         params.insert("name".to_string(), json!("a"));
         assert!(validator.validate_and_coerce(&mut params).is_err());
-        
+
         // String too long
         let mut params = HashMap::new();
         params.insert("name".to_string(), json!("this_is_too_long"));
@@ -744,17 +733,17 @@ mod tests {
         });
 
         let validator = ParameterValidator::new(schema);
-        
+
         // Valid number
         let mut params = HashMap::new();
         params.insert("age".to_string(), json!(25));
         assert!(validator.validate_and_coerce(&mut params).is_ok());
-        
+
         // Number too small
         let mut params = HashMap::new();
         params.insert("age".to_string(), json!(-5));
         assert!(validator.validate_and_coerce(&mut params).is_err());
-        
+
         // Number too large
         let mut params = HashMap::new();
         params.insert("age".to_string(), json!(200));
@@ -773,14 +762,14 @@ mod tests {
         });
 
         let validator = ParameterValidator::new(schema);
-        
+
         let mut params = HashMap::new();
-        params.insert("count".to_string(), json!("42"));      // String -> Number
-        params.insert("flag".to_string(), json!("true"));      // String -> Boolean
-        params.insert("name".to_string(), json!(123));         // Number -> String
-        
+        params.insert("count".to_string(), json!("42")); // String -> Number
+        params.insert("flag".to_string(), json!("true")); // String -> Boolean
+        params.insert("name".to_string(), json!(123)); // Number -> String
+
         assert!(validator.validate_and_coerce(&mut params).is_ok());
-        
+
         // Check coercion results
         assert_eq!(params.get("count").unwrap().as_i64(), Some(42));
         assert_eq!(params.get("flag").unwrap().as_bool(), Some(true));

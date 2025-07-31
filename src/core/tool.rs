@@ -10,8 +10,10 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use crate::core::error::{McpError, McpResult};
+use crate::core::tool_metadata::{
+    CategoryFilter, EnhancedToolMetadata, ToolBehaviorHints, ToolCategory, ToolDeprecation,
+};
 use crate::core::validation::{ParameterValidator, ValidationConfig};
-use crate::core::tool_metadata::{EnhancedToolMetadata, ToolBehaviorHints, ToolCategory, ToolDeprecation, CategoryFilter};
 use crate::protocol::types::{ContentBlock, ToolInfo, ToolInputSchema, ToolResult};
 
 /// Trait for implementing tool handlers
@@ -115,7 +117,10 @@ impl Tool {
     {
         let mut tool = Self::new(name, description, input_schema.clone(), handler);
         if input_schema.is_object() {
-            tool.validator = Some(ParameterValidator::with_config(input_schema, validation_config));
+            tool.validator = Some(ParameterValidator::with_config(
+                input_schema,
+                validation_config,
+            ));
         }
         tool
     }
@@ -157,12 +162,12 @@ impl Tool {
 
         // Validate and coerce parameters if validator is present
         if let Some(ref validator) = self.validator {
-            validator.validate_and_coerce(&mut arguments)
-                .map_err(|e| McpError::validation(format!(
+            validator.validate_and_coerce(&mut arguments).map_err(|e| {
+                McpError::validation(format!(
                     "Tool '{}' parameter validation failed: {}",
-                    self.info.name,
-                    e
-                )))?;
+                    self.info.name, e
+                ))
+            })?;
         }
 
         // Track execution time and outcome
@@ -194,12 +199,12 @@ impl Tool {
     /// Validate parameters without executing the tool
     pub fn validate_parameters(&self, arguments: &mut HashMap<String, Value>) -> McpResult<()> {
         if let Some(ref validator) = self.validator {
-            validator.validate_and_coerce(arguments)
-                .map_err(|e| McpError::validation(format!(
+            validator.validate_and_coerce(arguments).map_err(|e| {
+                McpError::validation(format!(
                     "Tool '{}' parameter validation failed: {}",
-                    self.info.name,
-                    e
-                )))
+                    self.info.name, e
+                ))
+            })
         } else {
             Ok(())
         }
@@ -289,29 +294,52 @@ impl Tool {
 
     /// Check if tool is suitable for caching based on behavior hints
     pub fn is_cacheable(&self) -> bool {
-        self.enhanced_metadata.behavior_hints.cacheable.unwrap_or(false) ||
-        (self.enhanced_metadata.behavior_hints.read_only.unwrap_or(false) &&
-         self.enhanced_metadata.behavior_hints.idempotent.unwrap_or(false))
+        self.enhanced_metadata
+            .behavior_hints
+            .cacheable
+            .unwrap_or(false)
+            || (self
+                .enhanced_metadata
+                .behavior_hints
+                .read_only
+                .unwrap_or(false)
+                && self
+                    .enhanced_metadata
+                    .behavior_hints
+                    .idempotent
+                    .unwrap_or(false))
     }
 
     /// Check if tool is destructive
     pub fn is_destructive(&self) -> bool {
-        self.enhanced_metadata.behavior_hints.destructive.unwrap_or(false)
+        self.enhanced_metadata
+            .behavior_hints
+            .destructive
+            .unwrap_or(false)
     }
 
     /// Check if tool is read-only
     pub fn is_read_only(&self) -> bool {
-        self.enhanced_metadata.behavior_hints.read_only.unwrap_or(false)
+        self.enhanced_metadata
+            .behavior_hints
+            .read_only
+            .unwrap_or(false)
     }
 
     /// Check if tool is idempotent
     pub fn is_idempotent(&self) -> bool {
-        self.enhanced_metadata.behavior_hints.idempotent.unwrap_or(false)
+        self.enhanced_metadata
+            .behavior_hints
+            .idempotent
+            .unwrap_or(false)
     }
 
     /// Check if tool requires authentication
     pub fn requires_auth(&self) -> bool {
-        self.enhanced_metadata.behavior_hints.requires_auth.unwrap_or(false)
+        self.enhanced_metadata
+            .behavior_hints
+            .requires_auth
+            .unwrap_or(false)
     }
 }
 
@@ -672,8 +700,8 @@ impl ToolBuilder {
         }
 
         // Apply enhanced metadata
-        let mut enhanced_metadata = EnhancedToolMetadata::new()
-            .with_behavior_hints(self.behavior_hints);
+        let mut enhanced_metadata =
+            EnhancedToolMetadata::new().with_behavior_hints(self.behavior_hints);
 
         if let Some(category) = self.category {
             enhanced_metadata = enhanced_metadata.with_category(category);
@@ -729,7 +757,7 @@ impl ToolHandler for ValidationChainTool {
     async fn call(&self, mut arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
         // Run custom validation first
         (self.custom_validator)(&mut arguments)?;
-        
+
         // Then run the tool's built-in validation and execution
         self.tool.call(arguments).await
     }
@@ -751,7 +779,7 @@ macro_rules! validated_tool {
         handler: $handler:expr
     ) => {{
         use $crate::core::validation::{create_tool_schema, param_schema};
-        
+
         let params = vec![
             $(
                 {
@@ -765,10 +793,10 @@ macro_rules! validated_tool {
                 }
             ),*
         ];
-        
+
         let required = vec![ $( stringify!($param_name) ),* ];
         let schema = create_tool_schema(params, required);
-        
+
         $crate::core::tool::Tool::new(
             $name.to_string(),
             Some($desc.to_string()),
@@ -790,7 +818,7 @@ where
     H: ToolHandler + 'static,
 {
     use serde_json::json;
-    
+
     let schema = json!({
         "type": "object",
         "properties": {
@@ -801,7 +829,7 @@ where
         },
         "required": [param_name]
     });
-    
+
     Tool::new(
         name.to_string(),
         Some(description.to_string()),
@@ -822,7 +850,7 @@ where
     H: ToolHandler + 'static,
 {
     use serde_json::{json, Map};
-    
+
     let mut properties = Map::new();
     for (param_name, param_desc, param_schema) in parameters {
         let mut schema_with_desc = param_schema;
@@ -831,13 +859,13 @@ where
         }
         properties.insert(param_name.to_string(), schema_with_desc);
     }
-    
+
     let schema = json!({
         "type": "object",
         "properties": properties,
         "required": required
     });
-    
+
     Tool::new(
         name.to_string(),
         Some(description.to_string()),
@@ -850,12 +878,12 @@ where
 pub trait ValidatedToolHandler: ToolHandler {
     /// Get the JSON schema for this tool's parameters
     fn parameter_schema() -> Value;
-    
+
     /// Get validation configuration for this tool
     fn validation_config() -> ValidationConfig {
         ValidationConfig::default()
     }
-    
+
     /// Create a tool instance with built-in validation
     fn create_tool(name: String, description: Option<String>, handler: Self) -> Tool
     where
@@ -945,9 +973,9 @@ impl ToolHandler for CalculatorTool {
 
 impl ValidatedToolHandler for CalculatorTool {
     fn parameter_schema() -> Value {
-        use crate::param_schema;
         use crate::core::validation::create_tool_schema;
-        
+        use crate::param_schema;
+
         create_tool_schema(
             vec![
                 param_schema!(enum "operation", values: ["add", "subtract", "multiply", "divide"]),
@@ -992,7 +1020,12 @@ impl ToolHandler for TextProcessorTool {
             "reverse" => text.chars().rev().collect(),
             "word_count" => text.split_whitespace().count().to_string(),
             "char_count" => text.len().to_string(),
-            _ => return Err(McpError::validation(format!("Unsupported operation: {}", operation))),
+            _ => {
+                return Err(McpError::validation(format!(
+                    "Unsupported operation: {}",
+                    operation
+                )))
+            }
         };
 
         Ok(ToolResult {
@@ -1015,9 +1048,9 @@ impl ToolHandler for TextProcessorTool {
 
 impl ValidatedToolHandler for TextProcessorTool {
     fn parameter_schema() -> Value {
-        use crate::param_schema;
         use crate::core::validation::create_tool_schema;
-        
+        use crate::param_schema;
+
         create_tool_schema(
             vec![
                 param_schema!(string "text", min: 1, max: 10000),
@@ -1200,11 +1233,14 @@ mod tests {
         args.insert("b".to_string(), json!(3));
 
         let result = tool.call(args).await.unwrap();
-        assert_eq!(result.content[0], ContentBlock::Text {
-            text: "8".to_string(),
-            annotations: None,
-            meta: None,
-        });
+        assert_eq!(
+            result.content[0],
+            ContentBlock::Text {
+                text: "8".to_string(),
+                annotations: None,
+                meta: None,
+            }
+        );
         assert!(result.structured_content.is_some());
 
         // Test division by zero
@@ -1232,20 +1268,26 @@ mod tests {
         args.insert("operation".to_string(), json!("uppercase"));
 
         let result = tool.call(args).await.unwrap();
-        assert_eq!(result.content[0], ContentBlock::Text {
-            text: "HELLO WORLD".to_string(),
-            annotations: None,
-            meta: None,
-        });
+        assert_eq!(
+            result.content[0],
+            ContentBlock::Text {
+                text: "HELLO WORLD".to_string(),
+                annotations: None,
+                meta: None,
+            }
+        );
 
         // Test word count
         args.insert("operation".to_string(), json!("word_count"));
         let result = tool.call(args).await.unwrap();
-        assert_eq!(result.content[0], ContentBlock::Text {
-            text: "2".to_string(),
-            annotations: None,
-            meta: None,
-        });
+        assert_eq!(
+            result.content[0],
+            ContentBlock::Text {
+                text: "2".to_string(),
+                annotations: None,
+                meta: None,
+            }
+        );
     }
 
     #[test]
@@ -1254,9 +1296,21 @@ mod tests {
             "typed_test",
             "A typed parameter test tool",
             vec![
-                ("username", "User's name", json!({"type": "string", "minLength": 3})),
-                ("age", "User's age", json!({"type": "integer", "minimum": 0})),
-                ("active", "Whether user is active", json!({"type": "boolean"})),
+                (
+                    "username",
+                    "User's name",
+                    json!({"type": "string", "minLength": 3}),
+                ),
+                (
+                    "age",
+                    "User's age",
+                    json!({"type": "integer", "minimum": 0}),
+                ),
+                (
+                    "active",
+                    "Whether user is active",
+                    json!({"type": "boolean"}),
+                ),
             ],
             vec!["username", "age"],
             EchoTool,
@@ -1264,7 +1318,7 @@ mod tests {
 
         assert_eq!(tool.info.name, "typed_test");
         assert!(tool.validator.is_some());
-        
+
         // Check that schema was built correctly
         let schema = &tool.info.input_schema;
         assert!(schema.properties.is_some());
@@ -1283,7 +1337,7 @@ mod tests {
             .unwrap();
         assert!(strict_tool.validator.is_some());
 
-        // Test permissive validation  
+        // Test permissive validation
         let permissive_tool = ToolBuilder::new("permissive")
             .permissive_validation()
             .build(EchoTool)
@@ -1300,66 +1354,66 @@ mod tests {
 pub trait ParameterExt {
     /// Extract a required string parameter
     fn get_string(&self, key: &str) -> McpResult<&str>;
-    
+
     /// Extract an optional string parameter
     fn get_optional_string(&self, key: &str) -> Option<&str>;
-    
+
     /// Extract a required number parameter
     fn get_number(&self, key: &str) -> McpResult<f64>;
-    
+
     /// Extract an optional number parameter
     fn get_optional_number(&self, key: &str) -> Option<f64>;
-    
+
     /// Extract a required integer parameter
     fn get_integer(&self, key: &str) -> McpResult<i64>;
-    
+
     /// Extract an optional integer parameter
     fn get_optional_integer(&self, key: &str) -> Option<i64>;
-    
+
     /// Extract a required boolean parameter
     fn get_boolean(&self, key: &str) -> McpResult<bool>;
-    
+
     /// Extract an optional boolean parameter
     fn get_optional_boolean(&self, key: &str) -> Option<bool>;
 }
 
 impl ParameterExt for HashMap<String, Value> {
     fn get_string(&self, key: &str) -> McpResult<&str> {
-        self.get(key)
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::validation(format!("Missing or invalid string parameter: {}", key)))
+        self.get(key).and_then(|v| v.as_str()).ok_or_else(|| {
+            McpError::validation(format!("Missing or invalid string parameter: {}", key))
+        })
     }
-    
+
     fn get_optional_string(&self, key: &str) -> Option<&str> {
         self.get(key).and_then(|v| v.as_str())
     }
-    
+
     fn get_number(&self, key: &str) -> McpResult<f64> {
-        self.get(key)
-            .and_then(|v| v.as_f64())
-            .ok_or_else(|| McpError::validation(format!("Missing or invalid number parameter: {}", key)))
+        self.get(key).and_then(|v| v.as_f64()).ok_or_else(|| {
+            McpError::validation(format!("Missing or invalid number parameter: {}", key))
+        })
     }
-    
+
     fn get_optional_number(&self, key: &str) -> Option<f64> {
         self.get(key).and_then(|v| v.as_f64())
     }
-    
+
     fn get_integer(&self, key: &str) -> McpResult<i64> {
-        self.get(key)
-            .and_then(|v| v.as_i64())
-            .ok_or_else(|| McpError::validation(format!("Missing or invalid integer parameter: {}", key)))
+        self.get(key).and_then(|v| v.as_i64()).ok_or_else(|| {
+            McpError::validation(format!("Missing or invalid integer parameter: {}", key))
+        })
     }
-    
+
     fn get_optional_integer(&self, key: &str) -> Option<i64> {
         self.get(key).and_then(|v| v.as_i64())
     }
-    
+
     fn get_boolean(&self, key: &str) -> McpResult<bool> {
-        self.get(key)
-            .and_then(|v| v.as_bool())
-            .ok_or_else(|| McpError::validation(format!("Missing or invalid boolean parameter: {}", key)))
+        self.get(key).and_then(|v| v.as_bool()).ok_or_else(|| {
+            McpError::validation(format!("Missing or invalid boolean parameter: {}", key))
+        })
     }
-    
+
     fn get_optional_boolean(&self, key: &str) -> Option<bool> {
         self.get(key).and_then(|v| v.as_bool())
     }
@@ -1368,8 +1422,8 @@ impl ParameterExt for HashMap<String, Value> {
 #[cfg(test)]
 mod enhanced_tests {
     use super::*;
-    use crate::prelude::ToolHandler;
     use crate::core::tool_metadata::*;
+    use crate::prelude::ToolHandler;
     use std::time::Duration;
     use tokio;
 
@@ -1637,13 +1691,25 @@ mod enhanced_tests {
             .build(handler)
             .expect("Failed to build tool");
 
-        assert_eq!(tool.get_custom_metadata("priority"), Some(&serde_json::Value::from("high")));
-        assert_eq!(tool.get_custom_metadata("team"), Some(&serde_json::Value::from("backend")));
+        assert_eq!(
+            tool.get_custom_metadata("priority"),
+            Some(&serde_json::Value::from("high"))
+        );
+        assert_eq!(
+            tool.get_custom_metadata("team"),
+            Some(&serde_json::Value::from("backend"))
+        );
         assert_eq!(tool.get_custom_metadata("nonexistent"), None);
 
         // Add metadata after creation
-        tool.add_custom_metadata("environment".to_string(), serde_json::Value::from("production"));
-        assert_eq!(tool.get_custom_metadata("environment"), Some(&serde_json::Value::from("production")));
+        tool.add_custom_metadata(
+            "environment".to_string(),
+            serde_json::Value::from("production"),
+        );
+        assert_eq!(
+            tool.get_custom_metadata("environment"),
+            Some(&serde_json::Value::from("production"))
+        );
     }
 
     #[test]

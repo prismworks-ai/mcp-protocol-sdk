@@ -323,7 +323,9 @@ pub fn validate_create_message_params(params: &CreateMessageParams) -> McpResult
 /// Validates sampling content (2025-06-18)
 pub fn validate_sampling_content(content: &SamplingContent) -> McpResult<()> {
     match content {
-        SamplingContent::Text { text, annotations, .. } => {
+        SamplingContent::Text {
+            text, annotations, ..
+        } => {
             if text.is_empty() {
                 return Err(McpError::Validation(
                     "Text content cannot be empty".to_string(),
@@ -380,7 +382,9 @@ pub fn validate_sampling_content(content: &SamplingContent) -> McpResult<()> {
 /// Validates content (2025-06-18 with ContentBlock)
 pub fn validate_content(content: &ContentBlock) -> McpResult<()> {
     match content {
-        ContentBlock::Text { text, annotations, .. } => {
+        ContentBlock::Text {
+            text, annotations, ..
+        } => {
             if text.is_empty() {
                 return Err(McpError::Validation(
                     "Text content cannot be empty".to_string(),
@@ -514,7 +518,7 @@ pub fn validate_annotations(annotations: &Annotations) -> McpResult<()> {
             ));
         }
     }
-    
+
     // Validate lastModified is a valid ISO 8601 timestamp (basic check)
     if let Some(last_modified) = &annotations.last_modified {
         if last_modified.is_empty() {
@@ -524,13 +528,15 @@ pub fn validate_annotations(annotations: &Annotations) -> McpResult<()> {
         }
         // Could add more sophisticated ISO 8601 validation here
     }
-    
+
     // Audience validation - all Role enum values are valid
     Ok(())
 }
 
 /// Validates tool annotations (2025-06-18 Updated for ToolAnnotations)
-pub fn validate_tool_annotations(_annotations: &crate::protocol::types::ToolAnnotations) -> McpResult<()> {
+pub fn validate_tool_annotations(
+    _annotations: &crate::protocol::types::ToolAnnotations,
+) -> McpResult<()> {
     // All tool annotation fields are optional hints, so any values are valid
     // Future versions might add specific validation rules
     Ok(())

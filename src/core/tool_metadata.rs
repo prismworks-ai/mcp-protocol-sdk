@@ -19,27 +19,30 @@ pub struct ToolBehaviorHints {
     /// Tool only reads data without making changes
     #[serde(rename = "readOnlyHint", skip_serializing_if = "Option::is_none")]
     pub read_only: Option<bool>,
-    
+
     /// Tool makes destructive changes that cannot be easily undone
     #[serde(rename = "destructiveHint", skip_serializing_if = "Option::is_none")]
     pub destructive: Option<bool>,
-    
+
     /// Tool produces the same output for the same input (no side effects)
     #[serde(rename = "idempotentHint", skip_serializing_if = "Option::is_none")]
     pub idempotent: Option<bool>,
-    
+
     /// Tool requires authentication or special permissions
     #[serde(rename = "requiresAuthHint", skip_serializing_if = "Option::is_none")]
     pub requires_auth: Option<bool>,
-    
+
     /// Tool may take a long time to execute
     #[serde(rename = "longRunningHint", skip_serializing_if = "Option::is_none")]
     pub long_running: Option<bool>,
-    
+
     /// Tool may consume significant system resources
-    #[serde(rename = "resourceIntensiveHint", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "resourceIntensiveHint",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub resource_intensive: Option<bool>,
-    
+
     /// Tool provides cacheable results
     #[serde(rename = "cacheableHint", skip_serializing_if = "Option::is_none")]
     pub cacheable: Option<bool>,
@@ -64,43 +67,43 @@ impl ToolBehaviorHints {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Mark tool as read-only (no destructive changes)
     pub fn read_only(mut self) -> Self {
         self.read_only = Some(true);
         self
     }
-    
+
     /// Mark tool as destructive (makes changes that cannot be easily undone)
     pub fn destructive(mut self) -> Self {
         self.destructive = Some(true);
         self
     }
-    
+
     /// Mark tool as idempotent (same input produces same output)
     pub fn idempotent(mut self) -> Self {
         self.idempotent = Some(true);
         self
     }
-    
+
     /// Mark tool as requiring authentication
     pub fn requires_auth(mut self) -> Self {
         self.requires_auth = Some(true);
         self
     }
-    
+
     /// Mark tool as potentially long-running
     pub fn long_running(mut self) -> Self {
         self.long_running = Some(true);
         self
     }
-    
+
     /// Mark tool as resource-intensive
     pub fn resource_intensive(mut self) -> Self {
         self.resource_intensive = Some(true);
         self
     }
-    
+
     /// Mark tool results as cacheable
     pub fn cacheable(mut self) -> Self {
         self.cacheable = Some(true);
@@ -128,25 +131,25 @@ impl ToolCategory {
             tags: HashSet::new(),
         }
     }
-    
+
     /// Set secondary category
     pub fn with_secondary(mut self, secondary: String) -> Self {
         self.secondary = Some(secondary);
         self
     }
-    
+
     /// Add a tag
     pub fn with_tag(mut self, tag: String) -> Self {
         self.tags.insert(tag);
         self
     }
-    
+
     /// Add multiple tags
     pub fn with_tags(mut self, tags: Vec<String>) -> Self {
         self.tags.extend(tags);
         self
     }
-    
+
     /// Check if category matches a filter
     pub fn matches_filter(&self, filter: &CategoryFilter) -> bool {
         // Check primary category
@@ -155,7 +158,7 @@ impl ToolCategory {
                 return false;
             }
         }
-        
+
         // Check secondary category
         if let Some(ref secondary) = filter.secondary {
             match &self.secondary {
@@ -167,14 +170,14 @@ impl ToolCategory {
                 None => return false,
             }
         }
-        
+
         // Check tags (any match is sufficient)
         if !filter.tags.is_empty() {
             if !filter.tags.iter().any(|tag| self.tags.contains(tag)) {
                 return false;
             }
         }
-        
+
         true
     }
 }
@@ -195,25 +198,25 @@ impl CategoryFilter {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Filter by primary category
     pub fn with_primary(mut self, primary: String) -> Self {
         self.primary = Some(primary);
         self
     }
-    
+
     /// Filter by secondary category
     pub fn with_secondary(mut self, secondary: String) -> Self {
         self.secondary = Some(secondary);
         self
     }
-    
+
     /// Filter by tag
     pub fn with_tag(mut self, tag: String) -> Self {
         self.tags.insert(tag);
         self
     }
-    
+
     /// Filter by multiple tags
     pub fn with_tags(mut self, tags: Vec<String>) -> Self {
         self.tags.extend(tags);
@@ -268,7 +271,7 @@ impl ToolPerformanceMetrics {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Record a successful execution
     pub fn record_success(&mut self, execution_time: Duration) {
         self.execution_count += 1;
@@ -277,7 +280,7 @@ impl ToolPerformanceMetrics {
         self.update_success_rate();
         self.last_execution = Some(Utc::now());
     }
-    
+
     /// Record a failed execution
     pub fn record_error(&mut self, execution_time: Duration) {
         self.execution_count += 1;
@@ -286,11 +289,11 @@ impl ToolPerformanceMetrics {
         self.update_success_rate();
         self.last_execution = Some(Utc::now());
     }
-    
+
     /// Record execution time and update statistics
     fn record_execution_time(&mut self, execution_time: Duration) {
         self.total_execution_time += execution_time;
-        
+
         // Update min/max
         if execution_time < self.min_execution_time {
             self.min_execution_time = execution_time;
@@ -298,26 +301,26 @@ impl ToolPerformanceMetrics {
         if execution_time > self.max_execution_time {
             self.max_execution_time = execution_time;
         }
-        
+
         // Update average
         if self.execution_count > 0 {
             self.average_execution_time = self.total_execution_time / self.execution_count as u32;
         }
-        
+
         // Update recent execution times (keep last 10)
         self.recent_execution_times.push(execution_time);
         if self.recent_execution_times.len() > 10 {
             self.recent_execution_times.remove(0);
         }
     }
-    
+
     /// Update success rate percentage
     fn update_success_rate(&mut self) {
         if self.execution_count > 0 {
             self.success_rate = (self.success_count as f64 / self.execution_count as f64) * 100.0;
         }
     }
-    
+
     /// Get recent average execution time (last 10 executions)
     pub fn recent_average_execution_time(&self) -> Duration {
         if self.recent_execution_times.is_empty() {
@@ -377,19 +380,19 @@ impl ToolDeprecation {
             severity: DeprecationSeverity::Low,
         }
     }
-    
+
     /// Set replacement tool
     pub fn with_replacement(mut self, replacement: String) -> Self {
         self.replacement = Some(replacement);
         self
     }
-    
+
     /// Set removal date
     pub fn with_removal_date(mut self, removal_date: DateTime<Utc>) -> Self {
         self.removal_date = Some(removal_date);
         self
     }
-    
+
     /// Set severity
     pub fn with_severity(mut self, severity: DeprecationSeverity) -> Self {
         self.severity = severity;
@@ -435,48 +438,48 @@ impl EnhancedToolMetadata {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Set behavior hints
     pub fn with_behavior_hints(mut self, hints: ToolBehaviorHints) -> Self {
         self.behavior_hints = hints;
         self
     }
-    
+
     /// Set category
     pub fn with_category(mut self, category: ToolCategory) -> Self {
         self.category = Some(category);
         self
     }
-    
+
     /// Set version
     pub fn with_version(mut self, version: String) -> Self {
         self.version = Some(version);
         self
     }
-    
+
     /// Set author
     pub fn with_author(mut self, author: String) -> Self {
         self.author = Some(author);
         self
     }
-    
+
     /// Add custom metadata field
     pub fn with_custom_field(mut self, key: String, value: serde_json::Value) -> Self {
         self.custom.insert(key, value);
         self
     }
-    
+
     /// Deprecate the tool
     pub fn deprecated(mut self, deprecation: ToolDeprecation) -> Self {
         self.deprecation = Some(deprecation);
         self
     }
-    
+
     /// Check if tool is deprecated
     pub fn is_deprecated(&self) -> bool {
         self.deprecation.as_ref().map_or(false, |d| d.deprecated)
     }
-    
+
     /// Get deprecation warning message
     pub fn deprecation_warning(&self) -> Option<String> {
         self.deprecation.as_ref().and_then(|d| {
@@ -511,24 +514,34 @@ impl EnhancedToolMetadata {
 
     /// Get performance metrics snapshot
     pub fn get_performance_snapshot(&self) -> ToolPerformanceMetrics {
-        self.performance.read()
+        self.performance
+            .read()
             .map(|p| p.clone())
             .unwrap_or_default()
     }
 
     /// Get execution count
     pub fn execution_count(&self) -> u64 {
-        self.performance.read().map(|p| p.execution_count).unwrap_or(0)
+        self.performance
+            .read()
+            .map(|p| p.execution_count)
+            .unwrap_or(0)
     }
 
     /// Get success rate
     pub fn success_rate(&self) -> f64 {
-        self.performance.read().map(|p| p.success_rate).unwrap_or(0.0)
+        self.performance
+            .read()
+            .map(|p| p.success_rate)
+            .unwrap_or(0.0)
     }
 
     /// Get average execution time
     pub fn average_execution_time(&self) -> Duration {
-        self.performance.read().map(|p| p.average_execution_time).unwrap_or_default()
+        self.performance
+            .read()
+            .map(|p| p.average_execution_time)
+            .unwrap_or_default()
     }
 }
 
@@ -543,7 +556,7 @@ mod tests {
             .read_only()
             .idempotent()
             .cacheable();
-        
+
         assert_eq!(hints.read_only, Some(true));
         assert_eq!(hints.idempotent, Some(true));
         assert_eq!(hints.cacheable, Some(true));
@@ -556,7 +569,7 @@ mod tests {
             .with_secondary("read".to_string())
             .with_tag("filesystem".to_string())
             .with_tag("utility".to_string());
-        
+
         assert_eq!(category.primary, "file");
         assert_eq!(category.secondary, Some("read".to_string()));
         assert!(category.tags.contains("filesystem"));
@@ -568,31 +581,28 @@ mod tests {
         let category = ToolCategory::new("file".to_string())
             .with_secondary("read".to_string())
             .with_tag("filesystem".to_string());
-        
-        let filter = CategoryFilter::new()
-            .with_primary("file".to_string());
-        
+
+        let filter = CategoryFilter::new().with_primary("file".to_string());
+
         assert!(category.matches_filter(&filter));
-        
-        let filter = CategoryFilter::new()
-            .with_primary("network".to_string());
-        
+
+        let filter = CategoryFilter::new().with_primary("network".to_string());
+
         assert!(!category.matches_filter(&filter));
-        
-        let filter = CategoryFilter::new()
-            .with_tag("filesystem".to_string());
-        
+
+        let filter = CategoryFilter::new().with_tag("filesystem".to_string());
+
         assert!(category.matches_filter(&filter));
     }
 
     #[test]
     fn test_performance_metrics() {
         let mut metrics = ToolPerformanceMetrics::new();
-        
+
         metrics.record_success(Duration::from_millis(100));
         metrics.record_success(Duration::from_millis(200));
         metrics.record_error(Duration::from_millis(150));
-        
+
         assert_eq!(metrics.execution_count, 3);
         assert_eq!(metrics.success_count, 2);
         assert_eq!(metrics.error_count, 1);
@@ -606,9 +616,12 @@ mod tests {
         let deprecation = ToolDeprecation::new("Tool is no longer maintained".to_string())
             .with_replacement("new_tool".to_string())
             .with_severity(DeprecationSeverity::High);
-        
+
         assert!(deprecation.deprecated);
-        assert_eq!(deprecation.reason, Some("Tool is no longer maintained".to_string()));
+        assert_eq!(
+            deprecation.reason,
+            Some("Tool is no longer maintained".to_string())
+        );
         assert_eq!(deprecation.replacement, Some("new_tool".to_string()));
         assert_eq!(deprecation.severity, DeprecationSeverity::High);
     }
@@ -617,13 +630,13 @@ mod tests {
     fn test_enhanced_metadata() {
         let hints = ToolBehaviorHints::new().read_only().cacheable();
         let category = ToolCategory::new("data".to_string()).with_tag("analysis".to_string());
-        
+
         let metadata = EnhancedToolMetadata::new()
             .with_behavior_hints(hints)
             .with_category(category)
             .with_version("1.0.0".to_string())
             .with_author("Test Author".to_string());
-        
+
         assert_eq!(metadata.behavior_hints.read_only, Some(true));
         assert_eq!(metadata.behavior_hints.cacheable, Some(true));
         assert!(metadata.category.is_some());
@@ -636,10 +649,9 @@ mod tests {
     fn test_deprecation_warning() {
         let deprecation = ToolDeprecation::new("Old implementation".to_string())
             .with_replacement("better_tool".to_string());
-        
-        let metadata = EnhancedToolMetadata::new()
-            .deprecated(deprecation);
-        
+
+        let metadata = EnhancedToolMetadata::new().deprecated(deprecation);
+
         assert!(metadata.is_deprecated());
         let warning = metadata.deprecation_warning().unwrap();
         assert!(warning.contains("deprecated"));

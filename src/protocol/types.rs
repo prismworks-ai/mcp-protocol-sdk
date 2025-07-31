@@ -69,7 +69,7 @@ pub struct BaseMetadata {
     pub name: String,
     /// Intended for UI and end-user contexts — optimized to be human-readable and easily understood,
     /// even by those unfamiliar with domain-specific terminology.
-    /// 
+    ///
     /// If not provided, the name should be used for display (except for Tool,
     /// where `annotations.title` should be given precedence over using `name`, if present).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -239,21 +239,21 @@ pub struct ElicitationCapability {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Annotations {
     /// Describes who the intended customer of this object or data is.
-    /// 
+    ///
     /// It can include multiple entries to indicate content useful for multiple audiences (e.g., `["user", "assistant"]`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub audience: Option<Vec<Role>>,
     /// Describes how important this data is for operating the server.
-    /// 
+    ///
     /// A value of 1 means "most important," and indicates that the data is
     /// effectively required, while 0 means "least important," and indicates that
     /// the data is entirely optional.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<f64>,
     /// The moment the resource was last modified, as an ISO 8601 formatted string.
-    /// 
+    ///
     /// Should be an ISO 8601 formatted string (e.g., "2025-01-12T15:00:58Z").
-    /// 
+    ///
     /// Examples: last activity timestamp in an open file, timestamp when the resource
     /// was attached, etc.
     #[serde(rename = "lastModified", skip_serializing_if = "Option::is_none")]
@@ -458,11 +458,11 @@ pub type Content = ContentBlock;
 // ============================================================================
 
 /// Tool-specific annotations (2025-06-18 Schema Compliance)
-/// 
+///
 /// NOTE: all properties in ToolAnnotations are **hints**.
 /// They are not guaranteed to provide a faithful description of
 /// tool behavior (including descriptive properties like `title`).
-/// 
+///
 /// Clients should never make tool use decisions based on ToolAnnotations
 /// received from untrusted servers.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -470,26 +470,26 @@ pub struct ToolAnnotations {
     /// A human-readable title for the tool
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
-    
+
     /// If true, the tool does not modify its environment
     /// Default: false
     #[serde(rename = "readOnlyHint", skip_serializing_if = "Option::is_none")]
     pub read_only_hint: Option<bool>,
-    
+
     /// If true, the tool may perform destructive updates to its environment
     /// If false, the tool performs only additive updates
     /// (This property is meaningful only when `readOnlyHint == false`)
     /// Default: true
     #[serde(rename = "destructiveHint", skip_serializing_if = "Option::is_none")]
     pub destructive_hint: Option<bool>,
-    
+
     /// If true, calling the tool repeatedly with the same arguments
     /// will have no additional effect on its environment
     /// (This property is meaningful only when `readOnlyHint == false`)
     /// Default: false
     #[serde(rename = "idempotentHint", skip_serializing_if = "Option::is_none")]
     pub idempotent_hint: Option<bool>,
-    
+
     /// If true, this tool may interact with an "open world" of external entities
     /// If false, the tool's domain of interaction is closed
     /// For example, the world of a web search tool is open, whereas that
@@ -516,44 +516,43 @@ impl ToolAnnotations {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Set the human-readable title for the tool
     pub fn with_title<S: Into<String>>(mut self, title: S) -> Self {
         self.title = Some(title.into());
         self
     }
-    
+
     /// Mark tool as read-only (does not modify environment)
     pub fn read_only(mut self) -> Self {
         self.read_only_hint = Some(true);
         self
     }
-    
+
     /// Mark tool as destructive (may perform destructive updates)
     pub fn destructive(mut self) -> Self {
         self.destructive_hint = Some(true);
         self
     }
-    
+
     /// Mark tool as idempotent (same input produces same result)
     pub fn idempotent(mut self) -> Self {
         self.idempotent_hint = Some(true);
         self
     }
-    
+
     /// Mark tool as interacting with open world of external entities
     pub fn open_world(mut self) -> Self {
         self.open_world_hint = Some(true);
         self
     }
-    
+
     /// Mark tool as interacting with closed world (limited domain)
     pub fn closed_world(mut self) -> Self {
         self.open_world_hint = Some(false);
         self
     }
 }
-
 
 // ============================================================================
 // Tool Annotations Integration with Enhanced Metadata
@@ -567,7 +566,9 @@ impl From<&crate::core::tool_metadata::ToolBehaviorHints> for ToolAnnotations {
             destructive_hint: hints.destructive,
             idempotent_hint: hints.idempotent,
             // Map open_world_hint: if requires_auth or resource_intensive, likely open world
-            open_world_hint: if hints.requires_auth.unwrap_or(false) || hints.resource_intensive.unwrap_or(false) {
+            open_world_hint: if hints.requires_auth.unwrap_or(false)
+                || hints.resource_intensive.unwrap_or(false)
+            {
                 Some(true)
             } else {
                 None
@@ -594,13 +595,12 @@ impl ToolAnnotations {
         }
         annotations
     }
-    
+
     /// Create minimal ToolAnnotations from behavior hints
     pub fn from_behavior_hints(hints: &crate::core::tool_metadata::ToolBehaviorHints) -> Self {
         Self::from(hints)
     }
 }
-
 
 /// Tool definition with annotations and title (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -890,7 +890,7 @@ pub enum SamplingContent {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModelHint {
     /// A hint for a model name.
-    /// 
+    ///
     /// The client SHOULD treat this as a substring of a model name; for example:
     /// - `claude-3-5-sonnet` should match `claude-3-5-sonnet-20241022`
     /// - `sonnet` should match `claude-3-5-sonnet-20241022`, `claude-3-sonnet-20240229`, etc.
@@ -909,7 +909,10 @@ pub struct ModelPreferences {
     #[serde(rename = "speedPriority", skip_serializing_if = "Option::is_none")]
     pub speed_priority: Option<f64>,
     /// How much to prioritize intelligence and capabilities when selecting a model
-    #[serde(rename = "intelligencePriority", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "intelligencePriority",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub intelligence_priority: Option<f64>,
     /// Optional hints to use for model selection
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1109,7 +1112,6 @@ pub struct JsonRpcNotification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<serde_json::Value>,
 }
-
 
 /// Complete JSON-RPC message types (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1363,7 +1365,9 @@ impl Resource {
     pub fn from_legacy<S: Into<String>>(uri: S, name: Option<S>) -> Self {
         Self {
             uri: uri.into(),
-            name: name.map(|n| n.into()).unwrap_or_else(|| "Unnamed Resource".to_string()),
+            name: name
+                .map(|n| n.into())
+                .unwrap_or_else(|| "Unnamed Resource".to_string()),
             description: None,
             mime_type: None,
             annotations: None,
@@ -1404,7 +1408,9 @@ impl ResourceTemplate {
     pub fn from_legacy<S: Into<String>>(uri_template: S, name: Option<S>) -> Self {
         Self {
             uri_template: uri_template.into(),
-            name: name.map(|n| n.into()).unwrap_or_else(|| "Unnamed Template".to_string()),
+            name: name
+                .map(|n| n.into())
+                .unwrap_or_else(|| "Unnamed Template".to_string()),
             description: None,
             mime_type: None,
             annotations: None,
@@ -1642,8 +1648,14 @@ mod tests {
             .with_last_modified("2025-01-12T15:00:58Z");
 
         assert_eq!(annotations.priority, Some(0.8));
-        assert_eq!(annotations.audience, Some(vec![Role::User, Role::Assistant]));
-        assert_eq!(annotations.last_modified, Some("2025-01-12T15:00:58Z".to_string()));
+        assert_eq!(
+            annotations.audience,
+            Some(vec![Role::User, Role::Assistant])
+        );
+        assert_eq!(
+            annotations.last_modified,
+            Some("2025-01-12T15:00:58Z".to_string())
+        );
     }
 
     #[test]
@@ -1695,7 +1707,7 @@ mod tests {
     #[test]
     fn test_implementation_with_title() {
         let impl_info = Implementation::with_title("my-server", "1.0.0", "My Awesome Server");
-        
+
         assert_eq!(impl_info.name, "my-server");
         assert_eq!(impl_info.version, "1.0.0");
         assert_eq!(impl_info.title, Some("My Awesome Server".to_string()));
@@ -1707,7 +1719,9 @@ mod tests {
             cost_priority: Some(0.3),
             speed_priority: Some(0.7),
             intelligence_priority: Some(0.9),
-            hints: Some(vec![ModelHint { name: Some("claude".to_string()) }]),
+            hints: Some(vec![ModelHint {
+                name: Some("claude".to_string()),
+            }]),
         };
 
         let json = serde_json::to_value(&prefs).unwrap();
