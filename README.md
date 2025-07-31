@@ -37,10 +37,10 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.2.3"
+mcp-protocol-sdk = "0.3.0"
 
 # Or with specific features only:
-mcp-protocol-sdk = { version = "0.2.3", features = ["stdio", "validation"] }
+mcp-protocol-sdk = { version = "0.3.0", features = ["stdio", "validation"] }
 ```
 
 ### Build an MCP Server (5 minutes)
@@ -159,7 +159,7 @@ Optimize your binary size by selecting only needed features:
 
 **Minimal Example** (STDIO only):
 ```toml
-mcp-protocol-sdk = { version = "0.2.3", default-features = false, features = ["stdio"] }
+mcp-protocol-sdk = { version = "0.3.0", default-features = false, features = ["stdio"] }
 ```
 
 ## 🚀 Performance
