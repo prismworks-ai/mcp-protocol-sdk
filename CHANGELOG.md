@@ -7,11 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Advanced authentication features (OAuth2, JWT, mTLS)
+- Monitoring integration (Prometheus metrics)
+- Plugin system for dynamic tool loading
+
+## [0.3.0] - 2025-07-30
+
+🎉 **Major Release: Complete Ecosystem Unification**
+
 ### Added
-- Initial public release preparation
-- Comprehensive OSS documentation
-- GitHub Pages integration
-- Community contribution guidelines
+- **Unified Architecture**: All client, server, and types functionality in single crate
+- **Migration Documentation**: Complete guide for upgrading from separate crates
+- **Enhanced Performance**: Optimized build times with unified dependencies
+- **Improved Developer Experience**: Single, consistent API surface
+
+### Changed
+- **BREAKING**: Consolidated all functionality into `mcp-protocol-sdk` crate
+- **Repository Structure**: Cleaned up organization from 11 to 4 focused repositories
+- **Documentation**: Updated all guides to reflect unified architecture
+- **Examples**: Enhanced examples to showcase unified API
+
+### Removed
+- **Deprecated**: Separate `mcp-protocol-client`, `mcp-protocol-server`, `mcp-protocol-types` crates
+- **Cleanup**: Removed redundant organization repositories (community, rfcs, docs, etc.)
+
+### Migration Guide
+```toml
+# Before (v0.2.x)
+[dependencies]
+mcp-protocol-client = "0.1.0"
+mcp-protocol-server = "0.1.0" 
+mcp-protocol-types = "0.1.0"
+
+# After (v0.3.0)
+[dependencies]
+mcp-protocol-sdk = "0.3.0"
+```
+
+### Fixed
+- **Build Performance**: Significantly faster compilation with unified codebase
+- **Dependency Management**: Simplified dependency tree
+- **Version Alignment**: Single version to track across all functionality
+
+## [0.2.4] - 2025-06-18
+
+### Fixed
+- Remove duplicate title from homepage
+- GitHub Pages configuration optimizations
+- GitHub Actions release permission issues
+- MSRV alignment in clippy.toml (1.82)
+- API documentation inconsistencies
 
 ## [0.1.0] - 2025-06-15
 

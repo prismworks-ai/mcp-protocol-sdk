@@ -1,10 +1,28 @@
 # 🔧 Configuration Guide
 
-Configure the MCP Protocol SDK for optimal performance and functionality in your environment.
+Configure the **unified MCP Protocol SDK** for optimal performance and functionality in your environment.
+
+## 🎉 Unified SDK Benefits
+
+With v0.3.0, configuration is simpler than ever:
+
+**Before (Multiple Crates):**
+```toml
+[dependencies]
+mcp-protocol-client = "0.1.0"
+mcp-protocol-server = "0.1.0"
+mcp-protocol-types = "0.1.0"
+```
+
+**After (Unified SDK):**
+```toml
+[dependencies]
+mcp-protocol-sdk = "0.3.0"  # Everything included!
+```
 
 ## Feature Flags
 
-The SDK uses Cargo features to enable optional functionality. Choose only what you need:
+The unified SDK uses Cargo features to enable optional functionality. Choose only what you need:
 
 ### Available Features
 
@@ -23,7 +41,7 @@ For the smallest binary size, disable default features:
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.2.3", 
+    version = "0.3.0", 
     default-features = false,
     features = ["stdio"]  # Only what you need
 }
@@ -34,7 +52,7 @@ mcp-protocol-sdk = {
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.2.3", 
+    version = "0.3.0", 
     features = ["stdio", "validation", "tracing-subscriber"]
 }
 ```
@@ -44,7 +62,7 @@ mcp-protocol-sdk = {
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.2.3", 
+    version = "0.3.0", 
     features = ["http", "websocket"]
 }
 ```
@@ -53,7 +71,7 @@ mcp-protocol-sdk = {
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.2.3"  # All features enabled
+mcp-protocol-sdk = "0.3.0"  # All features enabled
 ```
 
 ## Environment Configuration

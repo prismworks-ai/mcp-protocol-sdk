@@ -1,6 +1,47 @@
 # Architecture Overview
 
-MCP Rust SDK is designed with a modular, extensible architecture that separates concerns and provides clear interfaces for different components.
+The **unified MCP Rust SDK** is designed with a modular, extensible architecture that separates concerns and provides clear interfaces for different components.
+
+## 🎉 Unified Architecture (v0.3.0)
+
+With v0.3.0, we've successfully **unified all MCP functionality** into a single, coherent SDK:
+
+### **Before: Fragmented Architecture**
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ mcp-protocol-   │  │ mcp-protocol-   │  │ mcp-protocol-   │
+│    client       │  │    server       │  │    types        │
+│                 │  │                 │  │                 │
+│ - HTTP client   │  │ - STDIO server  │  │ - JSON-RPC      │
+│ - WebSocket     │  │ - WebSocket     │  │ - MCP types     │
+│ - Basic types   │  │ - Basic types   │  │ - Validation    │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
+### **After: Unified Architecture**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 mcp-protocol-sdk v0.3.0                     │
+│                                                             │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐   │
+│  │    Client     │  │    Server     │  │    Types      │   │
+│  │               │  │               │  │               │   │
+│  │ - HTTP        │  │ - STDIO       │  │ - JSON-RPC    │   │
+│  │ - WebSocket   │  │ - HTTP        │  │ - MCP types   │   │
+│  │ - Advanced    │  │ - WebSocket   │  │ - Validation  │   │
+│  │   features    │  │ - Tools       │  │ - Shared      │   │
+│  └───────────────┘  └───────────────┘  └───────────────┘   │
+│                                                             │
+│            🎯 Single, Consistent API Surface                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **✅ Unification Benefits:**
+- **Simplified Dependencies**: One crate instead of three
+- **Consistent API**: Unified interface across all functionality
+- **Better Performance**: Optimized internal communication
+- **Easier Maintenance**: Single codebase and version
+- **Future-Ready**: Platform for advanced features
 
 ## High-Level Architecture
 

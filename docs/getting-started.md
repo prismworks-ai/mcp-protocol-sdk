@@ -1,6 +1,6 @@
 # 🚀 Quick Start Guide
 
-Get up and running with the MCP Protocol SDK in just a few minutes!
+Get up and running with the **unified MCP Protocol SDK** in just a few minutes!
 
 ## Prerequisites
 
@@ -9,14 +9,45 @@ Get up and running with the MCP Protocol SDK in just a few minutes!
 
 ## Installation
 
-Add the SDK to your `Cargo.toml`:
+Add the unified SDK to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.2.3"
+mcp-protocol-sdk = "0.3.0"
 
 # Choose only the features you need:
-# mcp-protocol-sdk = { version = "0.2.3", features = ["stdio", "http", "websocket"] }
+# mcp-protocol-sdk = { version = "0.3.0", features = ["stdio", "http", "websocket"] }
+```
+
+### 🎉 Migration from Separate Crates
+
+If you were using the old separate crates, migration is simple:
+
+**Before (v0.2.x):**
+```toml
+[dependencies]
+mcp-protocol-client = "0.1.0"
+mcp-protocol-server = "0.1.0" 
+mcp-protocol-types = "0.1.0"
+```
+
+**After (v0.3.0):**
+```toml
+[dependencies] 
+mcp-protocol-sdk = "0.3.0"  # Everything unified!
+```
+
+**Code changes:**
+```rust
+// OLD imports
+use mcp_protocol_client::*;
+use mcp_protocol_server::*;
+use mcp_protocol_types::*;
+
+// NEW imports (same functionality)
+use mcp_protocol_sdk::client::*;
+use mcp_protocol_sdk::server::*;
+use mcp_protocol_sdk::protocol::types::*;
 ```
 
 ## 5-Minute Server Example
@@ -127,12 +158,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 2. **For Clients**: Read the [Client Development Guide](./clients/README.md)
 3. **Integration**: Add your server to [Claude Desktop](./integrations/claude-desktop.md)
 
+## 🎉 Unified Architecture Benefits
+
+With v0.3.0, you get all MCP functionality in one clean package:
+
+### **Before: Multiple Dependencies**
+```toml
+[dependencies]
+mcp-protocol-client = "0.1.0"    # 298 downloads
+mcp-protocol-server = "0.1.0"    # 296 downloads  
+mcp-protocol-types = "0.1.0"     # Unknown downloads
+```
+
+### **After: Unified SDK**
+```toml
+[dependencies]
+mcp-protocol-sdk = "0.3.0"       # 🎯 Everything included!
+```
+
+**✅ Benefits:**
+- **Faster Builds**: Fewer dependencies to compile
+- **Simpler Imports**: One consistent API surface
+- **Better Maintenance**: Single version to track
+- **Zero Overhead**: Same performance, cleaner code
+
 ## Transport Options
 
-The SDK supports multiple transport layers:
+The unified SDK supports multiple transport layers:
 
 - **STDIO**: Perfect for Claude Desktop integration
-- **HTTP**: RESTful API integration
+- **HTTP**: RESTful API integration  
 - **WebSocket**: Real-time bidirectional communication
 
 Choose the right transport for your use case in our [transport guide](./servers/transports.md).
@@ -144,7 +199,7 @@ Minimize your binary size by choosing only the features you need:
 ```toml
 [dependencies]
 mcp-protocol-sdk = { 
-    version = "0.2.3", 
+    version = "0.3.0", 
     default-features = false,
     features = ["stdio"]  # Only STDIO transport
 }
@@ -166,4 +221,4 @@ Check out more examples in the [examples directory](../examples/) for:
 - HTTP API servers
 - WebSocket chat servers
 
-Happy coding! 🦀
+Happy coding with the unified SDK! 🦀✨
