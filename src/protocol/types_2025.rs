@@ -600,29 +600,8 @@ pub struct JsonRpcNotification {
     pub params: Option<serde_json::Value>,
 }
 
-/// JSON-RPC batch request (2025-03-26 NEW)
-pub type JsonRpcBatchRequest = Vec<JsonRpcRequestOrNotification>;
 
-/// JSON-RPC batch response (2025-03-26 NEW)
-pub type JsonRpcBatchResponse = Vec<JsonRpcResponseOrError>;
-
-/// Items in a batch request
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(untagged)]
-pub enum JsonRpcRequestOrNotification {
-    Request(JsonRpcRequest),
-    Notification(JsonRpcNotification),
-}
-
-/// Items in a batch response
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(untagged)]
-pub enum JsonRpcResponseOrError {
-    Response(JsonRpcResponse),
-    Error(JsonRpcError),
-}
-
-/// Complete JSON-RPC message types (2025-03-26)
+/// Complete JSON-RPC message types (2025-06-18)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum JsonRpcMessage {
@@ -630,8 +609,6 @@ pub enum JsonRpcMessage {
     Response(JsonRpcResponse),
     Error(JsonRpcError),
     Notification(JsonRpcNotification),
-    BatchRequest(JsonRpcBatchRequest),
-    BatchResponse(JsonRpcBatchResponse),
 }
 
 // ============================================================================
@@ -955,21 +932,6 @@ mod tests {
         assert_eq!(tool.annotations.unwrap().read_only, Some(true));
     }
 
-    #[test]
-    fn test_jsonrpc_batching() {
-        let req1 = JsonRpcRequest::new(json!(1), "method1".to_string(), Some(json!({}))).unwrap();
-        let req2 = JsonRpcRequest::new::<serde_json::Value>(json!(2), "method2".to_string(), None)
-            .unwrap();
-
-        let batch: JsonRpcBatchRequest = vec![
-            JsonRpcRequestOrNotification::Request(req1),
-            JsonRpcRequestOrNotification::Request(req2),
-        ];
-
-        let json = serde_json::to_value(&batch).unwrap();
-        assert!(json.is_array());
-        assert_eq!(json.as_array().unwrap().len(), 2);
-    }
 
     #[test]
     fn test_server_capabilities_2025() {
