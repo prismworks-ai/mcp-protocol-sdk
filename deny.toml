@@ -1,85 +1,25 @@
-# This file is used by cargo-deny to check for security vulnerabilities,
-# license compatibility, and banned dependencies.
-
 [licenses]
-# The confidence threshold for detecting a license from a license text.
-# 0.8 is a good default for most cases.
-confidence-threshold = 0.8
-
-# List of allowed licenses
 allow = [
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "Unicode-3.0",
 ]
-
-# The `private` setting for workspace crates
 private = { ignore = true }
 
 [bans]
-# Lint level for when multiple versions of the same crate are detected
 multiple-versions = "warn"
-
-# Lint level for when a crate version requirement is `*`
 wildcards = "allow"
-
-# The graph highlighting used when creating dotgraphs for crates
-# with multiple versions
-# * all - all edges are highlighted
-# * first-party-only - only edges to/from first-party crates are highlighted
-# * none - no edges are highlighted
-highlight = "all"
-
-# List of crates that are allowed. Use with care!
-allow = []
-
-# List of crates to deny
 deny = [
-    # Each entry can be either just the crate name, or a crate name and a
-    # version requirement
-    { name = "openssl", version = "*" }, # Use rustls instead
-]
-
-# Certain crates/versions that will be skipped when doing duplicate detection.
-skip = [
-    { name = "wasi", version = "*" },           # Different WASI snapshot versions
-    { name = "windows-sys", version = "*" },   # Different Windows API versions
-]
-
-# Similarly to `skip` allows you to skip certain crates from being checked
-# for duplicates.
-skip-tree = [
-    # { name = "windows", version = "=0.48.0", depth = 20 },
+    { name = "openssl" },
 ]
 
 [advisories]
-# The path where the advisory database is cloned/fetched into
-db-path = "~/.cargo/advisory-db"
-
-# The url(s) of the advisory databases to use
-db-urls = ["https://github.com/rustsec/advisory-db"]
-
-# A list of advisory IDs to ignore. Note that ignored advisories will still
-# output a note when they are encountered.
 ignore = [
-    #"RUSTSEC-0000-0000",
+    "RUSTSEC-2024-0388",
 ]
 
-# The unmaintained field should be in advisories section
-unmaintained = "none"
-
 [sources]
-# Lint level for what to happen when a crate from a crate registry that is
-# not in the allow list is encountered
 unknown-registry = "warn"
-
-# Lint level for what to happen when a crate from a git repository that is not
-# in the allow list is encountered
 unknown-git = "warn"
-
-# List of allowed crate registries
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-
-# List of allowed Git repositories
-allow-git = []

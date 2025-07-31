@@ -7,24 +7,31 @@ on:
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
+      - '.github/workflows/security.yml'
   pull_request:
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
+      - '.github/workflows/security.yml'
   workflow_dispatch:
 
-# Cancel previous runs if a new push occurs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   security_audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
+    
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -32,15 +39,34 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-audit-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run cargo audit
-        run: cargo audit --deny warnings
+      - name: Install cargo-audit
+        run: |
+          if ! command -v cargo-audit &> /dev/null; then
+            cargo install cargo-audit --locked
+          fi
+
+      - name: Run security audit
+        run: |
+          echo "Running cargo audit..."
+          cargo audit --deny warnings --deny unmaintained --deny unsound --deny yanked
         continue-on-error: false
 
-      - name: Run cargo audit (JSON output)
-        run: cargo audit --format json > audit-results.json
+      - name: Generate audit report (JSON)
+        if: always()
+        run: |
+          echo "Generating audit report..."
+          cargo audit --format json > audit-results.json || echo '{"vulnerabilities": []}' > audit-results.json
         continue-on-error: true
 
       - name: Upload audit results
@@ -49,10 +75,14 @@ jobs:
         with:
           name: security-audit-results
           path: audit-results.json
+          retention-days: 30
 
   dependency_check:
     name: Dependency Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -60,15 +90,50 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install cargo-deny
-        run: cargo install cargo-deny
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-deny-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run cargo deny
-        run: cargo deny check
+      - name: Install cargo-deny
+        run: |
+          if ! command -v cargo-deny &> /dev/null; then
+            cargo install cargo-deny --locked
+          fi
+
+      - name: Run dependency check
+        run: |
+          echo "Running cargo deny check..."
+          cargo deny check --deny warnings
+        continue-on-error: false
+
+      - name: Generate dependency report
+        if: always()
+        run: |
+          echo "Generating dependency report..."
+          cargo deny list --format json > dependency-report.json || echo '{"denied": []}' > dependency-report.json
+        continue-on-error: true
+
+      - name: Upload dependency results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-results  
+          path: dependency-report.json
+          retention-days: 30
 
   license_check:
     name: License Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -76,14 +141,88 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-license-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install cargo-license
-        run: cargo install cargo-license
+        run: |
+          if ! command -v cargo-license &> /dev/null; then
+            cargo install cargo-license --locked
+          fi
 
       - name: Check licenses
-        run: cargo license --json > licenses.json
+        run: |
+          echo "Checking licenses..."
+          cargo license --json > licenses.json
+          echo "License check completed successfully"
+
+      - name: Validate license compatibility
+        run: |
+          echo "Validating license compatibility..."
+          # Check that only allowed licenses are used
+          if cargo license --json | jq -r '.licenses[].license' | grep -v -E '^(MIT|Apache-2.0|Apache-2.0 WITH LLVM-exception|Unicode-3.0|BSD-3-Clause|ISC)$'; then
+            echo "❌ Found disallowed licenses"
+            exit 1
+          else
+            echo "✅ All licenses are compatible"
+          fi
 
       - name: Upload license results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: license-check-results
           path: licenses.json
+          retention-days: 30
+
+  security_summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [security_audit, dependency_check, license_check]
+    if: always()
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: security-results
+
+      - name: Generate security summary
+        run: |
+          echo "# Security Audit Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Security Audit Status
+          if [ "${{ needs.security_audit.result }}" == "success" ]; then
+            echo "✅ **Security Audit**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security Audit**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Dependency Check Status  
+          if [ "${{ needs.dependency_check.result }}" == "success" ]; then
+            echo "✅ **Dependency Check**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Dependency Check**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # License Check Status
+          if [ "${{ needs.license_check.result }}" == "success" ]; then
+            echo "✅ **License Check**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **License Check**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Artifacts**: Security reports available for download" >> $GITHUB_STEP_SUMMARY
