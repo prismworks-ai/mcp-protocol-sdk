@@ -405,24 +405,29 @@ impl ToolRegistry {
 
         // Behavior hints matching - check required hints first
         let hints = tool.behavior_hints();
-        
+
         // Filter out tools that don't meet required hints
         if criteria.required_hints.read_only.unwrap_or(false) && !hints.read_only.unwrap_or(false) {
             return None;
         }
-        if criteria.required_hints.idempotent.unwrap_or(false) && !hints.idempotent.unwrap_or(false) {
+        if criteria.required_hints.idempotent.unwrap_or(false) && !hints.idempotent.unwrap_or(false)
+        {
             return None;
         }
         if criteria.required_hints.cacheable.unwrap_or(false) && !hints.cacheable.unwrap_or(false) {
             return None;
         }
-        if criteria.required_hints.destructive.unwrap_or(false) && !hints.destructive.unwrap_or(false) {
+        if criteria.required_hints.destructive.unwrap_or(false)
+            && !hints.destructive.unwrap_or(false)
+        {
             return None;
         }
-        if criteria.required_hints.requires_auth.unwrap_or(false) && !hints.requires_auth.unwrap_or(false) {
+        if criteria.required_hints.requires_auth.unwrap_or(false)
+            && !hints.requires_auth.unwrap_or(false)
+        {
             return None;
         }
-        
+
         // Add score bonuses for meeting required hints
         if criteria.required_hints.read_only.unwrap_or(false) && hints.read_only.unwrap_or(false) {
             score += 0.2;
