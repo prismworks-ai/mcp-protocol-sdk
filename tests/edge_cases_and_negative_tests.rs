@@ -27,14 +27,14 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_boundary_values_comprehensive() {
         // Test boundary values for numeric fields
-        
+
         // Priority boundaries (0.0 - 1.0)
         let priority_boundaries = vec![
-            0.0,    // Minimum
-            0.1,    // Just above minimum
-            0.5,    // Middle
-            0.9,    // Just below maximum
-            1.0,    // Maximum
+            0.0, // Minimum
+            0.1, // Just above minimum
+            0.5, // Middle
+            0.9, // Just below maximum
+            1.0, // Maximum
         ];
 
         for priority in priority_boundaries {
@@ -43,20 +43,23 @@ mod edge_cases_and_negative_tests {
                 "audience": ["user"],
                 "lastModified": "2025-01-12T15:00:58Z"
             });
-            
+
             assert_eq!(annotation["priority"], priority);
-            assert!((0.0..=1.0).contains(&priority), "Priority {priority} out of bounds");
+            assert!(
+                (0.0..=1.0).contains(&priority),
+                "Priority {priority} out of bounds"
+            );
         }
 
         // Progress boundaries
         let progress_scenarios = vec![
-            (0, 100),     // Start
-            (1, 100),     // Just started
-            (50, 100),    // Halfway
-            (99, 100),    // Almost done
-            (100, 100),   // Complete
-            (0, 1),       // Single step start
-            (1, 1),       // Single step complete
+            (0, 100),   // Start
+            (1, 100),   // Just started
+            (50, 100),  // Halfway
+            (99, 100),  // Almost done
+            (100, 100), // Complete
+            (0, 1),     // Single step start
+            (1, 1),     // Single step complete
         ];
 
         for (progress, total) in progress_scenarios {
@@ -66,10 +69,13 @@ mod edge_cases_and_negative_tests {
                 "total": total,
                 "message": format!("Progress: {}/{}", progress, total)
             });
-            
+
             assert_eq!(progress_notification["progress"], progress);
             assert_eq!(progress_notification["total"], total);
-            assert!(progress <= total, "Progress {progress} should not exceed total {total}");
+            assert!(
+                progress <= total,
+                "Progress {progress} should not exceed total {total}"
+            );
         }
 
         println!("✅ Boundary value testing completed");
@@ -78,13 +84,16 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_unicode_handling() {
         // Test Unicode character handling across different fields
-        
+
         let unicode_test_cases = vec![
             ("emoji", "Hello 😀 World! 🎉🚀"),
             ("multilingual", "English 中文 русский العربية 日本語"),
             ("mathematical", "∫₂⁰ f(x)dx = ∞ ≠ ∅ ∈ ℝ"),
             ("symbols", "✓✗♥♠♦♣♪♫☃☂"),
-            ("special_chars", "\"Special\" 'quotes' & <tags> [brackets] {braces}"),
+            (
+                "special_chars",
+                "\"Special\" 'quotes' & <tags> [brackets] {braces}",
+            ),
         ];
 
         for (case_name, unicode_text) in unicode_test_cases {
@@ -95,7 +104,7 @@ mod edge_cases_and_negative_tests {
             });
 
             assert_eq!(content["text"], unicode_text);
-            
+
             // Test in tool descriptions
             let tool = json!({
                 "name": format!("tool_{}", case_name),
@@ -105,10 +114,10 @@ mod edge_cases_and_negative_tests {
                 },
                 "title": unicode_text
             });
-            
+
             assert!(tool["description"].as_str().unwrap().contains(unicode_text));
             assert_eq!(tool["title"], unicode_text);
-            
+
             println!("✅ Unicode case '{case_name}' validated: {unicode_text}");
         }
     }
@@ -116,7 +125,7 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_large_payload_handling() {
         // Test handling of large payloads
-        
+
         // Large text content (1MB)
         let large_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ".repeat(20000);
         let large_text_content = json!({
@@ -128,10 +137,10 @@ mod edge_cases_and_negative_tests {
                 "lastModified": "2025-01-12T15:00:58Z"
             }
         });
-        
+
         assert_eq!(large_text_content["type"], "text");
         assert!(large_text_content["text"].as_str().unwrap().len() > 1000000);
-        
+
         // Large base64 data (simulated)
         let large_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==".repeat(1000);
         let large_image_content = json!({
@@ -143,10 +152,10 @@ mod edge_cases_and_negative_tests {
                 "priority": 0.9
             }
         });
-        
+
         assert_eq!(large_image_content["type"], "image");
         assert!(large_image_content["data"].as_str().unwrap().len() > 50000);
-        
+
         // Large structured content
         let mut large_properties = serde_json::Map::new();
         for i in 0..1000 {
@@ -156,20 +165,20 @@ mod edge_cases_and_negative_tests {
                     "type": "string",
                     "description": format!("Property number {} with detailed description", i),
                     "default": format!("default_value_{}", i)
-                })
+                }),
             );
         }
-        
+
         let large_schema = json!({
             "type": "object",
             "properties": large_properties,
             "required": (0..100).map(|i| format!("property_{i}")).collect::<Vec<_>>()
         });
-        
+
         assert_eq!(large_schema["type"], "object");
         assert_eq!(large_schema["properties"].as_object().unwrap().len(), 1000);
         assert_eq!(large_schema["required"].as_array().unwrap().len(), 100);
-        
+
         println!("✅ Large payload testing completed:");
         println!("  - Large text: {} characters", large_text.len());
         println!("  - Large image: {} characters", large_base64.len());
@@ -179,33 +188,45 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_invalid_json_rpc_messages() {
         // Test detection of invalid JSON-RPC message structures
-        
+
         let invalid_messages = vec![
             // Missing jsonrpc field
-            ("missing_jsonrpc", json!({
-                "id": "test-1",
-                "method": "test/method",
-                "params": {}
-            })),
+            (
+                "missing_jsonrpc",
+                json!({
+                    "id": "test-1",
+                    "method": "test/method",
+                    "params": {}
+                }),
+            ),
             // Wrong jsonrpc version
-            ("wrong_version", json!({
-                "jsonrpc": "1.0",
-                "id": "test-2",
-                "method": "test/method",
-                "params": {}
-            })),
+            (
+                "wrong_version",
+                json!({
+                    "jsonrpc": "1.0",
+                    "id": "test-2",
+                    "method": "test/method",
+                    "params": {}
+                }),
+            ),
             // Missing method in request
-            ("missing_method", json!({
-                "jsonrpc": "2.0",
-                "id": "test-3",
-                "params": {}
-            })),
+            (
+                "missing_method",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": "test-3",
+                    "params": {}
+                }),
+            ),
             // Invalid method type (number)
-            ("invalid_method_type", json!({
-                "jsonrpc": "2.0",
-                "id": "test-4",
-                "method": 12345
-            }))
+            (
+                "invalid_method_type",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": "test-4",
+                    "method": 12345
+                }),
+            ),
         ];
 
         for (case_name, invalid_msg) in invalid_messages {
@@ -228,7 +249,7 @@ mod edge_cases_and_negative_tests {
                 }
                 _ => {}
             }
-            
+
             println!("🔍 Invalid JSON-RPC case '{case_name}' detected");
         }
     }
@@ -236,37 +257,49 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_invalid_content_combinations() {
         // Test invalid content type combinations
-        
+
         let invalid_content_cases = vec![
             // Text content with binary fields
-            ("text_with_binary", json!({
-                "type": "text",
-                "text": "Valid text",
-                "data": "base64data",  // Should not exist
-                "mimeType": "text/plain"
-            })),
+            (
+                "text_with_binary",
+                json!({
+                    "type": "text",
+                    "text": "Valid text",
+                    "data": "base64data",  // Should not exist
+                    "mimeType": "text/plain"
+                }),
+            ),
             // Image without required data
-            ("image_no_data", json!({
-                "type": "image",
-                "mimeType": "image/png"
-                // Missing data field
-            })),
+            (
+                "image_no_data",
+                json!({
+                    "type": "image",
+                    "mimeType": "image/png"
+                    // Missing data field
+                }),
+            ),
             // ResourceLink without required fields
-            ("resource_link_incomplete", json!({
-                "type": "resource_link",
-                "uri": "file:///test.txt"
-                // Missing name field
-            })),
+            (
+                "resource_link_incomplete",
+                json!({
+                    "type": "resource_link",
+                    "uri": "file:///test.txt"
+                    // Missing name field
+                }),
+            ),
             // Unknown content type
-            ("unknown_type", json!({
-                "type": "unknown_content_type",
-                "data": "some data"
-            }))
+            (
+                "unknown_type",
+                json!({
+                    "type": "unknown_content_type",
+                    "data": "some data"
+                }),
+            ),
         ];
 
         for (case_name, invalid_content) in invalid_content_cases {
             let content_type = invalid_content["type"].as_str().unwrap_or("unknown");
-            
+
             match content_type {
                 "text" => {
                     // Should have text but not data
@@ -277,10 +310,14 @@ mod edge_cases_and_negative_tests {
                 "image" | "audio" => {
                     // Should have both data and mimeType
                     if invalid_content.get("data").is_none() {
-                        println!("🔍 Invalid: {content_type} content missing data field ({case_name})");
+                        println!(
+                            "🔍 Invalid: {content_type} content missing data field ({case_name})"
+                        );
                     }
                     if invalid_content.get("mimeType").is_none() {
-                        println!("🔍 Invalid: {content_type} content missing mimeType field ({case_name})");
+                        println!(
+                            "🔍 Invalid: {content_type} content missing mimeType field ({case_name})"
+                        );
                     }
                 }
                 "resource_link" => {
@@ -299,7 +336,7 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_resource_limits() {
         // Test various resource limits
-        
+
         // Test large number of resources
         let mut large_resource_list = Vec::new();
         for i in 0..1000 {
@@ -312,88 +349,103 @@ mod edge_cases_and_negative_tests {
                 "title": format!("Test File {}", i)
             }));
         }
-        
+
         let large_resource_response = json!({
             "resources": large_resource_list
         });
-        
-        assert_eq!(large_resource_response["resources"].as_array().unwrap().len(), 1000);
-        
+
+        assert_eq!(
+            large_resource_response["resources"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1000
+        );
+
         // Test deep nesting limits
         let mut deep_nested = json!({"level_0": {}});
         let mut current = &mut deep_nested["level_0"];
-        
+
         for i in 1..=20 {
             *current = json!({format!("level_{}", i): {}});
             current = &mut current[format!("level_{i}")];
         }
         *current = json!({"final_value": "reached maximum depth"});
-        
+
         // Navigate to the deep value to verify structure
         let mut nav = &deep_nested;
         for i in 0..=20 {
             nav = &nav[format!("level_{i}")];
         }
         assert_eq!(nav["final_value"], "reached maximum depth");
-        
+
         println!("✅ Resource limits testing completed:");
-        println!("  - Large resource list: {} items", large_resource_list.len());
+        println!(
+            "  - Large resource list: {} items",
+            large_resource_list.len()
+        );
         println!("  - Deep nesting: 20+ levels validated");
     }
 
     #[test]
     fn test_error_recovery_patterns() {
         // Test various error recovery scenarios
-        
+
         let recovery_scenarios = vec![
             // Retry after failure
-            ("retry_pattern", vec![
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": "retry-1",
-                    "error": {
-                        "code": -32603,
-                        "message": "Internal error",
-                        "data": {
-                            "retryAfter": 1000,
-                            "maxRetries": 3
+            (
+                "retry_pattern",
+                vec![
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": "retry-1",
+                        "error": {
+                            "code": -32603,
+                            "message": "Internal error",
+                            "data": {
+                                "retryAfter": 1000,
+                                "maxRetries": 3
+                            }
                         }
-                    }
-                }),
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": "retry-2",
-                    "result": {
-                        "status": "success",
-                        "retryAttempt": 2
-                    }
-                })
-            ]),
+                    }),
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": "retry-2",
+                        "result": {
+                            "status": "success",
+                            "retryAttempt": 2
+                        }
+                    }),
+                ],
+            ),
             // Timeout and recovery
-            ("timeout_pattern", vec![
-                json!({
-                    "jsonrpc": "2.0",
-                    "method": "notifications/cancelled",
-                    "params": {
-                        "requestId": "timeout-1",
-                        "reason": "Operation timed out after 30 seconds"
-                    }
-                }),
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": "timeout-2",
-                    "result": {
-                        "status": "recovered",
-                        "resumeFrom": "checkpoint_5"
-                    }
-                })
-            ])
+            (
+                "timeout_pattern",
+                vec![
+                    json!({
+                        "jsonrpc": "2.0",
+                        "method": "notifications/cancelled",
+                        "params": {
+                            "requestId": "timeout-1",
+                            "reason": "Operation timed out after 30 seconds"
+                        }
+                    }),
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": "timeout-2",
+                        "result": {
+                            "status": "recovered",
+                            "resumeFrom": "checkpoint_5"
+                        }
+                    }),
+                ],
+            ),
         ];
 
         for (pattern_name, messages) in recovery_scenarios {
             for message in messages.iter() {
                 assert_eq!(message["jsonrpc"], "2.0");
-                
+
                 if message.get("error").is_some() {
                     let error = &message["error"];
                     assert!(error["code"].is_number());
@@ -401,19 +453,26 @@ mod edge_cases_and_negative_tests {
                 } else if message.get("result").is_some() {
                     assert!(message["result"].is_object());
                 } else if message.get("method").is_some() {
-                    assert!(message["method"].as_str().unwrap().starts_with("notifications/"));
+                    assert!(
+                        message["method"]
+                            .as_str()
+                            .unwrap()
+                            .starts_with("notifications/")
+                    );
                 }
             }
-            
-            println!("✅ Error recovery pattern '{pattern_name}' validated ({} messages)", 
-                   messages.len());
+
+            println!(
+                "✅ Error recovery pattern '{pattern_name}' validated ({} messages)",
+                messages.len()
+            );
         }
     }
 
     #[test]
     fn test_concurrent_operations() {
         // Test concurrent operation handling
-        
+
         // Multiple simultaneous tool calls
         let concurrent_tool_calls = [
             json!({
@@ -435,7 +494,7 @@ mod edge_cases_and_negative_tests {
                     "arguments": {"path": "/file2.txt"},
                     "_meta": {"progressToken": "analysis-2"}
                 }
-            })
+            }),
         ];
 
         // Validate each concurrent request
@@ -443,14 +502,24 @@ mod edge_cases_and_negative_tests {
             assert_eq!(request["method"], "tools/call");
             assert!(request["id"].as_str().unwrap().contains("concurrent"));
             assert_eq!(request["params"]["name"], "file_analyzer");
-            assert!(request["params"]["arguments"]["path"].as_str().unwrap().contains(".txt"));
-            
-            let progress_token = request["params"]["_meta"]["progressToken"].as_str().unwrap();
+            assert!(
+                request["params"]["arguments"]["path"]
+                    .as_str()
+                    .unwrap()
+                    .contains(".txt")
+            );
+
+            let progress_token = request["params"]["_meta"]["progressToken"]
+                .as_str()
+                .unwrap();
             assert!(progress_token.starts_with("analysis-"));
         }
 
         println!("✅ Concurrent operations testing completed:");
-        println!("  - {} concurrent tool calls validated", concurrent_tool_calls.len());
+        println!(
+            "  - {} concurrent tool calls validated",
+            concurrent_tool_calls.len()
+        );
     }
 
     // ============================================================================
@@ -460,9 +529,9 @@ mod edge_cases_and_negative_tests {
     #[test]
     fn test_complete_edge_case_coverage() {
         println!("\n=== COMPREHENSIVE EDGE CASE VALIDATION ===\n");
-        
+
         let mut edge_case_areas = HashMap::new();
-        
+
         // Track all edge case areas
         edge_case_areas.insert("Boundary Values", "✅ COMPREHENSIVE");
         edge_case_areas.insert("Unicode Handling", "✅ COMPREHENSIVE");
@@ -472,12 +541,12 @@ mod edge_cases_and_negative_tests {
         edge_case_areas.insert("Resource Limits", "✅ COMPREHENSIVE");
         edge_case_areas.insert("Error Recovery", "✅ COMPREHENSIVE");
         edge_case_areas.insert("Concurrent Operations", "✅ COMPREHENSIVE");
-        
+
         println!("Edge Case Areas Validated:");
         for (area, status) in &edge_case_areas {
             println!("  {status} {area}");
         }
-        
+
         println!("\n=== EDGE CASE TESTING SUMMARY ===\n");
         println!("✅ Boundary Values: Priority 0.0-1.0, Progress limits, String lengths");
         println!("✅ Unicode Support: Emoji, multilingual, mathematical symbols, special chars");
@@ -486,9 +555,9 @@ mod edge_cases_and_negative_tests {
         println!("✅ Resource Limits: 1000+ resources, 20+ nesting levels");
         println!("✅ Error Patterns: Retry logic, timeout recovery");
         println!("✅ Concurrency: Multiple simultaneous operations");
-        
+
         println!("\n🎉 EDGE CASE TESTING: 100% COVERAGE ACHIEVED\n");
-        
+
         assert_eq!(edge_case_areas.len(), 8);
         assert!(edge_case_areas.values().all(|v| v.contains("✅")));
     }

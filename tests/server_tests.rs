@@ -11,7 +11,6 @@ use mcp_protocol_sdk::{
 use serde_json::json;
 use std::collections::HashMap;
 
-
 #[cfg(test)]
 mod server_tests {
     use super::*;

@@ -467,10 +467,7 @@ mod transport_integration_tests {
             };
 
             let response = transport.send_request(request).await;
-            assert!(
-                response.is_ok(),
-                "Request with ID type {i} should succeed"
-            );
+            assert!(response.is_ok(), "Request with ID type {i} should succeed");
 
             let response = response.unwrap();
             assert_eq!(response.id, id, "Response ID should match request ID");
@@ -521,9 +518,9 @@ mod transport_integration_tests {
             notifications_received: 3,
             connection_errors: 1,
             protocol_errors: 0,
-            bytes_sent: 12_584, // ~12KB
+            bytes_sent: 12_584,     // ~12KB
             bytes_received: 15_229, // ~15KB
-            uptime_ms: 45_000, // 45 seconds
+            uptime_ms: 45_000,      // 45 seconds
         };
 
         // Verify the stats make sense

@@ -15,7 +15,11 @@ mod protocol_types_tests {
     fn test_content_creation() {
         let text_content = Content::text("Hello, world!");
         match text_content {
-            Content::Text { text, annotations, meta: _ } => {
+            Content::Text {
+                text,
+                annotations,
+                meta: _,
+            } => {
                 assert_eq!(text, "Hello, world!");
                 assert!(annotations.is_none());
             }
@@ -196,10 +200,7 @@ mod annotations_tests {
         assert_eq!(annotations.read_only, Some(true));
         assert_eq!(annotations.destructive, Some(false));
         assert_eq!(annotations.danger, Some(DangerLevel::Safe));
-        assert_eq!(
-            annotations.audience,
-            Some(vec![Role::User])
-        );
+        assert_eq!(annotations.audience, Some(vec![Role::User]));
     }
 
     #[test]

@@ -7,11 +7,11 @@ use serde_json::json;
 use std::collections::HashMap;
 
 use mcp_protocol_sdk::{
+    Content,
     client::session::SessionConfig,
     client::{ClientSession, McpClient},
     core::error::McpResult,
     transport::websocket::WebSocketClientTransport,
-    Content,
 };
 
 #[tokio::main]

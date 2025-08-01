@@ -128,8 +128,7 @@ pub fn validate_uri(uri: &str) -> McpResult<()> {
     // Check for basic URI patterns
     if uri.contains("://") {
         // Full URI - try to parse with url crate
-        Url::parse(uri)
-            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{uri}': {e}")))?;
+        Url::parse(uri).map_err(|e| McpError::InvalidUri(format!("Invalid URI '{uri}': {e}")))?;
     } else if uri.starts_with('/') {
         // Absolute path - basic validation
         if uri.contains('\0') || uri.contains('\n') || uri.contains('\r') {

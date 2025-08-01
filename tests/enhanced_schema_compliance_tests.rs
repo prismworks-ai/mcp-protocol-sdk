@@ -16,7 +16,6 @@ use std::collections::HashMap;
 
 // Import the MCP protocol types
 
-
 #[cfg(test)]
 mod enhanced_schema_compliance {
     use super::*;
@@ -48,13 +47,13 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_elicitation_string_schema_formats() {
         let formats = vec!["email", "uri", "date", "date-time"];
-        
+
         for format in formats {
             let schema = json!({
                 "type": "string",
                 "format": format
             });
-            
+
             assert_eq!(schema["type"], "string");
             assert_eq!(schema["format"], format);
         }
@@ -181,16 +180,19 @@ mod enhanced_schema_compliance {
         });
 
         assert_eq!(elicit_request["method"], "elicitation/create");
-        assert_eq!(elicit_request["params"]["message"], "Please provide your registration details");
-        
+        assert_eq!(
+            elicit_request["params"]["message"],
+            "Please provide your registration details"
+        );
+
         let schema = &elicit_request["params"]["requestedSchema"];
         assert_eq!(schema["type"], "object");
         assert!(schema["properties"].is_object());
         assert!(schema["required"].is_array());
-        
+
         let properties = schema["properties"].as_object().unwrap();
         assert_eq!(properties.len(), 6); // All property types covered
-        
+
         // Validate each property type
         assert_eq!(properties["name"]["type"], "string");
         assert_eq!(properties["email"]["format"], "email");
@@ -204,7 +206,7 @@ mod enhanced_schema_compliance {
     fn test_elicitation_result_comprehensive() {
         // Test elicitation result with all action types
         let actions = vec!["accept", "decline", "cancel"];
-        
+
         for action in actions {
             let result = json!({
                 "action": action,
@@ -221,9 +223,9 @@ mod enhanced_schema_compliance {
                     None
                 }
             });
-            
+
             assert_eq!(result["action"], action);
-            
+
             if action == "accept" {
                 assert!(result["content"].is_object());
                 let content = result["content"].as_object().unwrap();
@@ -270,13 +272,16 @@ mod enhanced_schema_compliance {
                 "type": "string",
                 "enum": ["option1", "option2", "option3"],
                 "enumNames": ["Option 1", "Option 2", "Option 3"]
-            })
+            }),
         ];
 
         for schema in schemas {
             assert!(schema["type"].is_string());
             let schema_type = schema["type"].as_str().unwrap();
-            assert!(matches!(schema_type, "string" | "number" | "integer" | "boolean"));
+            assert!(matches!(
+                schema_type,
+                "string" | "number" | "integer" | "boolean"
+            ));
         }
     }
 
@@ -335,41 +340,59 @@ mod enhanced_schema_compliance {
                     "audience": ["assistant"],
                     "priority": 0.6
                 }
-            })
+            }),
         ];
 
         for (i, block) in content_blocks.iter().enumerate() {
             assert!(block["type"].is_string(), "Content block {i} missing type");
-            
+
             let content_type = block["type"].as_str().unwrap();
             match content_type {
                 "text" => {
                     assert!(block["text"].is_string(), "Text content missing text field");
                 }
                 "image" | "audio" => {
-                    assert!(block["data"].is_string(), "{content_type} content missing data field");
-                    assert!(block["mimeType"].is_string(), "{content_type} content missing mimeType field");
+                    assert!(
+                        block["data"].is_string(),
+                        "{content_type} content missing data field"
+                    );
+                    assert!(
+                        block["mimeType"].is_string(),
+                        "{content_type} content missing mimeType field"
+                    );
                 }
                 "resource_link" => {
                     assert!(block["uri"].is_string(), "ResourceLink missing uri field");
                     assert!(block["name"].is_string(), "ResourceLink missing name field");
                 }
                 "resource" => {
-                    assert!(block["resource"].is_object(), "EmbeddedResource missing resource field");
-                    assert!(block["resource"]["uri"].is_string(), "EmbeddedResource.resource missing uri");
+                    assert!(
+                        block["resource"].is_object(),
+                        "EmbeddedResource missing resource field"
+                    );
+                    assert!(
+                        block["resource"]["uri"].is_string(),
+                        "EmbeddedResource.resource missing uri"
+                    );
                 }
-                _ => panic!("Unknown content type: {content_type}")
+                _ => panic!("Unknown content type: {content_type}"),
             }
-            
+
             // Validate annotations if present
             if let Some(annotations) = block.get("annotations") {
                 if let Some(audience) = annotations.get("audience") {
                     assert!(audience.is_array(), "Annotations audience should be array");
                 }
                 if let Some(priority) = annotations.get("priority") {
-                    assert!(priority.is_number(), "Annotations priority should be number");
+                    assert!(
+                        priority.is_number(),
+                        "Annotations priority should be number"
+                    );
                     let priority_val = priority.as_f64().unwrap();
-                    assert!((0.0..=1.0).contains(&priority_val), "Priority should be between 0 and 1");
+                    assert!(
+                        (0.0..=1.0).contains(&priority_val),
+                        "Priority should be between 0 and 1"
+                    );
                 }
             }
         }
@@ -389,39 +412,57 @@ mod enhanced_schema_compliance {
         });
 
         let types_with_meta = vec![
-            ("TextContent", json!({
-                "type": "text",
-                "text": "Sample text",
-                "_meta": meta_data.clone()
-            })),
-            ("ImageContent", json!({
-                "type": "image",
-                "data": "base64data",
-                "mimeType": "image/png",
-                "_meta": meta_data.clone()
-            })),
-            ("Tool", json!({
-                "name": "test_tool",
-                "description": "A test tool",
-                "inputSchema": {
-                    "type": "object"
-                },
-                "_meta": meta_data.clone()
-            })),
-            ("Resource", json!({
-                "uri": "file:///test.txt",
-                "name": "Test Resource",
-                "_meta": meta_data.clone()
-            })),
-            ("Root", json!({
-                "uri": "file:///project",
-                "name": "Project Root",
-                "_meta": meta_data.clone()
-            }))
+            (
+                "TextContent",
+                json!({
+                    "type": "text",
+                    "text": "Sample text",
+                    "_meta": meta_data.clone()
+                }),
+            ),
+            (
+                "ImageContent",
+                json!({
+                    "type": "image",
+                    "data": "base64data",
+                    "mimeType": "image/png",
+                    "_meta": meta_data.clone()
+                }),
+            ),
+            (
+                "Tool",
+                json!({
+                    "name": "test_tool",
+                    "description": "A test tool",
+                    "inputSchema": {
+                        "type": "object"
+                    },
+                    "_meta": meta_data.clone()
+                }),
+            ),
+            (
+                "Resource",
+                json!({
+                    "uri": "file:///test.txt",
+                    "name": "Test Resource",
+                    "_meta": meta_data.clone()
+                }),
+            ),
+            (
+                "Root",
+                json!({
+                    "uri": "file:///project",
+                    "name": "Project Root",
+                    "_meta": meta_data.clone()
+                }),
+            ),
         ];
 
         for (type_name, obj) in types_with_meta {
-            assert!(obj["_meta"].is_object(), "{type_name} _meta should be object");
+            assert!(
+                obj["_meta"].is_object(),
+                "{type_name} _meta should be object"
+            );
             assert_eq!(obj["_meta"]["custom_field"], "custom_value");
             assert_eq!(obj["_meta"]["timestamp"], "2025-01-12T15:00:58Z");
             assert_eq!(obj["_meta"]["version"], "1.0.0");
@@ -446,31 +487,46 @@ mod enhanced_schema_compliance {
                 "priority": 0.5, // Mid-range priority
                 "audience": ["user"], // Single audience
                 "lastModified": "2025-01-12T15:00:58.123Z" // With milliseconds
-            })
+            }),
         ];
 
         for (i, annotation) in boundary_annotations.iter().enumerate() {
             if let Some(priority) = annotation.get("priority") {
                 let priority_val = priority.as_f64().unwrap();
-                assert!((0.0..=1.0).contains(&priority_val), 
-                    "Annotation {i} priority {priority_val} out of bounds");
+                assert!(
+                    (0.0..=1.0).contains(&priority_val),
+                    "Annotation {i} priority {priority_val} out of bounds"
+                );
             }
-            
+
             if let Some(audience) = annotation.get("audience") {
-                assert!(audience.is_array(), "Annotation {i} audience should be array");
+                assert!(
+                    audience.is_array(),
+                    "Annotation {i} audience should be array"
+                );
                 for role in audience.as_array().unwrap() {
-                    assert!(matches!(role.as_str().unwrap(), "user" | "assistant"), 
-                        "Invalid role in annotation {i}");
+                    assert!(
+                        matches!(role.as_str().unwrap(), "user" | "assistant"),
+                        "Invalid role in annotation {i}"
+                    );
                 }
             }
-            
+
             if let Some(last_modified) = annotation.get("lastModified") {
-                assert!(last_modified.is_string(), "Annotation {i} lastModified should be string");
+                assert!(
+                    last_modified.is_string(),
+                    "Annotation {i} lastModified should be string"
+                );
                 // Basic ISO 8601 format validation
                 let timestamp = last_modified.as_str().unwrap();
-                assert!(timestamp.contains('T'), "Annotation {i} timestamp should contain 'T'");
-                assert!(timestamp.ends_with('Z') || timestamp.contains('+') || timestamp.contains('-'), 
-                    "Annotation {i} timestamp should have timezone info");
+                assert!(
+                    timestamp.contains('T'),
+                    "Annotation {i} timestamp should contain 'T'"
+                );
+                assert!(
+                    timestamp.ends_with('Z') || timestamp.contains('+') || timestamp.contains('-'),
+                    "Annotation {i} timestamp should have timezone info"
+                );
             }
         }
     }
@@ -480,7 +536,7 @@ mod enhanced_schema_compliance {
         // Test handling of large content blocks
         let large_text = "A".repeat(10000); // 10KB text
         let large_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==".repeat(100); // ~10KB base64
-        
+
         let large_content_blocks = vec![
             json!({
                 "type": "text",
@@ -496,12 +552,12 @@ mod enhanced_schema_compliance {
                 "annotations": {
                     "priority": 0.8
                 }
-            })
+            }),
         ];
 
         for block in large_content_blocks {
             assert!(block["type"].is_string());
-            
+
             match block["type"].as_str().unwrap() {
                 "text" => {
                     let text = block["text"].as_str().unwrap();
@@ -524,10 +580,10 @@ mod enhanced_schema_compliance {
     fn test_invalid_protocol_version_handling() {
         // Test various invalid protocol versions
         let invalid_versions = vec![
-            "",           // Empty
-            "1.0.0",      // Wrong format
-            "2024-01-01", // Wrong date
-            "2025-13-01", // Invalid month
+            "",               // Empty
+            "1.0.0",          // Wrong format
+            "2024-01-01",     // Wrong date
+            "2025-13-01",     // Invalid month
             "future-version", // Non-date format
         ];
 
@@ -545,7 +601,7 @@ mod enhanced_schema_compliance {
                     }
                 }
             });
-            
+
             // These should be structurally valid JSON but semantically invalid
             assert_eq!(init_request["method"], "initialize");
             assert_eq!(init_request["params"]["protocolVersion"], version);
@@ -580,22 +636,26 @@ mod enhanced_schema_compliance {
             json!({
                 "type": "resource",
                 "resource": "should_be_object"
-            })
+            }),
         ];
 
         for (i, invalid_content) in invalid_combinations.iter().enumerate() {
             // These are structurally invalid but test our validation logic
-            assert!(invalid_content["type"].is_string(), 
-                "Invalid content {i} should have type field");
-            
+            assert!(
+                invalid_content["type"].is_string(),
+                "Invalid content {i} should have type field"
+            );
+
             // In a real validation system, these would fail
             let content_type = invalid_content["type"].as_str().unwrap();
             match content_type {
                 "text" => {
                     // Should have text but not data/mimeType
-                    assert!(invalid_content.get("text").is_some() || 
-                           invalid_content.get("data").is_some(),
-                           "Invalid text content {i} has neither text nor data");
+                    assert!(
+                        invalid_content.get("text").is_some()
+                            || invalid_content.get("data").is_some(),
+                        "Invalid text content {i} has neither text nor data"
+                    );
                 }
                 "image" | "audio" => {
                     // Should have data and mimeType
@@ -603,8 +663,10 @@ mod enhanced_schema_compliance {
                 }
                 "resource_link" => {
                     // Should have uri and name
-                    assert!(invalid_content.get("uri").is_some(),
-                           "ResourceLink {i} missing uri");
+                    assert!(
+                        invalid_content.get("uri").is_some(),
+                        "ResourceLink {i} missing uri"
+                    );
                 }
                 "resource" => {
                     // Should have resource object
@@ -633,7 +695,7 @@ mod enhanced_schema_compliance {
                 "priority": "not_a_number",
                 "audience": [null], // Invalid role
                 "lastModified": "" // Empty timestamp
-            })
+            }),
         ];
 
         for (i, invalid_annotation) in invalid_annotations.iter().enumerate() {
@@ -649,7 +711,7 @@ mod enhanced_schema_compliance {
                     println!("Non-numeric priority in annotation {i}");
                 }
             }
-            
+
             if let Some(audience) = invalid_annotation.get("audience") {
                 if !audience.is_array() {
                     println!("Non-array audience in annotation {i}");
@@ -701,19 +763,19 @@ mod enhanced_schema_compliance {
         assert_eq!(tool_with_output_schema["name"], "data_processor");
         assert!(tool_with_output_schema["inputSchema"].is_object());
         assert!(tool_with_output_schema["outputSchema"].is_object());
-        
+
         // Validate input schema
         let input_schema = &tool_with_output_schema["inputSchema"];
         assert_eq!(input_schema["type"], "object");
         assert!(input_schema["properties"].is_object());
         assert!(input_schema["required"].is_array());
-        
+
         // Validate output schema
         let output_schema = &tool_with_output_schema["outputSchema"];
         assert_eq!(output_schema["type"], "object");
         assert!(output_schema["properties"].is_object());
         assert!(output_schema["required"].is_array());
-        
+
         // Validate annotations
         let annotations = &tool_with_output_schema["annotations"];
         assert_eq!(annotations["readOnlyHint"], false);
@@ -751,14 +813,14 @@ mod enhanced_schema_compliance {
         assert!(tool_result["content"].is_array());
         assert!(tool_result["structuredContent"].is_object());
         assert_eq!(tool_result["isError"], false);
-        
+
         // Validate structured content
         let structured = &tool_result["structuredContent"];
         assert_eq!(structured["operation"], "data_processing");
         assert_eq!(structured["status"], "success");
         assert!(structured["results"].is_object());
         assert!(structured["metadata"].is_object());
-        
+
         // Validate nested structured data
         let results = &structured["results"];
         assert_eq!(results["records_processed"], 1000);
@@ -771,7 +833,7 @@ mod enhanced_schema_compliance {
         // Test all union types for messages
         let client_requests = vec![
             "ping",
-            "initialize", 
+            "initialize",
             "completion/complete",
             "logging/setLevel",
             "prompts/get",
@@ -782,21 +844,21 @@ mod enhanced_schema_compliance {
             "resources/subscribe",
             "resources/unsubscribe",
             "tools/call",
-            "tools/list"
+            "tools/list",
         ];
 
         let server_requests = vec![
             "ping",
             "sampling/createMessage",
             "roots/list",
-            "elicitation/create"
+            "elicitation/create",
         ];
 
         let client_notifications = vec![
             "notifications/cancelled",
             "notifications/progress",
             "notifications/initialized",
-            "notifications/roots/list_changed"
+            "notifications/roots/list_changed",
         ];
 
         let server_notifications = vec![
@@ -806,34 +868,54 @@ mod enhanced_schema_compliance {
             "notifications/resources/updated",
             "notifications/resources/list_changed",
             "notifications/tools/list_changed",
-            "notifications/prompts/list_changed"
+            "notifications/prompts/list_changed",
         ];
 
         // Validate all method names are properly formatted
         for method in &client_requests {
             assert!(!method.is_empty());
-            assert!(method.chars().all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_'));
+            assert!(
+                method
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_')
+            );
         }
-        
+
         for method in &server_requests {
             assert!(!method.is_empty());
-            assert!(method.chars().all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_'));
+            assert!(
+                method
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_')
+            );
         }
-        
+
         for method in &client_notifications {
             assert!(!method.is_empty());
             assert!(method.starts_with("notifications/"));
         }
-        
+
         for method in &server_notifications {
             assert!(!method.is_empty());
             assert!(method.starts_with("notifications/"));
         }
-        
-        println!("✅ All {} client request methods validated", client_requests.len());
-        println!("✅ All {} server request methods validated", server_requests.len());
-        println!("✅ All {} client notification methods validated", client_notifications.len());
-        println!("✅ All {} server notification methods validated", server_notifications.len());
+
+        println!(
+            "✅ All {} client request methods validated",
+            client_requests.len()
+        );
+        println!(
+            "✅ All {} server request methods validated",
+            server_requests.len()
+        );
+        println!(
+            "✅ All {} client notification methods validated",
+            client_notifications.len()
+        );
+        println!(
+            "✅ All {} server notification methods validated",
+            server_notifications.len()
+        );
     }
 
     // ============================================================================
@@ -844,7 +926,7 @@ mod enhanced_schema_compliance {
     fn test_large_schema_performance() {
         // Test performance with large schemas
         let mut large_properties = serde_json::Map::new();
-        
+
         // Create 100 properties
         for i in 0..100 {
             large_properties.insert(
@@ -855,28 +937,31 @@ mod enhanced_schema_compliance {
                     "description": format!("Description for field {}", i),
                     "minLength": 1,
                     "maxLength": 1000
-                })
+                }),
             );
         }
-        
+
         let large_elicitation_schema = json!({
             "type": "object",
             "properties": large_properties,
             "required": (0..50).map(|i| format!("field_{i}")).collect::<Vec<_>>()
         });
-        
+
         assert_eq!(large_elicitation_schema["type"], "object");
         assert!(large_elicitation_schema["properties"].is_object());
         assert!(large_elicitation_schema["required"].is_array());
-        
+
         let properties = large_elicitation_schema["properties"].as_object().unwrap();
         assert_eq!(properties.len(), 100);
-        
+
         let required = large_elicitation_schema["required"].as_array().unwrap();
         assert_eq!(required.len(), 50);
-        
-        println!("✅ Large schema with {} properties and {} required fields validated", 
-                properties.len(), required.len());
+
+        println!(
+            "✅ Large schema with {} properties and {} required fields validated",
+            properties.len(),
+            required.len()
+        );
     }
 
     #[test]
@@ -899,14 +984,15 @@ mod enhanced_schema_compliance {
                 }
             }
         });
-        
+
         // Navigate to deeply nested value
         let deep_value = &nested_content["level1"]["level2"]["level3"]["level4"]["level5"]["data"];
         assert_eq!(deep_value, "deeply nested value");
-        
-        let depth = &nested_content["level1"]["level2"]["level3"]["level4"]["level5"]["metadata"]["depth"];
+
+        let depth =
+            &nested_content["level1"]["level2"]["level3"]["level4"]["level5"]["metadata"]["depth"];
         assert_eq!(depth, 5);
-        
+
         println!("✅ Deeply nested content structure validated");
     }
 
@@ -917,9 +1003,9 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_complete_2025_06_18_schema_coverage() {
         println!("\n=== ENHANCED SCHEMA COMPLIANCE VALIDATION ===\n");
-        
+
         let mut coverage_report = HashMap::new();
-        
+
         // Track coverage areas
         coverage_report.insert("Elicitation System", "✅ COMPREHENSIVE");
         coverage_report.insert("Union Types", "✅ COMPREHENSIVE");
@@ -931,12 +1017,12 @@ mod enhanced_schema_compliance {
         coverage_report.insert("Performance Testing", "✅ COMPREHENSIVE");
         coverage_report.insert("Large Content Handling", "✅ COMPREHENSIVE");
         coverage_report.insert("Deep Nesting", "✅ COMPREHENSIVE");
-        
+
         println!("Coverage Areas Validated:");
         for (area, status) in &coverage_report {
             println!("  {status} {area}");
         }
-        
+
         println!("\n=== COVERAGE SUMMARY ===\n");
         println!("✅ Elicitation Schemas: All 6 primitive types + complex combinations");
         println!("✅ Union Types: ContentBlock, PrimitiveSchemaDefinition, Message unions");
@@ -946,9 +1032,9 @@ mod enhanced_schema_compliance {
         println!("✅ Advanced Features: Output schemas, structured content");
         println!("✅ Performance: Large schemas, deep nesting");
         println!("✅ Negative Testing: Invalid values, malformed structures");
-        
+
         println!("\n🎉 ENHANCED SCHEMA COMPLIANCE: 100% COVERAGE ACHIEVED\n");
-        
+
         assert_eq!(coverage_report.len(), 10);
         assert!(coverage_report.values().all(|v| v.contains("✅")));
     }

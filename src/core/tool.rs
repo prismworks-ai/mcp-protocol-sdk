@@ -852,7 +852,7 @@ pub fn create_typed_tool<H>(
 where
     H: ToolHandler + 'static,
 {
-    use serde_json::{json, Map};
+    use serde_json::{Map, json};
 
     let mut properties = Map::new();
     for (param_name, param_desc, param_schema) in parameters {
@@ -1025,7 +1025,7 @@ impl ToolHandler for TextProcessorTool {
             _ => {
                 return Err(McpError::validation(format!(
                     "Unsupported operation: {operation}"
-                )))
+                )));
             }
         };
 

@@ -262,7 +262,7 @@ pub struct Annotations {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub danger: Option<DangerLevel>,
     /// Legacy destructive field for test compatibility
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub destructive: Option<bool>,
     /// Legacy read_only field for test compatibility
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -508,8 +508,6 @@ pub struct ToolAnnotations {
     pub open_world_hint: Option<bool>,
 }
 
-
-
 impl ToolAnnotations {
     /// Create new empty tool annotations
     pub fn new() -> Self {
@@ -552,7 +550,6 @@ impl ToolAnnotations {
         self
     }
 }
-
 
 // ============================================================================
 // Tool Annotations Integration with Enhanced Metadata
@@ -1263,7 +1260,7 @@ impl ContentBlock {
             meta: None,
         }
     }
-    
+
     /// Create resource content (legacy compatibility)
     pub fn resource<S: Into<String>>(uri: S) -> Self {
         let uri_str = uri.into();
@@ -1332,37 +1329,35 @@ impl Annotations {
         self.last_modified = Some(timestamp.into());
         self
     }
-    
 
     /// Set audience (legacy compatibility)
     pub fn for_audience_legacy(self, _audience: Vec<AnnotationAudience>) -> Self {
         // Legacy compatibility - ignore audience in new API
         self
     }
-    
+
     /// Set danger level (legacy compatibility)
     pub fn with_danger_level(self, _level: DangerLevel) -> Self {
         // Legacy compatibility - ignore danger level in new API
         self
     }
-    
 
     /// Legacy danger field (always returns None for compatibility)
     pub fn danger(&self) -> Option<DangerLevel> {
         None
     }
-    
+
     /// Legacy audience field (always returns None for compatibility)
     pub fn audience(&self) -> Option<Vec<AnnotationAudience>> {
         None
     }
-    
+
     /// Set as read-only (legacy compatibility)
     pub fn read_only(mut self) -> Self {
         self.read_only = Some(true);
         self
     }
-    
+
     /// Set as destructive (legacy compatibility)
     pub fn destructive(mut self, level: DangerLevel) -> Self {
         self.destructive = Some(true);
@@ -1823,7 +1818,6 @@ mod tests {
     }
 }
 
-
 // ============================================================================
 // Legacy/Compatibility Types for Tests
 // ============================================================================
@@ -1866,5 +1860,3 @@ pub enum DangerLevel {
     Medium,
     High,
 }
-
-

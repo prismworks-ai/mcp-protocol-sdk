@@ -12,11 +12,11 @@ use serde_json::Value;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::{broadcast, mpsc, Mutex, RwLock},
+    sync::{Mutex, RwLock, broadcast, mpsc},
     time::timeout,
 };
 use tokio_tungstenite::{
-    accept_async, connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream,
+    MaybeTlsStream, WebSocketStream, accept_async, connect_async, tungstenite::Message,
 };
 use url::Url;
 

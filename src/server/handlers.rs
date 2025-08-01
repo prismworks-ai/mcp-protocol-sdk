@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::{messages::*, methods, types::*, LATEST_PROTOCOL_VERSION};
+use crate::protocol::{LATEST_PROTOCOL_VERSION, messages::*, methods, types::*};
 
 /// Handler for initialization requests
 pub struct InitializeHandler;
@@ -25,7 +25,7 @@ impl InitializeHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing initialize parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -109,7 +109,7 @@ impl ToolHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing tool call parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -125,9 +125,7 @@ impl ToolHandler {
 
         if !tool.enabled {
             let name = &params.name;
-            return Err(McpError::ToolNotFound(format!(
-                "Tool '{name}' is disabled"
-            )));
+            return Err(McpError::ToolNotFound(format!("Tool '{name}' is disabled")));
         }
 
         let arguments = params.arguments.unwrap_or_default();
@@ -152,9 +150,8 @@ impl ResourceHandler {
         params: Option<Value>,
     ) -> McpResult<ListResourcesResult> {
         let _params: ListResourcesParams = match params {
-            Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid list resources params: {e}"))
-            })?,
+            Some(p) => serde_json::from_value(p)
+                .map_err(|e| McpError::Validation(format!("Invalid list resources params: {e}")))?,
             None => ListResourcesParams::default(),
         };
 
@@ -189,13 +186,12 @@ impl ResourceHandler {
         params: Option<Value>,
     ) -> McpResult<ReadResourceResult> {
         let params: ReadResourceParams = match params {
-            Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid read resource params: {e}"))
-            })?,
+            Some(p) => serde_json::from_value(p)
+                .map_err(|e| McpError::Validation(format!("Invalid read resource params: {e}")))?,
             None => {
                 return Err(McpError::Validation(
                     "Missing resource read parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -231,7 +227,7 @@ impl ResourceHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing resource subscribe parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -262,7 +258,7 @@ impl ResourceHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing resource unsubscribe parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -339,7 +335,7 @@ impl PromptHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing prompt get parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -421,7 +417,7 @@ impl LoggingHandler {
             None => {
                 return Err(McpError::Validation(
                     "Missing logging level parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -614,11 +610,13 @@ mod tests {
         assert!(notifications::prompts_list_changed().is_ok());
         assert!(notifications::resource_updated("file:///test".to_string()).is_ok());
         assert!(notifications::progress("token".to_string(), 0.5, Some(100.0)).is_ok());
-        assert!(notifications::log_message(
-            LoggingLevel::Info,
-            Some("test".to_string()),
-            json!({"message": "test log"})
-        )
-        .is_ok());
+        assert!(
+            notifications::log_message(
+                LoggingLevel::Info,
+                Some("test".to_string()),
+                json!({"message": "test log"})
+            )
+            .is_ok()
+        );
     }
 }

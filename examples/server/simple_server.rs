@@ -4,7 +4,7 @@
 //! resources, and prompts. It uses STDIO transport for communication.
 
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -20,8 +20,8 @@ use mcp_protocol_sdk::{
         Content, GetPromptResult as PromptResult, Prompt as PromptInfo, PromptArgument,
         PromptMessage, Resource as ResourceInfo, ResourceContents, Role, ToolResult,
     },
-    server::mcp_server::ServerConfig,
     server::McpServer,
+    server::mcp_server::ServerConfig,
     transport::stdio::StdioServerTransport,
 };
 
@@ -78,9 +78,7 @@ impl ToolHandler for CalculatorHandler {
         };
 
         Ok(ToolResult {
-            content: vec![Content::text(format!(
-                "{a} {operation} {b} = {result}"
-            ))],
+            content: vec![Content::text(format!("{a} {operation} {b} = {result}"))],
             is_error: None,
             structured_content: None,
             meta: None,
@@ -249,10 +247,18 @@ impl PromptHandler for CodeReviewPromptHandler {
         );
 
         let user_prompt = match focus {
-            "security" => "Please review this code for security vulnerabilities, potential exploits, and security best practices.",
-            "performance" => "Please review this code for performance issues, optimization opportunities, and efficiency improvements.",
-            "style" => "Please review this code for style consistency, readability, and adherence to coding standards.",
-            _ => "Please provide a comprehensive code review covering functionality, readability, maintainability, and best practices.",
+            "security" => {
+                "Please review this code for security vulnerabilities, potential exploits, and security best practices."
+            }
+            "performance" => {
+                "Please review this code for performance issues, optimization opportunities, and efficiency improvements."
+            }
+            "style" => {
+                "Please review this code for style consistency, readability, and adherence to coding standards."
+            }
+            _ => {
+                "Please provide a comprehensive code review covering functionality, readability, maintainability, and best practices."
+            }
         };
 
         Ok(PromptResult {
@@ -292,27 +298,31 @@ impl PromptHandler for DocumentationPromptHandler {
 
         let (system_prompt, user_prompt) = match doc_type {
             "api" => (
-                format!("You are a technical writer specializing in API documentation for {language} applications."),
-                "Please generate comprehensive API documentation for the provided code, including endpoints, parameters, responses, and usage examples."
+                format!(
+                    "You are a technical writer specializing in API documentation for {language} applications."
+                ),
+                "Please generate comprehensive API documentation for the provided code, including endpoints, parameters, responses, and usage examples.",
             ),
             "class" => (
-                format!("You are a technical writer specializing in {language} class documentation."),
-                "Please generate detailed class documentation including purpose, methods, properties, usage examples, and relationships with other classes."
+                format!(
+                    "You are a technical writer specializing in {language} class documentation."
+                ),
+                "Please generate detailed class documentation including purpose, methods, properties, usage examples, and relationships with other classes.",
             ),
             "function" => (
-                format!("You are a technical writer specializing in {language} function documentation."),
-                "Please generate comprehensive function documentation including purpose, parameters, return values, exceptions, and usage examples."
+                format!(
+                    "You are a technical writer specializing in {language} function documentation."
+                ),
+                "Please generate comprehensive function documentation including purpose, parameters, return values, exceptions, and usage examples.",
             ),
             _ => (
                 "You are a technical writer specializing in software documentation.".to_string(),
-                "Please generate appropriate documentation for the provided code."
+                "Please generate appropriate documentation for the provided code.",
             ),
         };
 
         Ok(PromptResult {
-            description: Some(format!(
-                "Documentation prompt for {language} {doc_type}"
-            )),
+            description: Some(format!("Documentation prompt for {language} {doc_type}")),
             messages: vec![
                 PromptMessage {
                     role: Role::User,

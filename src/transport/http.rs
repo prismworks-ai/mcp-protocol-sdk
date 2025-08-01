@@ -5,29 +5,29 @@
 
 use async_trait::async_trait;
 use axum::{
+    Json, Router,
     extract::State,
     http::{HeaderMap, StatusCode},
-    response::{sse::Event, Sse},
+    response::{Sse, sse::Event},
     routing::{get, post},
-    Json, Router,
 };
 use reqwest::Client;
 use serde_json::Value;
 use std::{collections::HashMap, convert::Infallible, sync::Arc, time::Duration};
-use tokio::sync::{broadcast, mpsc, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 #[cfg(all(feature = "futures", feature = "tokio-stream"))]
 use futures::stream::Stream;
 
 #[cfg(feature = "tokio-stream")]
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{
-    error_codes, JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse,
+    JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, error_codes,
 };
 use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
 
@@ -504,7 +504,9 @@ impl ServerTransport for HttpServerTransport {
     async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
         // This is now handled by the HTTP server itself and should not be called directly
         // The HTTP transport handles requests through the HTTP server routes
-        tracing::warn!("handle_request called directly on HTTP transport - this may indicate a configuration issue");
+        tracing::warn!(
+            "handle_request called directly on HTTP transport - this may indicate a configuration issue"
+        );
 
         let state = self.state.read().await;
 

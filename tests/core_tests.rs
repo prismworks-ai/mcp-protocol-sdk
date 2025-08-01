@@ -12,9 +12,8 @@ use mcp_protocol_sdk::{
     protocol::types::{Content, ToolResult},
     utils::uri::*,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
-
 
 #[cfg(test)]
 mod error_tests {
@@ -272,7 +271,9 @@ mod content_tests {
     fn test_text_content() {
         let content = Content::text("Hello, world!");
         match content {
-            Content::Text { text, annotations, .. } => {
+            Content::Text {
+                text, annotations, ..
+            } => {
                 assert_eq!(text, "Hello, world!");
                 assert!(annotations.is_none());
             }

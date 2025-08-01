@@ -10,11 +10,11 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
 use crate::core::{
+    PromptInfo, ResourceInfo, ToolInfo,
     error::{McpError, McpResult},
     prompt::{Prompt, PromptHandler},
     resource::{Resource, ResourceHandler},
     tool::{Tool, ToolHandler},
-    PromptInfo, ResourceInfo, ToolInfo,
 };
 use crate::protocol::{error_codes::*, messages::*, methods, types::*, validation::*};
 use crate::transport::traits::ServerTransport;
@@ -357,9 +357,7 @@ impl McpServer {
         match tools.get(name) {
             Some(tool) => {
                 if !tool.enabled {
-                    return Err(McpError::ToolNotFound(format!(
-                        "Tool '{name}' is disabled"
-                    )));
+                    return Err(McpError::ToolNotFound(format!("Tool '{name}' is disabled")));
                 }
 
                 let args = arguments.unwrap_or_default();
@@ -545,9 +543,7 @@ impl McpServer {
             methods::LOGGING_SET_LEVEL => self.handle_logging_set_level(request.params).await,
             _ => {
                 let method = &request.method;
-                Err(McpError::Protocol(format!(
-                    "Unknown method: {method}"
-                )))
+                Err(McpError::Protocol(format!("Unknown method: {method}")))
             }
         };
 
@@ -587,7 +583,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing initialize parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -628,7 +624,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing tool call parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -660,7 +656,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing resource read parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -681,7 +677,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing resource subscribe parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -698,7 +694,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing resource unsubscribe parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -731,7 +727,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing prompt get parameters".to_string(),
-                ))
+                ));
             }
         };
 
@@ -752,7 +748,7 @@ impl McpServer {
             None => {
                 return Err(McpError::Validation(
                     "Missing logging level parameters".to_string(),
-                ))
+                ));
             }
         };
 

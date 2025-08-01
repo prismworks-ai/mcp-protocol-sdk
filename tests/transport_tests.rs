@@ -14,7 +14,6 @@ use mcp_protocol_sdk::{
 };
 use serde_json::json;
 
-
 #[cfg(test)]
 mod stdio_transport_tests {
     use super::*;

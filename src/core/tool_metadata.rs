@@ -48,8 +48,6 @@ pub struct ToolBehaviorHints {
     pub cacheable: Option<bool>,
 }
 
-
-
 impl ToolBehaviorHints {
     /// Create a new empty set of behavior hints
     pub fn new() -> Self {
@@ -348,8 +346,6 @@ pub enum DeprecationSeverity {
     /// Tool is disabled or non-functional
     Critical,
 }
-
-
 
 impl ToolDeprecation {
     /// Create a new deprecation notice

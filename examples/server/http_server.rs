@@ -4,7 +4,7 @@
 //! over HTTP with Server-Sent Events for real-time notifications.
 
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use mcp_protocol_sdk::{
@@ -256,7 +256,9 @@ async fn main() -> McpResult<()> {
     http_server.start(transport).await?;
 
     tracing::info!("HTTP MCP server is running!");
-    tracing::info!("Test with: curl -X POST http://localhost:3000/mcp -H 'Content-Type: application/json' -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}}'");
+    tracing::info!(
+        "Test with: curl -X POST http://localhost:3000/mcp -H 'Content-Type: application/json' -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}}'"
+    );
 
     // Keep running until interrupted
     tokio::signal::ctrl_c()

@@ -74,8 +74,7 @@ fn test_2025_features() {
     assert_eq!(serialized["name"], "Test File");
 
     // Test Annotations (updated API)
-    let annotations = Annotations::new()
-        .with_priority(0.8);
+    let annotations = Annotations::new().with_priority(0.8);
 
     assert_eq!(annotations.priority, Some(0.8));
 
@@ -111,7 +110,7 @@ fn test_server_capabilities() {
             list_changed: Some(true),
         }),
         // Note: completions renamed in 2025-06-18 spec
-        completions: None,  
+        completions: None,
         ..Default::default()
     };
 

@@ -13,7 +13,7 @@ use mcp_protocol_sdk::{
     },
     protocol::types::*,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{collections::HashMap, time::Duration};
 
 #[cfg(test)]
@@ -218,10 +218,7 @@ mod cross_transport_tests {
                 request.jsonrpc, deserialized.jsonrpc,
                 "Request {i}: JSON-RPC version should match"
             );
-            assert_eq!(
-                request.id, deserialized.id,
-                "Request {i}: ID should match"
-            );
+            assert_eq!(request.id, deserialized.id, "Request {i}: ID should match");
             assert_eq!(
                 request.method, deserialized.method,
                 "Request {i}: Method should match"

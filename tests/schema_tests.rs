@@ -342,9 +342,11 @@ mod schema_tests {
 
         for method in methods {
             assert!(!method.is_empty());
-            assert!(method
-                .chars()
-                .all(|c| c.is_ascii_lowercase() || c == '/' || c == '_'));
+            assert!(
+                method
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c == '/' || c == '_')
+            );
         }
     }
 
@@ -588,7 +590,12 @@ mod schema_tests {
 
         assert_eq!(version_info["protocolVersion"], "2025-03-26");
         assert!(version_info["supportedFeatures"].is_array());
-        assert!(!version_info["supportedFeatures"].as_array().unwrap().is_empty());
+        assert!(
+            !version_info["supportedFeatures"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]

@@ -189,9 +189,8 @@ impl PromptHandler for CodeReviewPrompt {
              Provide constructive feedback and suggestions for improvement."
         );
 
-        let user_prompt = format!(
-            "Please review this {language} code:\n\n```{language}\n{code}\n```"
-        );
+        let user_prompt =
+            format!("Please review this {language} code:\n\n```{language}\n{code}\n```");
 
         Ok(PromptResult {
             description: Some("Code review prompt".to_string()),

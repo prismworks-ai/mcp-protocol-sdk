@@ -179,7 +179,7 @@ async fn demonstrate_concurrent_requests(client: &McpClient) {
 
 /// Demo server for HTTP testing
 async fn demo_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use axum::{routing::post, Router};
+    use axum::{Router, routing::post};
     use std::net::SocketAddr;
 
     let app = Router::new().route("/mcp", post(handle_request));

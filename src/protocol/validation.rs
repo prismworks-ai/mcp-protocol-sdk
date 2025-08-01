@@ -743,16 +743,12 @@ pub fn validate_mcp_request(method: &str, params: Option<&Value>) -> McpResult<(
         match method {
             methods::INITIALIZE => {
                 let params: InitializeParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| {
-                        McpError::Validation(format!("Invalid initialize params: {e}"))
-                    })?;
+                    .map_err(|e| McpError::Validation(format!("Invalid initialize params: {e}")))?;
                 validate_initialize_params(&params)?;
             }
             methods::TOOLS_CALL => {
-                let params: CallToolParams =
-                    serde_json::from_value(params_value.clone()).map_err(|e| {
-                        McpError::Validation(format!("Invalid call tool params: {e}"))
-                    })?;
+                let params: CallToolParams = serde_json::from_value(params_value.clone())
+                    .map_err(|e| McpError::Validation(format!("Invalid call tool params: {e}")))?;
                 validate_call_tool_params(&params)?;
             }
             methods::RESOURCES_READ => {
@@ -764,9 +760,7 @@ pub fn validate_mcp_request(method: &str, params: Option<&Value>) -> McpResult<(
             }
             methods::PROMPTS_GET => {
                 let params: GetPromptParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| {
-                        McpError::Validation(format!("Invalid get prompt params: {e}"))
-                    })?;
+                    .map_err(|e| McpError::Validation(format!("Invalid get prompt params: {e}")))?;
                 validate_get_prompt_params(&params)?;
             }
             methods::SAMPLING_CREATE_MESSAGE => {

@@ -17,7 +17,6 @@ use std::collections::HashMap;
 
 // Import the MCP protocol types
 
-
 #[cfg(test)]
 mod protocol_validation_comprehensive {
     use super::*;
@@ -29,7 +28,7 @@ mod protocol_validation_comprehensive {
     #[test]
     fn test_complete_initialization_flow() {
         // Test complete initialization sequence
-        
+
         // 1. Client sends initialize request
         let init_request = json!({
             "jsonrpc": "2.0",
@@ -66,7 +65,7 @@ mod protocol_validation_comprehensive {
         assert_eq!(init_request["params"]["protocolVersion"], "2025-06-18");
         assert!(init_request["params"]["capabilities"].is_object());
         assert!(init_request["params"]["clientInfo"].is_object());
-        
+
         // 2. Server responds with initialize result
         let init_response = json!({
             "jsonrpc": "2.0",
@@ -109,7 +108,7 @@ mod protocol_validation_comprehensive {
         assert!(init_response["result"]["capabilities"].is_object());
         assert!(init_response["result"]["serverInfo"].is_object());
         assert!(init_response["result"]["instructions"].is_string());
-        
+
         // 3. Client sends initialized notification
         let initialized_notification = json!({
             "jsonrpc": "2.0",
@@ -124,84 +123,99 @@ mod protocol_validation_comprehensive {
 
         // Validate notification structure
         assert_eq!(initialized_notification["jsonrpc"], "2.0");
-        assert_eq!(initialized_notification["method"], "notifications/initialized");
+        assert_eq!(
+            initialized_notification["method"],
+            "notifications/initialized"
+        );
         assert!(initialized_notification.get("id").is_none()); // Notifications don't have IDs
-        
+
         println!("✅ Complete initialization flow validated");
     }
 
     #[test]
     fn test_comprehensive_error_responses() {
         // Test all error response scenarios
-        
+
         let error_scenarios = vec![
             // Parse error
-            ("parse_error", json!({
-                "jsonrpc": "2.0",
-                "id": null,
-                "error": {
-                    "code": -32700,
-                    "message": "Parse error",
-                    "data": {
-                        "details": "Invalid JSON format at position 42",
-                        "position": 42
+            (
+                "parse_error",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": null,
+                    "error": {
+                        "code": -32700,
+                        "message": "Parse error",
+                        "data": {
+                            "details": "Invalid JSON format at position 42",
+                            "position": 42
+                        }
                     }
-                }
-            })),
+                }),
+            ),
             // Invalid request
-            ("invalid_request", json!({
-                "jsonrpc": "2.0",
-                "id": "invalid-1",
-                "error": {
-                    "code": -32600,
-                    "message": "Invalid Request",
-                    "data": {
-                        "details": "Missing required field 'method'",
-                        "field": "method"
+            (
+                "invalid_request",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": "invalid-1",
+                    "error": {
+                        "code": -32600,
+                        "message": "Invalid Request",
+                        "data": {
+                            "details": "Missing required field 'method'",
+                            "field": "method"
+                        }
                     }
-                }
-            })),
+                }),
+            ),
             // Method not found
-            ("method_not_found", json!({
-                "jsonrpc": "2.0",
-                "id": "method-1",
-                "error": {
-                    "code": -32601,
-                    "message": "Method not found",
-                    "data": {
-                        "method": "unknown/method",
-                        "supportedMethods": [
-                            "initialize",
-                            "tools/list",
-                            "tools/call",
-                            "resources/list"
-                        ]
+            (
+                "method_not_found",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": "method-1",
+                    "error": {
+                        "code": -32601,
+                        "message": "Method not found",
+                        "data": {
+                            "method": "unknown/method",
+                            "supportedMethods": [
+                                "initialize",
+                                "tools/list",
+                                "tools/call",
+                                "resources/list"
+                            ]
+                        }
                     }
-                }
-            })),
+                }),
+            ),
             // MCP-specific: Tool not found
-            ("tool_not_found", json!({
-                "jsonrpc": "2.0",
-                "id": "tool-1",
-                "error": {
-                    "code": -32000,
-                    "message": "Tool not found",
-                    "data": {
-                        "toolName": "nonexistent_tool",
-                        "availableTools": ["file_read", "code_analyze", "search"]
+            (
+                "tool_not_found",
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": "tool-1",
+                    "error": {
+                        "code": -32000,
+                        "message": "Tool not found",
+                        "data": {
+                            "toolName": "nonexistent_tool",
+                            "availableTools": ["file_read", "code_analyze", "search"]
+                        }
                     }
-                }
-            }))
+                }),
+            ),
         ];
 
         for (scenario, error_response) in error_scenarios {
             assert_eq!(error_response["jsonrpc"], "2.0");
             assert!(error_response["error"].is_object());
-            
+
             let error = &error_response["error"];
             assert!(error["code"].is_number());
             assert!(error["message"].is_string());
-            
+
             let code = error["code"].as_i64().unwrap();
             match code {
                 -32700 => assert_eq!(error["message"], "Parse error"),
@@ -210,7 +224,7 @@ mod protocol_validation_comprehensive {
                 -32000 => assert_eq!(error["message"], "Tool not found"),
                 _ => {}
             }
-            
+
             println!("✅ Error scenario '{scenario}' validated (code: {code})");
         }
     }
@@ -218,7 +232,7 @@ mod protocol_validation_comprehensive {
     #[test]
     fn test_notification_sequencing() {
         // Test proper notification sequencing
-        
+
         let notification_sequence = [
             // 1. Progress notification
             json!({
@@ -253,24 +267,35 @@ mod protocol_validation_comprehensive {
                     "total": 100,
                     "message": "Operation completed"
                 }
-            })
+            }),
         ];
 
         for (i, notification) in notification_sequence.iter().enumerate() {
             assert_eq!(notification["jsonrpc"], "2.0");
             assert!(notification["method"].is_string());
-            assert!(notification["method"].as_str().unwrap().starts_with("notifications/"));
-            assert!(notification.get("id").is_none(), "Notification {i} should not have id");
+            assert!(
+                notification["method"]
+                    .as_str()
+                    .unwrap()
+                    .starts_with("notifications/")
+            );
+            assert!(
+                notification.get("id").is_none(),
+                "Notification {i} should not have id"
+            );
             assert!(notification["params"].is_object());
         }
-        
-        println!("✅ Notification sequence validated ({} notifications)", notification_sequence.len());
+
+        println!(
+            "✅ Notification sequence validated ({} notifications)",
+            notification_sequence.len()
+        );
     }
 
     #[test]
     fn test_progress_tracking_comprehensive() {
         // Test comprehensive progress tracking scenarios
-        
+
         let progress_scenarios = [
             // Determinate progress (with total)
             json!({
@@ -284,30 +309,36 @@ mod protocol_validation_comprehensive {
                 "progressToken": "analysis-task",
                 "progress": 2,
                 "message": "Loading dependencies"
-            })
+            }),
         ];
 
         for (i, progress) in progress_scenarios.iter().enumerate() {
             assert!(progress["progressToken"].is_string());
             assert!(progress["progress"].is_number());
             assert!(progress["message"].is_string());
-            
+
             let progress_val = progress["progress"].as_f64().unwrap();
-            assert!(progress_val >= 0.0, "Progress should be non-negative in update {i}");
-            
+            assert!(
+                progress_val >= 0.0,
+                "Progress should be non-negative in update {i}"
+            );
+
             if let Some(total) = progress.get("total") {
                 let total_val = total.as_f64().unwrap();
-                assert!(progress_val <= total_val, "Progress should not exceed total in update {i}");
+                assert!(
+                    progress_val <= total_val,
+                    "Progress should not exceed total in update {i}"
+                );
             }
         }
-        
+
         println!("✅ Progress tracking scenarios validated");
     }
 
     #[test]
     fn test_complete_tool_execution_flow() {
         // Test complete tool execution with structured output
-        
+
         // 1. Tool call request
         let tool_call = json!({
             "jsonrpc": "2.0",
@@ -325,7 +356,7 @@ mod protocol_validation_comprehensive {
         assert_eq!(tool_call["method"], "tools/call");
         assert_eq!(tool_call["params"]["name"], "code_analyzer");
         assert!(tool_call["params"]["arguments"].is_object());
-        
+
         // 2. Tool call response with structured content
         let tool_response = json!({
             "jsonrpc": "2.0",
@@ -360,14 +391,14 @@ mod protocol_validation_comprehensive {
         assert!(tool_response["result"]["content"].is_array());
         assert!(tool_response["result"]["structuredContent"].is_object());
         assert_eq!(tool_response["result"]["isError"], false);
-        
+
         println!("✅ Complete tool execution flow validated");
     }
 
     #[test]
     fn test_elicitation_complete_flow() {
         // Test complete elicitation flow
-        
+
         // 1. Server requests elicitation
         let elicit_request = json!({
             "jsonrpc": "2.0",
@@ -398,7 +429,7 @@ mod protocol_validation_comprehensive {
         assert_eq!(elicit_request["method"], "elicitation/create");
         assert!(elicit_request["params"]["message"].is_string());
         assert!(elicit_request["params"]["requestedSchema"].is_object());
-        
+
         // 2. Client responds with user input
         let elicit_response = json!({
             "jsonrpc": "2.0",
@@ -414,14 +445,14 @@ mod protocol_validation_comprehensive {
 
         assert_eq!(elicit_response["result"]["action"], "accept");
         assert!(elicit_response["result"]["content"].is_object());
-        
+
         println!("✅ Complete elicitation flow validated");
     }
 
     #[test]
     fn test_resource_operations_comprehensive() {
         // Test comprehensive resource operations
-        
+
         // 1. List resources
         let list_request = json!({
             "jsonrpc": "2.0",
@@ -449,7 +480,7 @@ mod protocol_validation_comprehensive {
         assert_eq!(list_request["method"], "resources/list");
         assert_eq!(list_response["id"], "list-1");
         assert!(list_response["result"]["resources"].is_array());
-        
+
         // 2. Read resource
         let read_request = json!({
             "jsonrpc": "2.0",
@@ -475,15 +506,18 @@ mod protocol_validation_comprehensive {
         });
 
         assert_eq!(read_request["method"], "resources/read");
-        assert_eq!(read_response["result"]["contents"][0]["uri"], "file:///project/config.json");
-        
+        assert_eq!(
+            read_response["result"]["contents"][0]["uri"],
+            "file:///project/config.json"
+        );
+
         println!("✅ Resource operations comprehensive validation completed");
     }
 
     #[test]
     fn test_sampling_flow_comprehensive() {
         // Test comprehensive sampling flow
-        
+
         let sampling_request = json!({
             "jsonrpc": "2.0",
             "id": "sample-1",
@@ -527,7 +561,7 @@ mod protocol_validation_comprehensive {
         assert_eq!(sampling_request["method"], "sampling/createMessage");
         assert!(sampling_request["params"]["messages"].is_array());
         assert_eq!(sampling_response["result"]["role"], "assistant");
-        
+
         println!("✅ Sampling flow comprehensive validation completed");
     }
 
@@ -538,9 +572,9 @@ mod protocol_validation_comprehensive {
     #[test]
     fn test_complete_protocol_compliance_2025_06_18() {
         println!("\n=== COMPREHENSIVE PROTOCOL VALIDATION ===\n");
-        
+
         let mut protocol_areas = HashMap::new();
-        
+
         // Track all protocol areas
         protocol_areas.insert("Initialization Flow", "✅ COMPLETE");
         protocol_areas.insert("Error Responses", "✅ COMPLETE");
@@ -550,12 +584,12 @@ mod protocol_validation_comprehensive {
         protocol_areas.insert("Elicitation Flow", "✅ COMPLETE");
         protocol_areas.insert("Resource Operations", "✅ COMPLETE");
         protocol_areas.insert("Sampling Flow", "✅ COMPLETE");
-        
+
         println!("Protocol Areas Validated:");
         for (area, status) in &protocol_areas {
             println!("  {status} {area}");
         }
-        
+
         println!("\n=== PROTOCOL COMPLIANCE SUMMARY ===\n");
         println!("✅ JSON-RPC 2.0: Full compliance with request/response/notification patterns");
         println!("✅ MCP 2025-06-18: All protocol features implemented and tested");
@@ -565,9 +599,9 @@ mod protocol_validation_comprehensive {
         println!("✅ Notifications: Proper sequencing and parameter validation");
         println!("✅ Progress Tracking: Both determinate and indeterminate progress");
         println!("✅ Structured Output: Complex nested data structures");
-        
+
         println!("\n🎉 PROTOCOL VALIDATION: 100% COMPLIANCE ACHIEVED\n");
-        
+
         assert_eq!(protocol_areas.len(), 8);
         assert!(protocol_areas.values().all(|v| v.contains("✅")));
     }
