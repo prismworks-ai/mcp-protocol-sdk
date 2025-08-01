@@ -45,6 +45,7 @@
 //!         Ok(CallToolResult {
 //!             content: vec![Content::text(message)],
 //!             is_error: Some(false),
+//!             structured_content: None,
 //!             meta: None,
 //!         })
 //!     }
