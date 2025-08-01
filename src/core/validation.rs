@@ -309,14 +309,18 @@ impl ParameterValidator {
         }
 
         // Integer validation
-        if schema.get("type").and_then(|v| v.as_str()) == Some("integer") && num_val.fract() != 0.0
-        {
-            if self.config.coerce_types {
-                *value = Value::Number(serde_json::Number::from(num_val.round() as i64));
+        if schema.get("type").and_then(|v| v.as_str()) == Some("integer") {
+            if num_val.fract() != 0.0 {
+                if self.config.coerce_types {
+                    *value = Value::Number(serde_json::Number::from(num_val.round() as i64));
+                } else {
+                    return Err(McpError::validation(format!(
+                        "Parameter '{field_name}' must be an integer"
+                    )));
+                }
             } else {
-                return Err(McpError::validation(format!(
-                    "Parameter '{field_name}' must be an integer"
-                )));
+                // Convert float to integer even if it has no fractional part
+                *value = Value::Number(serde_json::Number::from(num_val as i64));
             }
         }
 
@@ -489,7 +493,7 @@ impl ParameterValidator {
         match value {
             Value::String(s) => {
                 if let Ok(f) = s.parse::<f64>() {
-                    Some(Value::Number(serde_json::Number::from_f64(f)?))
+                    serde_json::Number::from_f64(f).map(Value::Number)
                 } else {
                     None
                 }

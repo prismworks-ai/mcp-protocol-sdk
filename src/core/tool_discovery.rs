@@ -397,11 +397,33 @@ impl ToolRegistry {
             if name_match || desc_match {
                 score += if name_match { 0.4 } else { 0.2 };
                 reasons.push("matches text search".to_string());
+            } else {
+                // If text search is specified but doesn't match, exclude this tool
+                return None;
             }
         }
 
-        // Behavior hints matching
+        // Behavior hints matching - check required hints first
         let hints = tool.behavior_hints();
+        
+        // Filter out tools that don't meet required hints
+        if criteria.required_hints.read_only.unwrap_or(false) && !hints.read_only.unwrap_or(false) {
+            return None;
+        }
+        if criteria.required_hints.idempotent.unwrap_or(false) && !hints.idempotent.unwrap_or(false) {
+            return None;
+        }
+        if criteria.required_hints.cacheable.unwrap_or(false) && !hints.cacheable.unwrap_or(false) {
+            return None;
+        }
+        if criteria.required_hints.destructive.unwrap_or(false) && !hints.destructive.unwrap_or(false) {
+            return None;
+        }
+        if criteria.required_hints.requires_auth.unwrap_or(false) && !hints.requires_auth.unwrap_or(false) {
+            return None;
+        }
+        
+        // Add score bonuses for meeting required hints
         if criteria.required_hints.read_only.unwrap_or(false) && hints.read_only.unwrap_or(false) {
             score += 0.2;
             reasons.push("read-only as required".to_string());
@@ -705,7 +727,7 @@ mod tests {
 
         // Recommend tool for file processing
         let criteria = DiscoveryCriteria::default();
-        let recommendation = registry.recommend_tool("file processing", &criteria);
+        let recommendation = registry.recommend_tool("file", &criteria);
 
         assert!(recommendation.is_some());
         let result = recommendation.unwrap();
