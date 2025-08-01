@@ -103,7 +103,7 @@ pub mod prelude {
     pub use crate::protocol::types::*;
     pub use crate::server::McpServer;
     pub use async_trait::async_trait;
-    pub use serde_json::{Value, json};
+    pub use serde_json::{json, Value};
     pub use std::collections::HashMap;
 }
 

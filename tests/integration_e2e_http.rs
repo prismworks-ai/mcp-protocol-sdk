@@ -26,7 +26,7 @@ use mcp_protocol_sdk::{
 mod e2e_http_tests {
     use super::*;
     use async_trait::async_trait;
-    use serde_json::{Value, json};
+    use serde_json::{json, Value};
     use std::{collections::HashMap, sync::Arc, time::Duration};
     use tokio::{sync::Mutex, time::sleep};
 

@@ -4,7 +4,7 @@
 //! resources, and prompts. It uses STDIO transport for communication.
 
 use async_trait::async_trait;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -20,8 +20,8 @@ use mcp_protocol_sdk::{
         Content, GetPromptResult as PromptResult, Prompt as PromptInfo, PromptArgument,
         PromptMessage, Resource as ResourceInfo, ResourceContents, Role, ToolResult,
     },
-    server::McpServer,
     server::mcp_server::ServerConfig,
+    server::McpServer,
     transport::stdio::StdioServerTransport,
 };
 

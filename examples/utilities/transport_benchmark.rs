@@ -296,7 +296,7 @@ fn print_benchmark_results(
 
 /// Demo server for benchmarking
 async fn demo_benchmark_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use axum::{Router, response::Json, routing::post};
+    use axum::{response::Json, routing::post, Router};
     use std::net::SocketAddr;
 
     let app = Router::new().route(

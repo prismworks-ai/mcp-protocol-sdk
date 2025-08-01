@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Demo server for testing (normally this would be a separate process)
 async fn demo_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use axum::{Router, response::Json, routing::post};
+    use axum::{response::Json, routing::post, Router};
     use std::net::SocketAddr;
 
     let app = Router::new().route(
