@@ -4,6 +4,10 @@
 [![Documentation](https://docs.rs/mcp-protocol-sdk/badge.svg)](https://docs.rs/mcp-protocol-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](./SCHEMA_COMPLIANCE.md)
+[![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+
+🎯 **v0.4.0 Released** - Complete MCP 2025-06-18 schema upgrade with enhanced tool results and comprehensive test coverage.
 
 ---
 
@@ -14,7 +18,8 @@ The **Model Context Protocol (MCP)** is revolutionizing how AI assistants intera
 - **Enterprise-grade reliability** with comprehensive error handling
 - **Multiple transport options** beyond just STDIO
 - **Advanced session management** with auto-reconnection
-- **Production-ready features** like monitoring, validation, and performance optimization
+- **100% Schema Compliance** with MCP 2025-06-18 specification
+- **Production-ready features** like monitoring, validation, and comprehensive testing
 
 ## 🚀 Quick Start
 
@@ -140,7 +145,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 | **Production Ready** | ✅ Enterprise features | ❌ Basic functionality |
 | **Documentation** | ✅ Extensive | ❌ Minimal |
 | **Examples** | ✅ 8+ complete examples | ❌ Few basic examples |
-| **Test Coverage** | ✅ 85+ tests | ❌ Limited testing |
+| **Test Coverage** | ✅ 97 comprehensive tests | ❌ Limited testing |
+| **Schema Compliance** | ✅ 100% MCP 2025-06-18 | ❌ Outdated schema |
 | **Performance** | ✅ Optimized & benchmarked | ❌ Not optimized |
 
 ---

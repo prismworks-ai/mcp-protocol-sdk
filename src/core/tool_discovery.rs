@@ -97,6 +97,12 @@ pub struct DiscoveryCriteria {
     pub min_executions: Option<u64>,
 }
 
+impl Default for ToolRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ToolRegistry {
     /// Create a new tool registry
     pub fn new() -> Self {
@@ -279,8 +285,10 @@ impl ToolRegistry {
 
     /// Update global statistics
     fn update_global_stats(&mut self) {
-        let mut stats = GlobalToolStats::default();
-        stats.total_tools = self.tools.len();
+        let mut stats = GlobalToolStats {
+            total_tools: self.tools.len(),
+            ..Default::default()
+        };
 
         let mut max_executions = 0u64;
         let mut max_success_rate = 0.0f64;

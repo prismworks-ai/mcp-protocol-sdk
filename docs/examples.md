@@ -2,6 +2,16 @@
 
 This page showcases real-world examples of using MCP Rust SDK in different scenarios, from basic implementations to complex production-ready applications.
 
+## Examples Organization
+
+The examples are organized into three categories:
+
+- **[Client Examples](../examples/client/)** - Examples for building MCP clients
+- **[Server Examples](../examples/server/)** - Examples for building MCP servers  
+- **[Utility Examples](../examples/utilities/)** - Benchmarks and development tools
+
+See the [Examples README](../examples/README.md) for a complete overview of the organized structure.
+
 ## Quick Start Examples
 
 ### Minimal Echo Server

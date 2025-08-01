@@ -14,7 +14,6 @@ on:
       - 'Cargo.toml'
   workflow_dispatch:
 
-# Cancel previous runs if a new push occurs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,119 +23,100 @@ env:
 
 jobs:
   benchmark:
-    name: Run Benchmarks
+    name: Performance Benchmarks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "benchmarks"
+          cache-on-failure: true
 
-      - name: Install cargo-criterion
-        run: |
-          if ! command -v cargo-criterion >/dev/null 2>&1; then
-            cargo install cargo-criterion
-          else
-            echo "cargo-criterion is already installed"
-          fi
+      - name: Install critcmp
+        run: cargo install critcmp
 
-      - name: Run benchmarks
-        id: benchmarks
+      - name: Check for benchmarks
+        id: check_benchmarks
         run: |
           if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
             echo "benchmarks_found=true" >> $GITHUB_OUTPUT
-            cargo criterion --all-features
           else
             echo "benchmarks_found=false" >> $GITHUB_OUTPUT
-            echo "No benchmarks found, skipping benchmark run"
-            mkdir -p target/criterion/reports
-            echo "<html><body><h1>No benchmarks found</h1></body></html>" > target/criterion/reports/index.html
           fi
 
-      - name: Store benchmark result
-        if: steps.benchmarks.outputs.benchmarks_found == 'true'
+      - name: Run benchmarks (current)
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true'
+        run: |
+          cargo bench --all-features -- --output-format json | tee current_bench.json
+
+      - name: Run benchmarks (baseline)
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true' && github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          cargo bench --all-features -- --output-format json | tee baseline_bench.json || echo "[]" > baseline_bench.json
+          git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Compare benchmarks
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true' && github.event_name == 'pull_request'
+        run: |
+          echo "## 📊 Benchmark Results" > benchmark_comment.md
+          echo "" >> benchmark_comment.md
+          
+          if [ -f baseline_bench.json ] && [ -f current_bench.json ]; then
+            critcmp baseline_bench.json current_bench.json >> benchmark_comment.md || echo "Unable to compare benchmarks" >> benchmark_comment.md
+          else
+            echo "Benchmark comparison not available" >> benchmark_comment.md
+          fi
+          
+          echo "" >> benchmark_comment.md
+          echo "View detailed results in the [workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> benchmark_comment.md
+
+      - name: Comment PR
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('benchmark_comment.md')) {
+              const comment = fs.readFileSync('benchmark_comment.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Upload benchmark results
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            current_bench.json
+            baseline_bench.json
+            benchmark_comment.md
+          retention-days: 30
+
+      - name: Store benchmark (main branch)
+        if: steps.check_benchmarks.outputs.benchmarks_found == 'true' && github.ref == 'refs/heads/main'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'cargo'
-          output-file-path: target/criterion/reports/index.html
+          output-file-path: current_bench.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
+          auto-push: true
           comment-on-alert: true
-          alert-threshold: '200%'
+          alert-threshold: '150%'
           fail-on-alert: false
-
-  performance_comparison:
-    name: Performance Comparison
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout PR
-        uses: actions/checkout@v4
-
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-bench-pr-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run PR benchmarks
-        run: |
-          if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
-            cargo bench --all-features -- --output-format json | tee pr_benchmark.json
-          else
-            echo "No benchmarks found, creating empty results" 
-            echo "[]" > pr_benchmark.json
-          fi
-
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Run main benchmarks
-        run: |
-          if [ -n "$(find benches -name '*.rs' 2>/dev/null)" ]; then
-            cargo bench --all-features -- --output-format json | tee main_benchmark.json
-          else
-            echo "No benchmarks found, creating empty results"
-            echo "[]" > main_benchmark.json
-          fi
-
-      - name: Compare benchmarks
-        run: |
-          echo "## Benchmark Comparison" >> comparison.md
-          echo "Performance comparison between main and this PR:" >> comparison.md
-          echo "" >> comparison.md
-          
-          # This is a simplified comparison - in practice, you'd want to use
-          # a more sophisticated tool like criterion-compare
-          echo "Benchmark results available in artifacts." >> comparison.md
-
-      - name: Upload comparison
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-comparison
-          path: |
-            comparison.md
-            pr_benchmark.json
-            main_benchmark.json

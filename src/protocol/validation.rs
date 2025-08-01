@@ -512,7 +512,7 @@ pub fn validate_content(content: &ContentBlock) -> McpResult<()> {
 pub fn validate_annotations(annotations: &Annotations) -> McpResult<()> {
     // Validate priority is in valid range
     if let Some(priority) = annotations.priority {
-        if priority < 0.0 || priority > 1.0 {
+        if !(0.0..=1.0).contains(&priority) {
             return Err(McpError::Validation(
                 "Annotation priority must be between 0.0 and 1.0".to_string(),
             ));
@@ -865,6 +865,8 @@ mod tests {
                 additional_properties: std::collections::HashMap::new(),
             },
             annotations: None,
+            title: Some("Test Tool".to_string()),
+            meta: None,
         };
         assert!(validate_tool_info(&valid_tool).is_ok());
 
@@ -878,6 +880,8 @@ mod tests {
                 additional_properties: std::collections::HashMap::new(),
             },
             annotations: None,
+            title: None,
+            meta: None,
         };
         assert!(validate_tool_info(&invalid_tool).is_err());
     }
@@ -926,6 +930,7 @@ mod tests {
         let invalid_text = Content::Text {
             text: "".to_string(),
             annotations: None,
+            meta: None,
         };
         assert!(validate_content(&invalid_text).is_err());
 
@@ -933,6 +938,7 @@ mod tests {
             data: "data".to_string(),
             mime_type: "text/plain".to_string(), // Invalid MIME type for image
             annotations: None,
+            meta: None,
         };
         assert!(validate_content(&invalid_image).is_err());
 
@@ -940,6 +946,7 @@ mod tests {
             data: "data".to_string(),
             mime_type: "image/png".to_string(), // Invalid MIME type for audio
             annotations: None,
+            meta: None,
         };
         assert!(validate_content(&invalid_audio).is_err());
     }

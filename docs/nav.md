@@ -62,8 +62,8 @@ let transport = StdioServerTransport::new();
 
 ## Feature Comparison
 
-| Feature | mcp-protocol-sdk | Official rmcp |
-|---------|--------------|---------------|
+| Feature | mcp-protocol-sdk | Other Rust SDKs |
+|---------|--------------|------------------|
 | **Transports** | STDIO, HTTP, WebSocket | STDIO, SSE only |
 | **Session Mgmt** | ✅ Auto-reconnect | ❌ Basic |
 | **Error Handling** | ✅ Comprehensive | ❌ Limited |

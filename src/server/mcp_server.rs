@@ -845,6 +845,7 @@ mod tests {
                 Ok(ToolResult {
                     content: vec![Content::text("Hello from tool")],
                     is_error: None,
+                    structured_content: None,
                     meta: None,
                 })
             }
@@ -880,6 +881,7 @@ mod tests {
             ClientInfo {
                 name: "test-client".to_string(),
                 version: "1.0.0".to_string(),
+                title: Some("Test Client".to_string()),
             },
         );
 

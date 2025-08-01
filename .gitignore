@@ -27,9 +27,12 @@ Thumbs.db
 tarpaulin-report.html
 cobertura.xml
 lcov.info
+coverage/
 
 # Benchmarks
 /target/criterion/
+benchmark-comparison/
+benchmarks-results/
 
 # Documentation
 /target/doc/
@@ -57,7 +60,6 @@ yarn.lock
 
 # Testing
 /test-results/
-/coverage/
 
 # Profiling
 *.prof
@@ -65,6 +67,8 @@ perf.data*
 
 # Security
 audit.json
+audit-results.json
+security-audit-results/
 
 # Local development
 .local/
@@ -72,6 +76,11 @@ local/
 scratch/
 playground/
 my-docs/
+
+# Development analysis and reports (auto-generated)
+dependency-analysis/
+license-check-results/
+.local-ci-status
 
 # Personal/Development files
 *_SUMMARY.md
@@ -83,6 +92,9 @@ my-docs/
 *notes*
 *todo*
 *draft*
+
+# AI Context system (local development aid)
+.aicontext/
 
 # Deployment and release scripts (keep public CI/dev scripts)
 scripts/prepare_open_source.sh

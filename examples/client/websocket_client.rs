@@ -218,7 +218,7 @@ async fn demonstrate_websocket_operations(
         for resource in &resources_result.resources {
             tracing::info!(
                 "  - {}: {} ({})",
-                resource.name.as_deref().unwrap_or("Unknown"),
+                resource.name,
                 resource.uri,
                 resource.mime_type.as_deref().unwrap_or("unknown type")
             );

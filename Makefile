@@ -116,12 +116,13 @@ deps-update: ## Update dependencies
 # Coverage
 coverage: ## Generate code coverage report
 	@echo "📊 Generating code coverage..."
-	@cargo tarpaulin --all-features --workspace --timeout 120 --out html --output-dir coverage
-	@echo "Coverage report generated in coverage/ directory"
+	@mkdir -p .local/reports
+	@cargo tarpaulin --all-features --workspace --timeout 120 --out html --output-dir .local/reports
+	@echo "Coverage report generated in .local/reports/ directory"
 
 coverage-open: ## Generate and open coverage report
 	@$(MAKE) coverage
-	@open coverage/tarpaulin-report.html || xdg-open coverage/tarpaulin-report.html || echo "Open coverage/tarpaulin-report.html manually"
+	@open .local/reports/tarpaulin-report.html || xdg-open .local/reports/tarpaulin-report.html || echo "Open .local/reports/tarpaulin-report.html manually"
 
 # Benchmarks
 bench: ## Run performance benchmarks
@@ -132,7 +133,7 @@ bench: ## Run performance benchmarks
 clean: ## Clean build artifacts
 	@echo "🧹 Cleaning build artifacts..."
 	@cargo clean
-	@rm -rf coverage/
+	@rm -rf .local/reports/*.html .local/reports/*.xml
 	@rm -f *.profraw
 
 # Tool installation

@@ -41,8 +41,10 @@ mod cross_transport_tests {
                 content: vec![Content::Text {
                     text: format!("Echo: {}", message),
                     annotations: None,
+                    meta: None,
                 }],
                 is_error: None,
+                structured_content: None,
                 meta: None,
             })
         }
@@ -84,10 +86,12 @@ mod cross_transport_tests {
                 .keys()
                 .map(|uri| ResourceInfo {
                     uri: uri.clone(),
-                    name: Some(format!("Resource: {}", uri)),
+                    name: format!("Resource: {}", uri),
                     description: None,
                     mime_type: Some("text/plain".to_string()),
                     annotations: None,
+                    meta: None,
+                    title: Some(format!("Resource: {}", uri)),
                     size: None,
                 })
                 .collect())

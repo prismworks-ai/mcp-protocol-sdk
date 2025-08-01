@@ -747,9 +747,12 @@ impl ToolBuilder {
 }
 
 /// Tool wrapper that supports custom validation chains
+/// Type alias for validation function to reduce complexity
+type ValidationFunction = Box<dyn Fn(&mut HashMap<String, Value>) -> McpResult<()> + Send + Sync>;
+
 pub struct ValidationChainTool {
     tool: Tool,
-    custom_validator: Box<dyn Fn(&mut HashMap<String, Value>) -> McpResult<()> + Send + Sync>,
+    custom_validator: ValidationFunction,
 }
 
 #[async_trait]
@@ -1251,7 +1254,11 @@ mod tests {
 
         let result = tool.call(args).await.unwrap();
         assert_eq!(result.is_error, Some(true));
-        assert!(result.content[0].to_string().contains("Division by zero"));
+        if let ContentBlock::Text { text, .. } = &result.content[0] {
+            assert!(text.contains("Division by zero"));
+        } else {
+            panic!("Expected text content");
+        }
     }
 
     #[tokio::test]
@@ -1267,7 +1274,7 @@ mod tests {
         args.insert("text".to_string(), json!("hello world"));
         args.insert("operation".to_string(), json!("uppercase"));
 
-        let result = tool.call(args).await.unwrap();
+        let result = tool.call(args.clone()).await.unwrap();
         assert_eq!(
             result.content[0],
             ContentBlock::Text {

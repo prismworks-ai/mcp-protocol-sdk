@@ -258,11 +258,14 @@ pub struct ValidationConfig {
 // Management System Types
 // ============================================================================
 
+/// Type alias for lifecycle callback to reduce complexity
+type LifecycleCallback = Box<dyn Fn() -> Result<(), McpError> + Send + Sync>;
+
 /// Lifecycle manager for server state transitions
 pub struct LifecycleManager {
     state: ServerState,
-    listeners: HashMap<String, Vec<Box<dyn Fn() -> Result<(), McpError> + Send + Sync>>>,
-    hooks: HashMap<String, Vec<Box<dyn Fn() -> Result<(), McpError> + Send + Sync>>>,
+    listeners: HashMap<String, Vec<LifecycleCallback>>,
+    hooks: HashMap<String, Vec<LifecycleCallback>>,
 }
 
 impl Default for LifecycleManager {

@@ -566,6 +566,7 @@ mod tests {
         let server_info = ServerInfo {
             name: "test-server".to_string(),
             version: "1.0.0".to_string(),
+            title: Some("Test Server".to_string()),
         };
         let capabilities = ServerCapabilities::default();
 

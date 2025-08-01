@@ -19,7 +19,7 @@ mod comprehensive_schema_validation {
     /// Validates the protocol version constant
     #[test]
     fn test_protocol_version_compliance() {
-        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-03-26");
+        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-06-18");
         assert_eq!(JSONRPC_VERSION, "2.0");
         assert_eq!(PROTOCOL_VERSION, LATEST_PROTOCOL_VERSION); // Legacy compatibility
     }
@@ -30,6 +30,7 @@ mod comprehensive_schema_validation {
         let impl_info = Implementation {
             name: "test-implementation".to_string(),
             version: "1.0.0".to_string(),
+            title: None,
         };
 
         let json_val = serde_json::to_value(&impl_info).unwrap();
@@ -85,6 +86,7 @@ mod comprehensive_schema_validation {
             roots: Some(RootsCapability {
                 list_changed: Some(true),
             }),
+            elicitation: None,
             experimental: Some(HashMap::new()),
         };
 
@@ -119,11 +121,24 @@ mod comprehensive_schema_validation {
         assert_eq!(json_val["data"], "audiodata");
         assert_eq!(json_val["mimeType"], "audio/wav");
 
-        // Test resource content (2025-03-26 NEW)
-        let resource_content = Content::resource("file:///test.txt");
-        let json_val = serde_json::to_value(&resource_content).unwrap();
+        // Test resource_link content (2025-06-18 NEW)
+        let resource_link_content = Content::resource_link("file:///test.txt", "test file");
+        let json_val = serde_json::to_value(&resource_link_content).unwrap();
+        assert_eq!(json_val["type"], "resource_link");
+        assert_eq!(json_val["uri"], "file:///test.txt");
+        assert_eq!(json_val["name"], "test file");
+
+        // Test embedded resource content (2025-06-18)
+        let embedded_resource = Content::embedded_resource(ResourceContents::Text {
+            uri: "file:///test.txt".to_string(),
+            mime_type: Some("text/plain".to_string()),
+            text: "File content".to_string(),
+            meta: None,
+        });
+        let json_val = serde_json::to_value(&embedded_resource).unwrap();
         assert_eq!(json_val["type"], "resource");
         assert_eq!(json_val["resource"]["uri"], "file:///test.txt");
+        assert_eq!(json_val["resource"]["text"], "File content");
     }
 
     /// Validates Tool with annotations against schema
@@ -142,12 +157,15 @@ mod comprehensive_schema_validation {
                 required: Some(vec!["param1".to_string()]),
                 additional_properties: HashMap::new(),
             },
-            annotations: Some(Annotations {
-                audience: Some(vec![AnnotationAudience::User]),
-                danger: Some(DangerLevel::Low),
-                destructive: Some(false),
-                read_only: Some(true),
+            annotations: Some(ToolAnnotations {
+                title: None,
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: None,
+                open_world_hint: None,
             }),
+            title: Some("Test Tool".to_string()),
+            meta: None,
         };
 
         let json_val = serde_json::to_value(&tool).unwrap();
@@ -159,12 +177,10 @@ mod comprehensive_schema_validation {
         assert!(json_val["inputSchema"]["properties"].is_object());
         assert!(json_val["inputSchema"]["required"].is_array());
 
-        // Validate annotations (2025-03-26 NEW)
+        // Validate annotations (2025-06-18)
         assert!(json_val["annotations"].is_object());
-        assert!(json_val["annotations"]["audience"].is_array());
-        assert_eq!(json_val["annotations"]["danger"], "low");
-        assert_eq!(json_val["annotations"]["destructive"], false);
-        assert_eq!(json_val["annotations"]["readOnly"], true);
+        assert_eq!(json_val["annotations"]["destructiveHint"], false);
+        assert_eq!(json_val["annotations"]["readOnlyHint"], true);
     }
 
     /// Validates Resource against schema
@@ -172,11 +188,20 @@ mod comprehensive_schema_validation {
     fn test_resource_schema_compliance() {
         let resource = Resource {
             uri: "file:///test.txt".to_string(),
-            name: Some("Test File".to_string()),
+            name: "Test File".to_string(),
             description: Some("A test file".to_string()),
             mime_type: Some("text/plain".to_string()),
-            annotations: Some(Annotations::new().read_only()),
+            annotations: Some(Annotations {
+                audience: None,
+                priority: None,
+                last_modified: None,
+                danger: None,
+                destructive: None,
+                read_only: Some(true),
+            }),
             size: Some(1024),
+            title: Some("Test File".to_string()),
+            meta: None,
         };
 
         let json_val = serde_json::to_value(&resource).unwrap();
@@ -199,7 +224,10 @@ mod comprehensive_schema_validation {
                 name: "input".to_string(),
                 description: Some("Input text".to_string()),
                 required: Some(true),
+                title: Some("Input".to_string()),
             }]),
+            title: Some("Test Prompt".to_string()),
+            meta: None,
         };
 
         let json_val = serde_json::to_value(&prompt).unwrap();
@@ -267,18 +295,19 @@ mod comprehensive_schema_validation {
     #[test]
     fn test_initialize_params_schema_compliance() {
         let params = InitializeParams {
-            protocol_version: "2025-03-26".to_string(),
+            protocol_version: "2025-06-18".to_string(),
             capabilities: ClientCapabilities::default(),
             client_info: Implementation {
                 name: "test-client".to_string(),
                 version: "1.0.0".to_string(),
+                title: Some("Test Client".to_string()),
             },
             meta: None,
         };
 
         let json_val = serde_json::to_value(&params).unwrap();
 
-        assert_eq!(json_val["protocolVersion"], "2025-03-26");
+        assert_eq!(json_val["protocolVersion"], "2025-06-18");
         assert!(json_val["capabilities"].is_object());
         assert!(json_val["clientInfo"].is_object());
         assert_eq!(json_val["clientInfo"]["name"], "test-client");
@@ -289,11 +318,12 @@ mod comprehensive_schema_validation {
     #[test]
     fn test_initialize_result_schema_compliance() {
         let result = InitializeResult {
-            protocol_version: "2025-03-26".to_string(),
+            protocol_version: "2025-06-18".to_string(),
             capabilities: ServerCapabilities::default(),
             server_info: Implementation {
                 name: "test-server".to_string(),
                 version: "1.0.0".to_string(),
+                title: Some("Test Server".to_string()),
             },
             instructions: Some("Test instructions".to_string()),
             meta: None,
@@ -301,7 +331,7 @@ mod comprehensive_schema_validation {
 
         let json_val = serde_json::to_value(&result).unwrap();
 
-        assert_eq!(json_val["protocolVersion"], "2025-03-26");
+        assert_eq!(json_val["protocolVersion"], "2025-06-18");
         assert!(json_val["capabilities"].is_object());
         assert!(json_val["serverInfo"].is_object());
         assert_eq!(json_val["serverInfo"]["name"], "test-server");
@@ -330,6 +360,7 @@ mod comprehensive_schema_validation {
         let result = CallToolResult {
             content: vec![Content::text("Tool output")],
             is_error: Some(false),
+            structured_content: None,
             meta: None,
         };
 
@@ -345,7 +376,7 @@ mod comprehensive_schema_validation {
     fn test_sampling_schema_compliance() {
         let message = SamplingMessage {
             role: Role::User,
-            content: Content::text("Hello AI"),
+            content: SamplingContent::text("Hello AI"),
         };
 
         let json_val = serde_json::to_value(&message).unwrap();
@@ -361,7 +392,12 @@ mod comprehensive_schema_validation {
             include_context: Some("thisServer".to_string()),
             temperature: Some(0.7),
             stop_sequences: Some(vec!["STOP".to_string()]),
-            model_preferences: Some(ModelPreferences::default()),
+            model_preferences: Some(ModelPreferences {
+                cost_priority: None,
+                speed_priority: None,
+                intelligence_priority: None,
+                hints: None,
+            }),
             metadata: None,
             meta: None,
         };
@@ -382,7 +418,7 @@ mod comprehensive_schema_validation {
     fn test_create_message_result_schema_compliance() {
         let result = CreateMessageResult {
             role: Role::Assistant,
-            content: Content::text("AI response"),
+            content: SamplingContent::text("AI response"),
             model: "claude-3-5-sonnet".to_string(),
             stop_reason: Some(StopReason::EndTurn),
             meta: None,
@@ -518,6 +554,7 @@ mod comprehensive_schema_validation {
             uri: "file:///text.txt".to_string(),
             mime_type: Some("text/plain".to_string()),
             text: "File content here".to_string(),
+            meta: None,
         };
 
         let json_val = serde_json::to_value(&text_resource).unwrap();
@@ -530,6 +567,7 @@ mod comprehensive_schema_validation {
             uri: "file:///image.png".to_string(),
             mime_type: Some("image/png".to_string()),
             blob: "base64imagedata".to_string(),
+            meta: None,
         };
 
         let json_val = serde_json::to_value(&blob_resource).unwrap();
@@ -557,7 +595,9 @@ mod comprehensive_schema_validation {
     }
 
     /// Validates JSON-RPC batch operations against schema
+    /// NOTE: JSON-RPC batching was removed in protocol version 2025-06-18
     #[test]
+    #[ignore] // Removed in 2025-06-18 spec
     fn test_jsonrpc_batch_schema_compliance() {
         // Test batch request
         let req1 = JsonRpcRequest::new::<serde_json::Value>(json!(1), "method1".to_string(), None)
@@ -566,7 +606,7 @@ mod comprehensive_schema_validation {
             .unwrap();
         let notification = JsonRpcNotification::new::<()>("notif".to_string(), None).unwrap();
 
-        let batch_request: JsonRpcBatchRequest = vec![
+        let batch_request: Vec<JsonRpcRequestOrNotification> = vec![
             JsonRpcRequestOrNotification::Request(req1),
             JsonRpcRequestOrNotification::Request(req2),
             JsonRpcRequestOrNotification::Notification(notification),
@@ -580,7 +620,7 @@ mod comprehensive_schema_validation {
         let resp1 = JsonRpcResponse::success(json!(1), json!({"result": "ok"})).unwrap();
         let error2 = JsonRpcError::error(json!(2), -32601, "Not found".to_string(), None);
 
-        let batch_response: JsonRpcBatchResponse = vec![
+        let batch_response: Vec<JsonRpcResponseOrError> = vec![
             JsonRpcResponseOrError::Response(resp1),
             JsonRpcResponseOrError::Error(error2),
         ];
@@ -623,14 +663,15 @@ mod comprehensive_schema_validation {
         let preferences = ModelPreferences {
             cost_priority: Some(0.3),
             speed_priority: Some(0.7),
-            quality_priority: Some(0.9),
+            intelligence_priority: Some(0.9),
+            hints: None,
         };
 
         let json_val = serde_json::to_value(&preferences).unwrap();
         // Use approximate comparison for floating point values due to JSON precision
         assert!((json_val["costPriority"].as_f64().unwrap() - 0.3).abs() < 0.01);
         assert!((json_val["speedPriority"].as_f64().unwrap() - 0.7).abs() < 0.01);
-        assert!((json_val["qualityPriority"].as_f64().unwrap() - 0.9).abs() < 0.01);
+        assert!((json_val["intelligencePriority"].as_f64().unwrap() - 0.9).abs() < 0.01);
     }
 
     /// Validates complete message flow against schema
@@ -646,6 +687,7 @@ mod comprehensive_schema_validation {
                 client_info: Implementation {
                     name: "test-client".to_string(),
                     version: "1.0.0".to_string(),
+                    title: Some("Test Client".to_string()),
                 },
                 meta: None,
             }),
@@ -654,7 +696,7 @@ mod comprehensive_schema_validation {
 
         let json_val = serde_json::to_value(&init_request).unwrap();
         assert_eq!(json_val["method"], "initialize");
-        assert_eq!(json_val["params"]["protocolVersion"], "2025-03-26");
+        assert_eq!(json_val["params"]["protocolVersion"], "2025-06-18");
 
         // Initialize response
         let init_response = JsonRpcResponse::success(
@@ -665,6 +707,7 @@ mod comprehensive_schema_validation {
                 server_info: Implementation {
                     name: "test-server".to_string(),
                     version: "1.0.0".to_string(),
+                    title: Some("Test Server".to_string()),
                 },
                 instructions: None,
                 meta: None,
@@ -673,7 +716,7 @@ mod comprehensive_schema_validation {
         .unwrap();
 
         let json_val = serde_json::to_value(&init_response).unwrap();
-        assert_eq!(json_val["result"]["protocolVersion"], "2025-03-26");
+        assert_eq!(json_val["result"]["protocolVersion"], "2025-06-18");
 
         // Initialized notification
         let initialized_notif = JsonRpcNotification::new::<InitializedParams>(
@@ -699,13 +742,14 @@ mod comprehensive_schema_validation {
         // Annotations
         let annotations = Annotations::new()
             .destructive(DangerLevel::High)
-            .for_audience(vec![AnnotationAudience::User]);
+            .for_audience(vec![Role::User]);
         assert!(annotations.destructive.is_some());
         assert!(annotations.danger.is_some());
         println!("✓ Annotations support");
 
         // Tool annotations
-        let tool = Tool::new("test", "description").with_annotations(annotations);
+        let tool_annotations = ToolAnnotations::new().read_only();
+        let tool = Tool::new("test", "description").with_annotations(tool_annotations);
         assert!(tool.annotations.is_some());
         println!("✓ Tool annotations support");
 
@@ -737,15 +781,20 @@ mod comprehensive_schema_validation {
         assert!(progress.message.is_some());
         println!("✓ Enhanced progress notifications");
 
-        // Embedded resources
-        let resource_content = Content::resource("file://test.txt");
-        assert!(matches!(resource_content, Content::Resource { .. }));
-        println!("✓ Embedded resources support");
+        // Resource links (2025-06-18 NEW)
+        let resource_link = Content::resource_link("file://test.txt", "test file");
+        assert!(matches!(resource_link, Content::ResourceLink { .. }));
+        println!("✓ Resource links support");
 
-        // JSON-RPC batching
-        let batch: JsonRpcBatchRequest = vec![];
-        assert!(serde_json::to_value(&batch).unwrap().is_array());
-        println!("✓ JSON-RPC batching support");
+        // Embedded resources (2025-06-18)
+        let embedded_resource = Content::embedded_resource(ResourceContents::Text {
+            uri: "file://test.txt".to_string(),
+            mime_type: Some("text/plain".to_string()),
+            text: "content".to_string(),
+            meta: None,
+        });
+        assert!(matches!(embedded_resource, Content::Resource { .. }));
+        println!("✓ Embedded resources support");
 
         // Metadata support
         let init_params = InitializeParams {
@@ -754,6 +803,7 @@ mod comprehensive_schema_validation {
             client_info: Implementation {
                 name: "test".to_string(),
                 version: "1.0.0".to_string(),
+                title: Some("Test".to_string()),
             },
             meta: Some({
                 let mut meta = HashMap::new();
@@ -781,6 +831,7 @@ mod comprehensive_schema_validation {
         let _impl = Implementation {
             name: "test".to_string(),
             version: "1.0.0".to_string(),
+            title: Some("Test Implementation".to_string()),
         };
         checks_passed += 1;
         println!("✓ Core types (Implementation)");
@@ -803,11 +854,13 @@ mod comprehensive_schema_validation {
         // Check 5: Resource types
         let _resource = Resource {
             uri: "file://test".to_string(),
-            name: None,
+            name: "Test Resource".to_string(),
             description: None,
             mime_type: None,
             annotations: None,
             size: None,
+            title: Some("Test Resource".to_string()),
+            meta: None,
         };
         checks_passed += 1;
         println!("✓ Resource types");
@@ -817,6 +870,8 @@ mod comprehensive_schema_validation {
             name: "test".to_string(),
             description: None,
             arguments: None,
+            title: Some("Test Prompt".to_string()),
+            meta: None,
         };
         checks_passed += 1;
         println!("✓ Prompt types");
@@ -834,6 +889,7 @@ mod comprehensive_schema_validation {
             client_info: Implementation {
                 name: "test".to_string(),
                 version: "1.0.0".to_string(),
+                title: Some("Test".to_string()),
             },
             meta: None,
         };

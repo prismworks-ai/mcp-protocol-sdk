@@ -48,6 +48,7 @@ impl ToolHandler for HttpCalculatorHandler {
                     return Ok(ToolResult {
                         content: vec![Content::text("Error: Division by zero")],
                         is_error: Some(true),
+                        structured_content: None,
                         meta: None,
                     });
                 }
@@ -62,6 +63,7 @@ impl ToolHandler for HttpCalculatorHandler {
                         operation
                     ))],
                     is_error: Some(true),
+                    structured_content: None,
                     meta: None,
                 });
             }
@@ -73,6 +75,7 @@ impl ToolHandler for HttpCalculatorHandler {
                 a, operation, b, result
             ))],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -108,6 +111,7 @@ impl ResourceHandler for HttpStatusHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: serde_json::to_string_pretty(&status)?,
+                    meta: None,
                 }])
             }
             "http://server/metrics" => {
@@ -123,6 +127,7 @@ impl ResourceHandler for HttpStatusHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: serde_json::to_string_pretty(&metrics)?,
+                    meta: None,
                 }])
             }
             _ => Err(McpError::ResourceNotFound(uri.to_string())),
@@ -133,19 +138,23 @@ impl ResourceHandler for HttpStatusHandler {
         Ok(vec![
             ResourceInfo {
                 uri: "http://server/status".to_string(),
-                name: Some("HTTP Server Status".to_string()),
+                name: "HTTP Server Status".to_string(),
                 description: Some("Current status of the HTTP MCP server".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: None,
+                meta: None,
             },
             ResourceInfo {
                 uri: "http://server/metrics".to_string(),
-                name: Some("HTTP Server Metrics".to_string()),
+                name: "HTTP Server Metrics".to_string(),
                 description: Some("Performance metrics for the HTTP transport".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: None,
+                meta: None,
             },
         ])
     }
@@ -206,11 +215,13 @@ async fn main() -> McpResult<()> {
             .add_resource_detailed(
                 ResourceInfo {
                     uri: "http://server/status".to_string(),
-                    name: Some("HTTP Server Status".to_string()),
+                    name: "HTTP Server Status".to_string(),
                     description: Some("Current status of the HTTP MCP server".to_string()),
                     mime_type: Some("application/json".to_string()),
                     annotations: None,
                     size: None,
+                    title: None,
+                    meta: None,
                 },
                 HttpStatusHandler,
             )
@@ -220,11 +231,13 @@ async fn main() -> McpResult<()> {
             .add_resource_detailed(
                 ResourceInfo {
                     uri: "http://server/metrics".to_string(),
-                    name: Some("HTTP Server Metrics".to_string()),
+                    name: "HTTP Server Metrics".to_string(),
                     description: Some("Performance metrics for the HTTP transport".to_string()),
                     mime_type: Some("application/json".to_string()),
                     annotations: None,
                     size: None,
+                    title: None,
+                    meta: None,
                 },
                 HttpStatusHandler,
             )

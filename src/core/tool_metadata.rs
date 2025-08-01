@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 /// Tool behavior hints for clients to understand tool characteristics
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ToolBehaviorHints {
     /// Tool only reads data without making changes
     #[serde(rename = "readOnlyHint", skip_serializing_if = "Option::is_none")]
@@ -48,19 +48,7 @@ pub struct ToolBehaviorHints {
     pub cacheable: Option<bool>,
 }
 
-impl Default for ToolBehaviorHints {
-    fn default() -> Self {
-        Self {
-            read_only: None,
-            destructive: None,
-            idempotent: None,
-            requires_auth: None,
-            long_running: None,
-            resource_intensive: None,
-            cacheable: None,
-        }
-    }
-}
+
 
 impl ToolBehaviorHints {
     /// Create a new empty set of behavior hints
@@ -172,10 +160,8 @@ impl ToolCategory {
         }
 
         // Check tags (any match is sufficient)
-        if !filter.tags.is_empty() {
-            if !filter.tags.iter().any(|tag| self.tags.contains(tag)) {
-                return false;
-            }
+        if !filter.tags.is_empty() && !filter.tags.iter().any(|tag| self.tags.contains(tag)) {
+            return false;
         }
 
         true
@@ -350,9 +336,10 @@ pub struct ToolDeprecation {
 }
 
 /// Severity levels for deprecation warnings
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum DeprecationSeverity {
     /// Tool is deprecated but still fully functional
+    #[default]
     Low,
     /// Tool may have reduced functionality or support
     Medium,
@@ -362,11 +349,7 @@ pub enum DeprecationSeverity {
     Critical,
 }
 
-impl Default for DeprecationSeverity {
-    fn default() -> Self {
-        DeprecationSeverity::Low
-    }
-}
+
 
 impl ToolDeprecation {
     /// Create a new deprecation notice
@@ -477,14 +460,14 @@ impl EnhancedToolMetadata {
 
     /// Check if tool is deprecated
     pub fn is_deprecated(&self) -> bool {
-        self.deprecation.as_ref().map_or(false, |d| d.deprecated)
+        self.deprecation.as_ref().is_some_and(|d| d.deprecated)
     }
 
     /// Get deprecation warning message
     pub fn deprecation_warning(&self) -> Option<String> {
         self.deprecation.as_ref().and_then(|d| {
             if d.deprecated {
-                let mut warning = format!("Tool is deprecated");
+                let mut warning = "Tool is deprecated".to_string();
                 if let Some(ref reason) = d.reason {
                     warning.push_str(&format!(": {}", reason));
                 }

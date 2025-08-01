@@ -283,8 +283,9 @@ if [[ "$COVERAGE" == "true" ]]; then
     
     if command -v cargo-tarpaulin >/dev/null 2>&1; then
         print_step "Generating coverage report..."
-        time_command cargo tarpaulin --all-features --workspace --timeout 120 --out html --output-dir coverage
-        print_success "Coverage report generated in coverage/ directory"
+        mkdir -p .local/reports
+        time_command cargo tarpaulin --all-features --workspace --timeout 120 --out html --output-dir .local/reports
+        print_success "Coverage report generated in .local/reports/ directory"
     else
         print_warning "cargo-tarpaulin not installed, skipping coverage"
         print_warning "Install with: cargo install cargo-tarpaulin"

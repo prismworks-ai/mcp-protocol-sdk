@@ -101,17 +101,20 @@ mod tool_tests {
                 "success" => Ok(ToolResult {
                     content: vec![Content::text("Operation successful")],
                     is_error: Some(false),
+                    structured_content: None,
                     meta: None,
                 }),
                 "error" => Ok(ToolResult {
                     content: vec![Content::text("Operation failed")],
                     is_error: Some(true),
+                    structured_content: None,
                     meta: None,
                 }),
                 "timeout" => Err(McpError::Timeout("Operation timed out".to_string())),
                 _ => Ok(ToolResult {
                     content: vec![Content::text("Default response")],
                     is_error: Some(false),
+                    structured_content: None,
                     meta: None,
                 }),
             }
@@ -269,7 +272,7 @@ mod content_tests {
     fn test_text_content() {
         let content = Content::text("Hello, world!");
         match content {
-            Content::Text { text, annotations } => {
+            Content::Text { text, annotations, .. } => {
                 assert_eq!(text, "Hello, world!");
                 assert!(annotations.is_none());
             }
@@ -285,6 +288,7 @@ mod content_tests {
                 data,
                 mime_type,
                 annotations,
+                ..
             } => {
                 assert_eq!(data, "base64data");
                 assert_eq!(mime_type, "image/png");
@@ -302,6 +306,7 @@ mod content_tests {
                 data,
                 mime_type,
                 annotations,
+                ..
             } => {
                 assert_eq!(data, "base64audiodata");
                 assert_eq!(mime_type, "audio/wav");
@@ -313,16 +318,19 @@ mod content_tests {
 
     #[test]
     fn test_resource_content() {
-        let content = Content::resource("file:///test.txt");
+        let content = Content::resource_link("file:///test.txt", "Test File");
         match content {
-            Content::Resource {
-                resource,
+            Content::ResourceLink {
+                uri,
+                name,
                 annotations,
+                ..
             } => {
-                assert_eq!(resource.uri, "file:///test.txt");
+                assert_eq!(uri, "file:///test.txt");
+                assert_eq!(name, "Test File");
                 assert!(annotations.is_none());
             }
-            _ => panic!("Expected resource content"),
+            _ => panic!("Expected resource link content"),
         }
     }
 }

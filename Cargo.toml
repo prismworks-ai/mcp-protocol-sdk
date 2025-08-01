@@ -1,6 +1,6 @@
 [package]
 name = "mcp-protocol-sdk"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.82"  # Minimum stable Rust version
 authors = ["MCP Rust Contributors <mcp-rust@users.noreply.github.com>"]
@@ -81,60 +81,63 @@ http = ["axum", "tower", "tower-http", "reqwest", "chrono", "tokio-stream", "fut
 websocket = ["tokio-tungstenite", "http", "futures", "futures-util"]
 validation = ["jsonschema"]
 
+# Client Examples
 [[example]]
-name = "simple_server"
-path = "examples/simple_server.rs"
-required-features = ["stdio", "tracing-subscriber"]
-
-[[example]]
-name = "echo_server"
-path = "examples/echo_server.rs"
-required-features = ["stdio", "tracing-subscriber"]
-
-[[example]]
-name = "client_example"
-path = "examples/client_example.rs"
+name = "basic_client"
+path = "examples/client/basic_client.rs"
 required-features = ["stdio"]
 
 [[example]]
-name = "database_server"
-path = "examples/database_server.rs"
-required-features = ["stdio", "tracing-subscriber"]
-
-[[example]]
-name = "http_server"
-path = "examples/http_server.rs"
-required-features = ["http"]
-
-[[example]]
 name = "http_client"
-path = "examples/http_client.rs"
+path = "examples/client/http_client.rs"
 required-features = ["http"]
 
 [[example]]
-name = "websocket_server"
-path = "examples/websocket_server.rs"
-required-features = ["websocket"]
+name = "advanced_http_client"
+path = "examples/client/advanced_http_client.rs"
+required-features = ["http", "tracing-subscriber", "chrono", "fastrand"]
 
 [[example]]
 name = "websocket_client"
-path = "examples/websocket_client.rs"
+path = "examples/client/websocket_client.rs"
 required-features = ["websocket"]
 
 [[example]]
 name = "conservative_http_demo"
-path = "examples/conservative_http_demo.rs"
+path = "examples/client/conservative_http_demo.rs"
 required-features = ["http", "tracing-subscriber"]
 
+# Server Examples
+[[example]]
+name = "simple_server"
+path = "examples/server/simple_server.rs"
+required-features = ["stdio", "tracing-subscriber"]
+
+[[example]]
+name = "echo_server"
+path = "examples/server/echo_server.rs"
+required-features = ["stdio", "tracing-subscriber"]
+
+[[example]]
+name = "database_server"
+path = "examples/server/database_server.rs"
+required-features = ["stdio", "tracing-subscriber"]
+
+[[example]]
+name = "http_server"
+path = "examples/server/http_server.rs"
+required-features = ["http"]
+
+[[example]]
+name = "websocket_server"
+path = "examples/server/websocket_server.rs"
+required-features = ["websocket"]
+
+# Utility Examples
 [[example]]
 name = "transport_benchmark"
-path = "examples/transport_benchmark.rs"
+path = "examples/utilities/transport_benchmark.rs"
 required-features = ["http", "tracing-subscriber"]
-
-[[example]]
-name = "advanced_http_client"
-path = "examples/advanced_http_client.rs"
-required-features = ["http", "tracing-subscriber", "chrono", "fastrand"]
 
 [package.metadata.docs.rs]
 all-features = true

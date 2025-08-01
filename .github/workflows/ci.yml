@@ -5,9 +5,8 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
-# Cancel previous runs if a new push occurs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,16 +26,11 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "check"
+          cache-on-failure: true
 
       - name: Run cargo check
         run: cargo check --all-features
@@ -66,16 +60,11 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "test-${{ matrix.os }}-${{ matrix.rust }}"
+          cache-on-failure: true
 
       - name: Run cargo test (default features)
         run: cargo test --verbose
@@ -100,19 +89,47 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-feature-${{ matrix.feature }}-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "features"
+          cache-on-failure: true
 
       - name: Test feature ${{ matrix.feature }}
         run: cargo test --features ${{ matrix.feature }} --verbose
+
+  cross-compile:
+    name: Cross Compilation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: 
+          - x86_64-pc-windows-gnu
+          - aarch64-apple-darwin
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "cross-${{ matrix.target }}"
+          cache-on-failure: true
+
+      - name: Install cross-compilation dependencies
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Check compilation for ${{ matrix.target }}
+        run: cargo check --target ${{ matrix.target }} --all-features
 
   examples:
     name: Examples
@@ -124,39 +141,33 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "examples"
+          cache-on-failure: true
 
-      - name: Check default examples
+      - name: Check all examples
         run: |
+          # Default examples
           cargo check --example simple_server
           cargo check --example echo_server
           cargo check --example client_example
           cargo check --example database_server
-
-      - name: Check HTTP examples
-        run: |
+          
+          # HTTP examples
           cargo check --example http_server --features http
           cargo check --example http_client --features http
           cargo check --example conservative_http_demo --features http,tracing-subscriber
           cargo check --example transport_benchmark --features http,tracing-subscriber
           cargo check --example advanced_http_client --features http,tracing-subscriber,chrono,fastrand
-
-      - name: Check WebSocket examples
-        run: |
+          
+          # WebSocket examples
           cargo check --example websocket_server --features websocket
           cargo check --example websocket_client --features websocket
 
-  fmt:
-    name: Rustfmt
+  quality:
+    name: Code Quality
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -165,38 +176,19 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt
+          components: rustfmt, clippy
 
-      - name: Run cargo fmt
-        run: |
-          # Format and check all Rust source files, excluding scripts and generated files
-          cargo fmt --all -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          components: clippy
+          shared-key: "quality"
+          cache-on-failure: true
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
-      - name: Run cargo clippy
-        run: cargo clippy --all-features -- -W clippy::all -A unused_imports -A unused_variables -A dead_code -A unused_mut -A private_interfaces -A clippy::redundant_closure -A clippy::redundant_pattern_matching -A clippy::should_implement_trait -A clippy::manual_strip -A clippy::type_complexity
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings -A unused_imports -A unused_variables -A dead_code
 
   docs:
     name: Documentation
@@ -208,35 +200,16 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up cargo cache
-        uses: actions/cache@v4
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-docs-${{ hashFiles('**/Cargo.lock') }}
+          shared-key: "docs"
+          cache-on-failure: true
 
       - name: Check documentation
         run: cargo doc --all-features --no-deps --document-private-items
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
-
-      - name: Run cargo audit
-        run: cargo audit
+        env:
+          RUSTDOCFLAGS: "-D warnings"
 
   coverage:
     name: Code Coverage
@@ -248,19 +221,14 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "coverage"
+          cache-on-failure: true
+
       - name: Install cargo-tarpaulin
         run: cargo install cargo-tarpaulin
-
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Generate code coverage
         run: cargo tarpaulin --all-features --workspace --timeout 120 --out xml

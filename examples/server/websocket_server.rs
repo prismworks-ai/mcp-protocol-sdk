@@ -72,6 +72,7 @@ impl ToolHandler for WebSocketEchoHandler {
         Ok(ToolResult {
             content: vec![Content::text(response)],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -104,6 +105,7 @@ impl ToolHandler for WebSocketChatHandler {
                 room, username, message
             ))],
             is_error: None,
+            structured_content: None,
             meta: None,
         })
     }
@@ -142,6 +144,7 @@ impl ResourceHandler for WebSocketStatusHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: serde_json::to_string_pretty(&status)?,
+                    meta: None,
                 }])
             }
             "ws://server/connections" => {
@@ -170,6 +173,7 @@ impl ResourceHandler for WebSocketStatusHandler {
                     uri: uri.to_string(),
                     mime_type: Some("application/json".to_string()),
                     text: serde_json::to_string_pretty(&connections)?,
+                    meta: None,
                 }])
             }
             _ => Err(McpError::ResourceNotFound(uri.to_string())),
@@ -180,23 +184,27 @@ impl ResourceHandler for WebSocketStatusHandler {
         Ok(vec![
             ResourceInfo {
                 uri: "ws://server/status".to_string(),
-                name: Some("WebSocket Server Status".to_string()),
+                name: "WebSocket Server Status".to_string(),
                 description: Some(
                     "Current status and capabilities of WebSocket server".to_string(),
                 ),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: None,
+                meta: None,
             },
             ResourceInfo {
                 uri: "ws://server/connections".to_string(),
-                name: Some("Active WebSocket Connections".to_string()),
+                name: "Active WebSocket Connections".to_string(),
                 description: Some(
                     "Information about currently connected WebSocket clients".to_string(),
                 ),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: None,
+                meta: None,
             },
         ])
     }
@@ -287,11 +295,13 @@ async fn main() -> McpResult<()> {
         .add_resource_detailed(
             ResourceInfo {
                 uri: "ws://server/".to_string(),
-                name: Some("WebSocket Server Resources".to_string()),
+                name: "WebSocket Server Resources".to_string(),
                 description: Some("WebSocket server status and connection information".to_string()),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
+                title: None,
+                meta: None,
             },
             WebSocketStatusHandler,
         )

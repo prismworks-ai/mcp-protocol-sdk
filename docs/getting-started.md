@@ -1,6 +1,8 @@
 # 🚀 Quick Start Guide
 
-Get up and running with the **unified MCP Protocol SDK** in just a few minutes!
+Get up and running with the **production-ready MCP Protocol SDK** (v0.4.0) in just a few minutes!
+
+🎯 **Latest Release**: Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 97 comprehensive tests.
 
 ## Prerequisites
 
@@ -13,17 +15,17 @@ Add the unified SDK to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.3.0"
+mcp-protocol-sdk = "0.4.0"  # Latest with 2025-06-18 schema upgrade
 
 # Choose only the features you need:
-# mcp-protocol-sdk = { version = "0.3.0", features = ["stdio", "http", "websocket"] }
+# mcp-protocol-sdk = { version = "0.4.0", features = ["stdio", "http", "websocket"] }
 ```
 
 ### 🎉 Migration from Separate Crates
 
 If you were using the old separate crates, migration is simple:
 
-**Before (v0.2.x):**
+**Before (Separate Crates):**
 ```toml
 [dependencies]
 mcp-protocol-client = "0.1.0"
@@ -31,10 +33,10 @@ mcp-protocol-server = "0.1.0"
 mcp-protocol-types = "0.1.0"
 ```
 
-**After (v0.3.0):**
+**After (Unified SDK):**
 ```toml
 [dependencies] 
-mcp-protocol-sdk = "0.3.0"  # Everything unified!
+mcp-protocol-sdk = "0.4.0"  # Everything unified + production ready!
 ```
 
 **Code changes:**
@@ -154,33 +156,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Next Steps
 
-1. **For Servers**: Read the [Server Development Guide](./servers/README.md)
-2. **For Clients**: Read the [Client Development Guide](./clients/README.md)
+1. **Complete Guide**: Read the [Implementation Guide](./implementation-guide.md) for detailed client and server development
+2. **Examples**: Explore [runnable examples](../examples/) for hands-on learning
 3. **Integration**: Add your server to [Claude Desktop](./integrations/claude-desktop.md)
 
-## 🎉 Unified Architecture Benefits
+## 🎯 v0.4.0 Latest Features
 
-With v0.3.0, you get all MCP functionality in one clean package:
+With the current release, you get enhanced MCP capabilities:
 
-### **Before: Multiple Dependencies**
+### **Production-Ready Features**
 ```toml
 [dependencies]
-mcp-protocol-client = "0.1.0"    # 298 downloads
-mcp-protocol-server = "0.1.0"    # 296 downloads  
-mcp-protocol-types = "0.1.0"     # Unknown downloads
+mcp-protocol-sdk = "0.4.0"  # 🎯 Latest production features!
 ```
 
-### **After: Unified SDK**
-```toml
-[dependencies]
-mcp-protocol-sdk = "0.3.0"       # 🎯 Everything included!
-```
-
-**✅ Benefits:**
-- **Faster Builds**: Fewer dependencies to compile
-- **Simpler Imports**: One consistent API surface
-- **Better Maintenance**: Single version to track
-- **Zero Overhead**: Same performance, cleaner code
+**✅ Current Capabilities:**
+- **Multiple Transport Support**: STDIO, HTTP, WebSocket with optimized performance
+- **Enhanced Tool Results**: Rich data alongside human-readable content
+- **Advanced Session Management**: Auto-reconnection and fault tolerance
+- **Complete Documentation**: Comprehensive guides and 97 tests
+- **Enterprise Ready**: Production-grade error handling and monitoring
 
 ## Transport Options
 

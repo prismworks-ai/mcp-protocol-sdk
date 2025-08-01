@@ -592,7 +592,7 @@ mod tests {
             .build(TextResource::new("test".to_string(), None));
 
         assert_eq!(resource.info.uri, "test://resource");
-        assert_eq!(resource.info.name, Some("Test Resource".to_string()));
+        assert_eq!(resource.info.name, "Test Resource");
         assert_eq!(
             resource.info.description,
             Some("A test resource".to_string())

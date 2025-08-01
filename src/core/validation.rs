@@ -313,16 +313,14 @@ impl ParameterValidator {
         }
 
         // Integer validation
-        if schema.get("type").and_then(|v| v.as_str()) == Some("integer") {
-            if num_val.fract() != 0.0 {
-                if self.config.coerce_types {
-                    *value = Value::Number(serde_json::Number::from(num_val.round() as i64));
-                } else {
-                    return Err(McpError::validation(format!(
-                        "Parameter '{}' must be an integer",
-                        field_name
-                    )));
-                }
+        if schema.get("type").and_then(|v| v.as_str()) == Some("integer") && num_val.fract() != 0.0 {
+            if self.config.coerce_types {
+                *value = Value::Number(serde_json::Number::from(num_val.round() as i64));
+            } else {
+                return Err(McpError::validation(format!(
+                    "Parameter '{}' must be an integer",
+                    field_name
+                )));
             }
         }
 

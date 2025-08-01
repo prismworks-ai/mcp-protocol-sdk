@@ -6,15 +6,22 @@
 [![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 [![Security Audit](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
-[![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](#️-mcp-protocol-schema-compliance)
+[![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](#-mcp-protocol-schema-compliance)
+[![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
 
+> **🚀 Quick Start**: [**Getting Started**](./docs/getting-started.md) | [**Implementation Guide**](./docs/implementation-guide.md) | [**Examples**](./examples/)
+
 The MCP Protocol SDK enables seamless integration between AI models and external systems through a standardized protocol. Build powerful tools, resources, and capabilities that AI can discover and use dynamically.
+
+🚀 **v0.4.0 Released** - Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 97 comprehensive tests.
 
 ---
 
-## 📚 [Complete Documentation & Guides](./docs/README.md) | 📖 [API Reference](https://docs.rs/mcp-protocol-sdk) | 🚀 [Getting Started](./docs/getting-started.md)
+## 📚 [Documentation](./docs/README.md) | 📖 [API Reference](https://docs.rs/mcp-protocol-sdk) | 🚀 [Getting Started](./docs/getting-started.md) | 🆚 [vs Official SDK](./docs/comparison-official-sdk.md)
+
+### 🎯 Quick Links: 📖 [Implementation Guide](./docs/implementation-guide.md) | 🔧 [Examples](./examples/) | 🚀 [Transports](./docs/transports.md)
 
 ---
 
@@ -26,8 +33,9 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 - 🛠️ **Complete MCP Support** - Tools, resources, prompts, logging, and sampling
 - 🎯 **Type-Safe** - Comprehensive type system with compile-time guarantees  
 - 🚀 **Async/Await** - Built on Tokio for high-performance concurrent operations
-- 📦 **Modular Design** - Optional features for minimal binary size
-- 🔒 **Production Ready** - Comprehensive error handling, validation, and testing
+- 📦 **Unified Architecture** - All functionality in one crate (v0.3.0)
+- 🔒 **Production Ready** - 97 comprehensive tests, full validation, and error handling
+- 🆕 **Latest Schema** - 100% compliant with MCP 2025-06-18 specification
 - 📊 **Built-in Metrics** - Performance monitoring and health checks
 - 📖 **Excellent Docs** - Complete guides for servers, clients, and integrations
 
@@ -37,10 +45,10 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.3.0"
+mcp-protocol-sdk = "0.4.0"
 
 # Or with specific features only:
-mcp-protocol-sdk = { version = "0.3.0", features = ["stdio", "validation"] }
+mcp-protocol-sdk = { version = "0.4.0", features = ["stdio", "validation"] }
 ```
 
 ### Build an MCP Server (5 minutes)
@@ -124,10 +132,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 | 🖥️ **Claude Desktop Integration** | Add custom tools to Claude Desktop | [📝 Guide](./docs/integrations/claude-desktop.md) |
 | ⚡ **Cursor IDE Enhancement** | AI-powered development tools | [📝 Guide](./docs/integrations/cursor.md) |
 | 📝 **VS Code Extensions** | Smart code assistance and automation | [📝 Guide](./docs/integrations/vscode.md) |
-| 🗄️ **Database Access** | SQL queries and data analysis | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/database_server.rs) |
-| 🌐 **API Integration** | External service connectivity | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_server.rs) |
-| 📁 **File Operations** | Filesystem tools and utilities | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/simple_server.rs) |
-| 💬 **Chat Applications** | Real-time AI conversations | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/websocket_server.rs) |
+| 🗄️ **Database Access** | SQL queries and data analysis | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/database_server.rs) |
+| 🌐 **API Integration** | External service connectivity | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/http_server.rs) |
+| 📁 **File Operations** | Filesystem tools and utilities | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/simple_server.rs) |
+| 💬 **Chat Applications** | Real-time AI conversations | [📝 Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/websocket_server.rs) |
 
 ## 🏗️ Architecture
 
@@ -199,7 +207,7 @@ cargo run --example conservative_http_demo --all-features
 
 ## 🛡️ MCP Protocol Schema Compliance
 
-This SDK provides **100% verified compliance** with the official MCP Protocol Schema (2025-03-26), ensuring seamless interoperability with all MCP-compatible systems.
+This SDK provides **100% verified compliance** with the official MCP Protocol Schema (2025-06-18), ensuring seamless interoperability with all MCP-compatible systems.
 
 ### ✅ Comprehensive Validation
 
@@ -210,7 +218,7 @@ Our comprehensive test suite validates every aspect of the MCP protocol:
 cargo test --test comprehensive_schema_tests -- --nocapture
 ```
 
-**Results**: `26/26 tests passing` with `100.0% compliance rate` 🎉
+**Results**: `97 tests passing` with `100.0% compliance rate` 🎉
 
 ### 📊 Schema Compliance Report
 
@@ -227,16 +235,17 @@ cargo test --test comprehensive_schema_tests -- --nocapture
 | **Roots** | ✅ 100% | Discovery, List management |
 | **Completions** | ✅ 100% | Auto-complete for prompts/resources |
 
-### 🚀 2025-03-26 Features
+### 🚀 2025-06-18 Features
 
 Full support for all latest MCP protocol enhancements:
 
 - **🎵 Audio Content** - Native audio message support
-- **📝 Annotations** - Tool safety and usage metadata
-- **🌐 Embedded Resources** - Direct resource embedding
+- **📝 Enhanced Tool Results** - Structured content alongside text blocks
+- **🌐 Enhanced Resources** - Rich metadata with title and meta fields
+- **🛠️ Advanced Tool Management** - Complete tool discovery and categorization
 - **📊 Enhanced Progress** - Detailed progress tracking
 - **🔄 JSON-RPC Batching** - Efficient bulk operations
-- **📦 Metadata Support** - Rich request/response metadata
+- **📦 Zero Breaking Changes** - Full backward compatibility maintained
 
 ### 🧪 Validation Architecture
 
@@ -310,15 +319,15 @@ With 100% schema compliance, this SDK guarantees compatibility with:
 
 | Example | Description | Transport | Features |
 |---------|-------------|-----------|----------|
-| [Conservative HTTP Demo](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/conservative_http_demo.rs) | **Production-ready HTTP client** | **Advanced HTTP** | **Connection pooling, metrics** |
-| [Transport Benchmark](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/transport_benchmark.rs) | **Performance comparison** | **Multiple** | **45% speed improvement** |
-| [Advanced HTTP Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/advanced_http_client.rs) | **Full-featured HTTP demo** | **Advanced HTTP** | **Retry logic, health checks** |
-| [Echo Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/echo_server.rs) | Simple tool demonstration | STDIO | Basic tools |
-| [Database Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/database_server.rs) | SQL query execution | STDIO | Database access |
-| [HTTP Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_server.rs) | RESTful API integration | HTTP | Web services |
-| [WebSocket Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/websocket_server.rs) | Real-time communication | WebSocket | Live updates |
-| [File Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/simple_server.rs) | File system operations | STDIO | File handling |
-| [Client Example](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client_example.rs) | Basic client usage | STDIO | Client patterns |
+| [Conservative HTTP Demo](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client/conservative_http_demo.rs) | **Production-ready HTTP client** | **Advanced HTTP** | **Connection pooling, metrics** |
+| [Transport Benchmark](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/utilities/transport_benchmark.rs) | **Performance comparison** | **Multiple** | **45% speed improvement** |
+| [Advanced HTTP Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client/advanced_http_client.rs) | **Full-featured HTTP demo** | **Advanced HTTP** | **Retry logic, health checks** |
+| [Echo Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/echo_server.rs) | Simple tool demonstration | STDIO | Basic tools |
+| [Database Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/database_server.rs) | SQL query execution | STDIO | Database access |
+| [HTTP Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/http_server.rs) | RESTful API integration | HTTP | Web services |
+| [WebSocket Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/websocket_server.rs) | Real-time communication | WebSocket | Live updates |
+| [File Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/simple_server.rs) | File system operations | STDIO | File handling |
+| [Basic Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client/basic_client.rs) | Basic client usage | STDIO | Client patterns |
 
 ## 🛠️ Development
 
@@ -387,7 +396,7 @@ Licensed under the [MIT License](./LICENSE).
 
 <div align="center">
 
-**[📚 Read the Full Documentation](./docs/README.md)** | **[🚀 Get Started Now](./docs/getting-started.md)**
+**[📚 Read the Full Documentation](./docs/README.md)** | **[🚀 Get Started Now](./docs/getting-started.md)** | **[📖 Implementation Guide](./docs/implementation-guide.md)**
 
 *Built with ❤️ in Rust*
 

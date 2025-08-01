@@ -154,27 +154,43 @@ let transport = WebSocketServerTransport::new("0.0.0.0:8080")
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use mcp_protocol_sdk::server::mcp_server::ServerConfig;
 
-let server = McpServer::new("my-server", "1.0.0")
-    .with_description("My awesome MCP server")
-    .with_timeout(Duration::from_secs(30))
-    .with_max_concurrent_requests(10)
-    .with_request_size_limit(1024 * 1024); // 1MB
+// Basic server
+let mut server = McpServer::new("my-server".to_string(), "1.0.0".to_string());
+
+// Or with custom configuration
+let config = ServerConfig {
+    max_concurrent_requests: 10,
+    request_timeout_ms: 30000,
+    validate_requests: true,
+    enable_logging: true,
+};
+
+let mut server = McpServer::with_config(
+    "my-server".to_string(),
+    "1.0.0".to_string(),
+    config,
+);
 ```
 
 ### Advanced Server Configuration
 
 ```rust
-let server = McpServer::builder()
-    .name("advanced-server")
-    .version("2.0.0")
-    .description("Advanced MCP server with custom configuration")
-    .timeout(Duration::from_secs(60))
-    .max_concurrent_requests(100)
-    .request_size_limit(10 * 1024 * 1024) // 10MB
-    .enable_compression(true)
-    .enable_heartbeat(Duration::from_secs(30))
-    .build();
+use mcp_protocol_sdk::server::mcp_server::ServerConfig;
+
+let config = ServerConfig {
+    max_concurrent_requests: 100,
+    request_timeout_ms: 60000,
+    validate_requests: true,
+    enable_logging: true,
+};
+
+let mut server = McpServer::with_config(
+    "advanced-server".to_string(),
+    "2.0.0".to_string(),
+    config,
+);
 ```
 
 ## Client Configuration
@@ -184,29 +200,29 @@ let server = McpServer::builder()
 ```rust
 use mcp_protocol_sdk::prelude::*;
 
-let client = McpClient::new()
-    .with_name("my-client")
-    .with_version("1.0.0")
-    .with_timeout(Duration::from_secs(30))
-    .build();
+let client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
 ```
 
 ### Advanced Client Configuration
 
 ```rust
-let client = McpClient::builder()
-    .name("advanced-client")
-    .version("2.0.0")
-    .timeout(Duration::from_secs(60))
-    .retry_config(RetryConfig {
-        max_retries: 3,
-        initial_delay: Duration::from_millis(100),
-        max_delay: Duration::from_secs(5),
-        backoff_multiplier: 2.0,
-    })
-    .connection_pool_size(5)
-    .enable_compression(true)
-    .build();
+// Advanced client configuration is typically handled at the session level
+use mcp_protocol_sdk::client::session::{ClientSession, SessionConfig};
+
+let client = McpClient::new("advanced-client".to_string(), "2.0.0".to_string());
+
+let session_config = SessionConfig {
+    auto_reconnect: true,
+    max_reconnect_attempts: 3,
+    reconnect_delay_ms: 1000,
+    connection_timeout_ms: 60000,
+    heartbeat_interval_ms: 30000,
+    max_concurrent_requests: 10,
+    request_timeout_ms: 30000,
+    ..Default::default()
+};
+
+let session = ClientSession::with_config(client, session_config);
 ```
 
 ## Performance Tuning
@@ -225,11 +241,19 @@ let server = McpServer::new("server", "1.0.0")
 ### Concurrency Configuration
 
 ```rust
-// Limit concurrent operations
-let server = McpServer::new("server", "1.0.0")
-    .with_max_concurrent_requests(50)
-    .with_max_concurrent_tools(10)
-    .with_tool_execution_timeout(Duration::from_secs(30));
+// Limit concurrent operations using ServerConfig
+let config = ServerConfig {
+    max_concurrent_requests: 50,
+    request_timeout_ms: 30000,
+    validate_requests: true,
+    enable_logging: true,
+};
+
+let mut server = McpServer::with_config(
+    "server".to_string(),
+    "1.0.0".to_string(),
+    config,
+);
 ```
 
 ### Connection Pool Configuration

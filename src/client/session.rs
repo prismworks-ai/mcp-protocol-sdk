@@ -573,6 +573,7 @@ mod tests {
                 ServerInfo {
                     name: "test-server".to_string(),
                     version: "1.0.0".to_string(),
+                    title: Some("Test Server".to_string()),
                 },
             );
             JsonRpcResponse::success(serde_json::Value::from(1), init_result)

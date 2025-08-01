@@ -15,7 +15,7 @@ mod protocol_types_tests {
     fn test_content_creation() {
         let text_content = Content::text("Hello, world!");
         match text_content {
-            Content::Text { text, annotations } => {
+            Content::Text { text, annotations, meta: _ } => {
                 assert_eq!(text, "Hello, world!");
                 assert!(annotations.is_none());
             }
@@ -68,6 +68,8 @@ mod protocol_types_tests {
                 additional_properties: HashMap::new(),
             },
             annotations: None,
+            title: None,
+            meta: None,
         };
 
         assert_eq!(tool.name, "test_tool");
@@ -78,15 +80,17 @@ mod protocol_types_tests {
     fn test_resource_creation() {
         let resource = Resource {
             uri: "file:///test.txt".to_string(),
-            name: Some("Test File".to_string()),
+            name: "Test File".to_string(),
             description: Some("A test file resource".to_string()),
             mime_type: Some("text/plain".to_string()),
             annotations: None,
             size: Some(1024),
+            title: None,
+            meta: None,
         };
 
         assert_eq!(resource.uri, "file:///test.txt");
-        assert_eq!(resource.name.unwrap(), "Test File");
+        assert_eq!(resource.name, "Test File");
         assert_eq!(resource.size.unwrap(), 1024);
     }
 
@@ -109,7 +113,7 @@ mod protocol_types_tests {
         let resource = Content::resource("file:///test.txt");
         match resource {
             Content::Resource { resource, .. } => {
-                assert_eq!(resource.uri, "file:///test.txt");
+                assert_eq!(resource.uri(), "file:///test.txt");
             }
             _ => panic!("Expected resource content"),
         }
@@ -149,6 +153,7 @@ mod protocol_validation_tests {
         let valid_content = Content::Text {
             text: "Valid text content".to_string(),
             annotations: None,
+            meta: None,
         };
 
         let result = validate_content(&valid_content);
@@ -185,7 +190,7 @@ mod annotations_tests {
     fn test_annotations_creation() {
         let annotations = Annotations::new()
             .read_only()
-            .for_audience(vec![AnnotationAudience::Developer])
+            .for_audience(vec![Role::User])
             .with_danger_level(DangerLevel::Safe);
 
         assert_eq!(annotations.read_only, Some(true));
@@ -193,7 +198,7 @@ mod annotations_tests {
         assert_eq!(annotations.danger, Some(DangerLevel::Safe));
         assert_eq!(
             annotations.audience,
-            Some(vec![AnnotationAudience::Developer])
+            Some(vec![Role::User])
         );
     }
 
@@ -209,10 +214,10 @@ mod annotations_tests {
     #[test]
     fn test_tool_with_annotations() {
         let tool = Tool::new("safe_reader", "Read file safely")
-            .with_annotations(Annotations::new().read_only());
+            .with_annotations(ToolAnnotations::new().read_only());
 
         assert_eq!(tool.name, "safe_reader");
         assert!(tool.annotations.is_some());
-        assert_eq!(tool.annotations.unwrap().read_only, Some(true));
+        assert_eq!(tool.annotations.unwrap().read_only_hint, Some(true));
     }
 }

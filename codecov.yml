@@ -1,7 +1,8 @@
 # Codecov configuration for MCP Protocol SDK
 
 codecov:
-  token: be6df91d-f7df-46e9-8648-b9ae2e1d0abe
+  # Token configured in GitHub Secrets as CODECOV_TOKEN
+  # Do not hardcode tokens in version control
 
 coverage:
   precision: 2

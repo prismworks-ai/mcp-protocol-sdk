@@ -184,11 +184,11 @@ mcp-protocol-sdk = "0.3.0"     # 🎯 Everything in one crate!
 
 | Scenario | Description | Transport | Example |
 |----------|-------------|-----------|---------|
-| **Claude Desktop** | Add tools to Claude | STDIO | [File Manager](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/simple_server.rs) |
-| **Web Integration** | HTTP-based AI tools | HTTP | [REST API Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_server.rs) |
-| **Real-time Chat** | Live AI conversations | WebSocket | [Chat Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/websocket_server.rs) |
-| **Database Access** | SQL query execution | STDIO | [Database Tools](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/database_server.rs) |
-| **API Integration** | External service calls | HTTP | [HTTP Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/http_client.rs) |
+| **Claude Desktop** | Add tools to Claude | STDIO | [File Manager](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/simple_server.rs) |
+| **Web Integration** | HTTP-based AI tools | HTTP | [REST API Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/http_server.rs) |
+| **Real-time Chat** | Live AI conversations | WebSocket | [Chat Server](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/websocket_server.rs) |
+| **Database Access** | SQL query execution | STDIO | [Database Tools](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/server/database_server.rs) |
+| **API Integration** | External service calls | HTTP | [HTTP Client](https://github.com/mcp-rust/mcp-protocol-sdk/blob/main/examples/client/http_client.rs) |
 
 ## 🔧 Optional Features
 
