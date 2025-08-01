@@ -647,7 +647,7 @@ mod tests {
         // Add a resource update handler
         session
             .add_notification_handler(ResourceUpdateHandler::new(|uri| {
-                println!("Resource updated: {}", uri);
+                println!("Resource updated: {uri}");
             }))
             .await;
 
@@ -661,7 +661,7 @@ mod tests {
         // Add a progress handler
         session
             .add_notification_handler(ProgressHandler::new(|token, progress, total| {
-                println!("Progress {}: {} / {:?}", token, progress, total);
+                println!("Progress {token}: {progress} / {total:?}");
             }))
             .await;
 

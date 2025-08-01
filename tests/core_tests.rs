@@ -14,7 +14,7 @@ use mcp_protocol_sdk::{
 };
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use tokio;
+
 
 #[cfg(test)]
 mod error_tests {
@@ -55,7 +55,7 @@ mod error_tests {
     #[test]
     fn test_error_display() {
         let error = McpError::Protocol("Test error message".to_string());
-        let display_str = format!("{}", error);
+        let display_str = format!("{error}");
         assert!(display_str.contains("Test error message"));
     }
 
@@ -230,7 +230,7 @@ mod uri_tests {
 
         for uri in valid_uris {
             let result = validate_uri(uri);
-            assert!(result.is_ok(), "URI should be valid: {}", uri);
+            assert!(result.is_ok(), "URI should be valid: {uri}");
         }
     }
 
@@ -244,7 +244,7 @@ mod uri_tests {
 
         for (filename, expected) in test_cases {
             let result = guess_mime_type(filename);
-            assert_eq!(result, expected, "Failed for: {}", filename);
+            assert_eq!(result, expected, "Failed for: {filename}");
         }
     }
 
@@ -259,7 +259,7 @@ mod uri_tests {
 
         for (filename, expected) in test_cases {
             let result = get_uri_extension(filename);
-            assert_eq!(result, expected, "Failed for: {}", filename);
+            assert_eq!(result, expected, "Failed for: {filename}");
         }
     }
 }

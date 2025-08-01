@@ -21,7 +21,7 @@ impl InitializeHandler {
     ) -> McpResult<InitializeResult> {
         let params: InitializeParams = match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("Invalid initialize params: {}", e)))?,
+                .map_err(|e| McpError::Validation(format!("Invalid initialize params: {e}")))?,
             None => {
                 return Err(McpError::Validation(
                     "Missing initialize parameters".to_string(),
@@ -31,9 +31,10 @@ impl InitializeHandler {
 
         // Validate protocol version compatibility
         if params.protocol_version != LATEST_PROTOCOL_VERSION {
+            let protocol_version = params.protocol_version;
+            let expected = LATEST_PROTOCOL_VERSION;
             return Err(McpError::Protocol(format!(
-                "Unsupported protocol version: {}. Expected: {}",
-                params.protocol_version, LATEST_PROTOCOL_VERSION
+                "Unsupported protocol version: {protocol_version}. Expected: {expected}"
             )));
         }
 
@@ -69,7 +70,7 @@ impl ToolHandler {
     ) -> McpResult<ListToolsResult> {
         let _params: ListToolsParams = match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("Invalid list tools params: {}", e)))?,
+                .map_err(|e| McpError::Validation(format!("Invalid list tools params: {e}")))?,
             None => ListToolsParams::default(),
         };
 
@@ -104,7 +105,7 @@ impl ToolHandler {
     ) -> McpResult<CallToolResult> {
         let params: CallToolParams = match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("Invalid call tool params: {}", e)))?,
+                .map_err(|e| McpError::Validation(format!("Invalid call tool params: {e}")))?,
             None => {
                 return Err(McpError::Validation(
                     "Missing tool call parameters".to_string(),
@@ -123,9 +124,9 @@ impl ToolHandler {
             .ok_or_else(|| McpError::ToolNotFound(params.name.clone()))?;
 
         if !tool.enabled {
+            let name = &params.name;
             return Err(McpError::ToolNotFound(format!(
-                "Tool '{}' is disabled",
-                params.name
+                "Tool '{name}' is disabled"
             )));
         }
 
@@ -152,7 +153,7 @@ impl ResourceHandler {
     ) -> McpResult<ListResourcesResult> {
         let _params: ListResourcesParams = match params {
             Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid list resources params: {}", e))
+                McpError::Validation(format!("Invalid list resources params: {e}"))
             })?,
             None => ListResourcesParams::default(),
         };
@@ -189,7 +190,7 @@ impl ResourceHandler {
     ) -> McpResult<ReadResourceResult> {
         let params: ReadResourceParams = match params {
             Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid read resource params: {}", e))
+                McpError::Validation(format!("Invalid read resource params: {e}"))
             })?,
             None => {
                 return Err(McpError::Validation(
@@ -225,7 +226,7 @@ impl ResourceHandler {
     ) -> McpResult<SubscribeResourceResult> {
         let params: SubscribeResourceParams = match params {
             Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid subscribe resource params: {}", e))
+                McpError::Validation(format!("Invalid subscribe resource params: {e}"))
             })?,
             None => {
                 return Err(McpError::Validation(
@@ -256,7 +257,7 @@ impl ResourceHandler {
     ) -> McpResult<UnsubscribeResourceResult> {
         let params: UnsubscribeResourceParams = match params {
             Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid unsubscribe resource params: {}", e))
+                McpError::Validation(format!("Invalid unsubscribe resource params: {e}"))
             })?,
             None => {
                 return Err(McpError::Validation(
@@ -292,7 +293,7 @@ impl PromptHandler {
     ) -> McpResult<ListPromptsResult> {
         let _params: ListPromptsParams = match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("Invalid list prompts params: {}", e)))?,
+                .map_err(|e| McpError::Validation(format!("Invalid list prompts params: {e}")))?,
             None => ListPromptsParams::default(),
         };
 
@@ -334,7 +335,7 @@ impl PromptHandler {
     ) -> McpResult<GetPromptResult> {
         let params: GetPromptParams = match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("Invalid get prompt params: {}", e)))?,
+                .map_err(|e| McpError::Validation(format!("Invalid get prompt params: {e}")))?,
             None => {
                 return Err(McpError::Validation(
                     "Missing prompt get parameters".to_string(),
@@ -415,7 +416,7 @@ impl LoggingHandler {
     pub async fn handle_set_level(params: Option<Value>) -> McpResult<SetLoggingLevelResult> {
         let _params: SetLoggingLevelParams = match params {
             Some(p) => serde_json::from_value(p).map_err(|e| {
-                McpError::Validation(format!("Invalid set logging level params: {}", e))
+                McpError::Validation(format!("Invalid set logging level params: {e}"))
             })?,
             None => {
                 return Err(McpError::Validation(
@@ -452,7 +453,7 @@ pub mod validation {
     {
         match params {
             Some(p) => serde_json::from_value(p)
-                .map_err(|e| McpError::Validation(format!("{}: {}", error_msg, e))),
+                .map_err(|e| McpError::Validation(format!("{error_msg}: {e}"))),
             None => Err(McpError::Validation(error_msg.to_string())),
         }
     }
@@ -461,8 +462,7 @@ pub mod validation {
     pub fn require_non_empty_string(value: &str, field_name: &str) -> McpResult<()> {
         if value.is_empty() {
             Err(McpError::Validation(format!(
-                "{} cannot be empty",
-                field_name
+                "{field_name} cannot be empty"
             )))
         } else {
             Ok(())

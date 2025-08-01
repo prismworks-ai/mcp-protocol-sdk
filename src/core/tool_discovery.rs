@@ -118,8 +118,7 @@ impl ToolRegistry {
 
         if self.tools.contains_key(&name) {
             return Err(McpError::validation(format!(
-                "Tool '{}' is already registered",
-                name
+                "Tool '{name}' is already registered"
             )));
         }
 
@@ -133,7 +132,7 @@ impl ToolRegistry {
         let tool = self
             .tools
             .remove(name)
-            .ok_or_else(|| McpError::validation(format!("Tool '{}' not found", name)))?;
+            .ok_or_else(|| McpError::validation(format!("Tool '{name}' not found")))?;
 
         self.update_global_stats();
         Ok(tool)

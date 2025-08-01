@@ -16,9 +16,7 @@ use serde_json::json;
 use std::collections::HashMap;
 
 // Import the MCP protocol types
-use mcp_protocol_sdk::protocol::messages::*;
-use mcp_protocol_sdk::protocol::types::*;
-use mcp_protocol_sdk::protocol::*;
+
 
 #[cfg(test)]
 mod protocol_validation_comprehensive {
@@ -213,7 +211,7 @@ mod protocol_validation_comprehensive {
                 _ => {}
             }
             
-            println!("✅ Error scenario '{}' validated (code: {})", scenario, code);
+            println!("✅ Error scenario '{scenario}' validated (code: {code})");
         }
     }
 
@@ -221,7 +219,7 @@ mod protocol_validation_comprehensive {
     fn test_notification_sequencing() {
         // Test proper notification sequencing
         
-        let notification_sequence = vec![
+        let notification_sequence = [
             // 1. Progress notification
             json!({
                 "jsonrpc": "2.0",
@@ -262,7 +260,7 @@ mod protocol_validation_comprehensive {
             assert_eq!(notification["jsonrpc"], "2.0");
             assert!(notification["method"].is_string());
             assert!(notification["method"].as_str().unwrap().starts_with("notifications/"));
-            assert!(notification.get("id").is_none(), "Notification {} should not have id", i);
+            assert!(notification.get("id").is_none(), "Notification {i} should not have id");
             assert!(notification["params"].is_object());
         }
         
@@ -273,7 +271,7 @@ mod protocol_validation_comprehensive {
     fn test_progress_tracking_comprehensive() {
         // Test comprehensive progress tracking scenarios
         
-        let progress_scenarios = vec![
+        let progress_scenarios = [
             // Determinate progress (with total)
             json!({
                 "progressToken": "file-processing",
@@ -295,11 +293,11 @@ mod protocol_validation_comprehensive {
             assert!(progress["message"].is_string());
             
             let progress_val = progress["progress"].as_f64().unwrap();
-            assert!(progress_val >= 0.0, "Progress should be non-negative in update {}", i);
+            assert!(progress_val >= 0.0, "Progress should be non-negative in update {i}");
             
             if let Some(total) = progress.get("total") {
                 let total_val = total.as_f64().unwrap();
-                assert!(progress_val <= total_val, "Progress should not exceed total in update {}", i);
+                assert!(progress_val <= total_val, "Progress should not exceed total in update {i}");
             }
         }
         
@@ -555,7 +553,7 @@ mod protocol_validation_comprehensive {
         
         println!("Protocol Areas Validated:");
         for (area, status) in &protocol_areas {
-            println!("  {} {}", status, area);
+            println!("  {status} {area}");
         }
         
         println!("\n=== PROTOCOL COMPLIANCE SUMMARY ===\n");

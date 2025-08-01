@@ -15,9 +15,7 @@ use serde_json::json;
 use std::collections::HashMap;
 
 // Import the MCP protocol types
-use mcp_protocol_sdk::protocol::messages::*;
-use mcp_protocol_sdk::protocol::types::*;
-use mcp_protocol_sdk::protocol::*;
+
 
 #[cfg(test)]
 mod enhanced_schema_compliance {
@@ -285,7 +283,7 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_content_block_union_comprehensive() {
         // Test all ContentBlock union variants
-        let content_blocks = vec![
+        let content_blocks = [
             json!({
                 "type": "text",
                 "text": "Sample text content",
@@ -341,7 +339,7 @@ mod enhanced_schema_compliance {
         ];
 
         for (i, block) in content_blocks.iter().enumerate() {
-            assert!(block["type"].is_string(), "Content block {} missing type", i);
+            assert!(block["type"].is_string(), "Content block {i} missing type");
             
             let content_type = block["type"].as_str().unwrap();
             match content_type {
@@ -349,8 +347,8 @@ mod enhanced_schema_compliance {
                     assert!(block["text"].is_string(), "Text content missing text field");
                 }
                 "image" | "audio" => {
-                    assert!(block["data"].is_string(), "{} content missing data field", content_type);
-                    assert!(block["mimeType"].is_string(), "{} content missing mimeType field", content_type);
+                    assert!(block["data"].is_string(), "{content_type} content missing data field");
+                    assert!(block["mimeType"].is_string(), "{content_type} content missing mimeType field");
                 }
                 "resource_link" => {
                     assert!(block["uri"].is_string(), "ResourceLink missing uri field");
@@ -360,7 +358,7 @@ mod enhanced_schema_compliance {
                     assert!(block["resource"].is_object(), "EmbeddedResource missing resource field");
                     assert!(block["resource"]["uri"].is_string(), "EmbeddedResource.resource missing uri");
                 }
-                _ => panic!("Unknown content type: {}", content_type)
+                _ => panic!("Unknown content type: {content_type}")
             }
             
             // Validate annotations if present
@@ -371,7 +369,7 @@ mod enhanced_schema_compliance {
                 if let Some(priority) = annotations.get("priority") {
                     assert!(priority.is_number(), "Annotations priority should be number");
                     let priority_val = priority.as_f64().unwrap();
-                    assert!(priority_val >= 0.0 && priority_val <= 1.0, "Priority should be between 0 and 1");
+                    assert!((0.0..=1.0).contains(&priority_val), "Priority should be between 0 and 1");
                 }
             }
         }
@@ -423,7 +421,7 @@ mod enhanced_schema_compliance {
         ];
 
         for (type_name, obj) in types_with_meta {
-            assert!(obj["_meta"].is_object(), "{} _meta should be object", type_name);
+            assert!(obj["_meta"].is_object(), "{type_name} _meta should be object");
             assert_eq!(obj["_meta"]["custom_field"], "custom_value");
             assert_eq!(obj["_meta"]["timestamp"], "2025-01-12T15:00:58Z");
             assert_eq!(obj["_meta"]["version"], "1.0.0");
@@ -433,7 +431,7 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_annotations_boundary_conditions() {
         // Test annotations with boundary values
-        let boundary_annotations = vec![
+        let boundary_annotations = [
             json!({
                 "priority": 0.0, // Minimum priority
                 "audience": [],  // Empty audience
@@ -454,25 +452,25 @@ mod enhanced_schema_compliance {
         for (i, annotation) in boundary_annotations.iter().enumerate() {
             if let Some(priority) = annotation.get("priority") {
                 let priority_val = priority.as_f64().unwrap();
-                assert!(priority_val >= 0.0 && priority_val <= 1.0, 
-                    "Annotation {} priority {} out of bounds", i, priority_val);
+                assert!((0.0..=1.0).contains(&priority_val), 
+                    "Annotation {i} priority {priority_val} out of bounds");
             }
             
             if let Some(audience) = annotation.get("audience") {
-                assert!(audience.is_array(), "Annotation {} audience should be array", i);
+                assert!(audience.is_array(), "Annotation {i} audience should be array");
                 for role in audience.as_array().unwrap() {
                     assert!(matches!(role.as_str().unwrap(), "user" | "assistant"), 
-                        "Invalid role in annotation {}", i);
+                        "Invalid role in annotation {i}");
                 }
             }
             
             if let Some(last_modified) = annotation.get("lastModified") {
-                assert!(last_modified.is_string(), "Annotation {} lastModified should be string", i);
+                assert!(last_modified.is_string(), "Annotation {i} lastModified should be string");
                 // Basic ISO 8601 format validation
                 let timestamp = last_modified.as_str().unwrap();
-                assert!(timestamp.contains('T'), "Annotation {} timestamp should contain 'T'", i);
+                assert!(timestamp.contains('T'), "Annotation {i} timestamp should contain 'T'");
                 assert!(timestamp.ends_with('Z') || timestamp.contains('+') || timestamp.contains('-'), 
-                    "Annotation {} timestamp should have timezone info", i);
+                    "Annotation {i} timestamp should have timezone info");
             }
         }
     }
@@ -558,7 +556,7 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_invalid_content_type_combinations() {
         // Test invalid content type scenarios
-        let invalid_combinations = vec![
+        let invalid_combinations = [
             // Text content with image fields
             json!({
                 "type": "text",
@@ -588,7 +586,7 @@ mod enhanced_schema_compliance {
         for (i, invalid_content) in invalid_combinations.iter().enumerate() {
             // These are structurally invalid but test our validation logic
             assert!(invalid_content["type"].is_string(), 
-                "Invalid content {} should have type field", i);
+                "Invalid content {i} should have type field");
             
             // In a real validation system, these would fail
             let content_type = invalid_content["type"].as_str().unwrap();
@@ -597,7 +595,7 @@ mod enhanced_schema_compliance {
                     // Should have text but not data/mimeType
                     assert!(invalid_content.get("text").is_some() || 
                            invalid_content.get("data").is_some(),
-                           "Invalid text content {} has neither text nor data", i);
+                           "Invalid text content {i} has neither text nor data");
                 }
                 "image" | "audio" => {
                     // Should have data and mimeType
@@ -606,7 +604,7 @@ mod enhanced_schema_compliance {
                 "resource_link" => {
                     // Should have uri and name
                     assert!(invalid_content.get("uri").is_some(),
-                           "ResourceLink {} missing uri", i);
+                           "ResourceLink {i} missing uri");
                 }
                 "resource" => {
                     // Should have resource object
@@ -620,7 +618,7 @@ mod enhanced_schema_compliance {
     #[test]
     fn test_invalid_annotation_values() {
         // Test invalid annotation values
-        let invalid_annotations = vec![
+        let invalid_annotations = [
             json!({
                 "priority": -0.1, // Below minimum
                 "audience": ["invalid_role"],
@@ -644,17 +642,17 @@ mod enhanced_schema_compliance {
                 if priority.is_number() {
                     let priority_val = priority.as_f64().unwrap();
                     // In validation, values outside 0.0-1.0 would fail
-                    if priority_val < 0.0 || priority_val > 1.0 {
-                        println!("Invalid priority {} in annotation {}", priority_val, i);
+                    if !(0.0..=1.0).contains(&priority_val) {
+                        println!("Invalid priority {priority_val} in annotation {i}");
                     }
                 } else {
-                    println!("Non-numeric priority in annotation {}", i);
+                    println!("Non-numeric priority in annotation {i}");
                 }
             }
             
             if let Some(audience) = invalid_annotation.get("audience") {
                 if !audience.is_array() {
-                    println!("Non-array audience in annotation {}", i);
+                    println!("Non-array audience in annotation {i}");
                 }
             }
         }
@@ -850,7 +848,7 @@ mod enhanced_schema_compliance {
         // Create 100 properties
         for i in 0..100 {
             large_properties.insert(
-                format!("field_{}", i),
+                format!("field_{i}"),
                 json!({
                     "type": "string",
                     "title": format!("Field {}", i),
@@ -864,7 +862,7 @@ mod enhanced_schema_compliance {
         let large_elicitation_schema = json!({
             "type": "object",
             "properties": large_properties,
-            "required": (0..50).map(|i| format!("field_{}", i)).collect::<Vec<_>>()
+            "required": (0..50).map(|i| format!("field_{i}")).collect::<Vec<_>>()
         });
         
         assert_eq!(large_elicitation_schema["type"], "object");
@@ -936,7 +934,7 @@ mod enhanced_schema_compliance {
         
         println!("Coverage Areas Validated:");
         for (area, status) in &coverage_report {
-            println!("  {} {}", status, area);
+            println!("  {status} {area}");
         }
         
         println!("\n=== COVERAGE SUMMARY ===\n");

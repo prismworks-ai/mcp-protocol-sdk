@@ -45,7 +45,7 @@ mod edge_cases_and_negative_tests {
             });
             
             assert_eq!(annotation["priority"], priority);
-            assert!(priority >= 0.0 && priority <= 1.0, "Priority {} out of bounds", priority);
+            assert!((0.0..=1.0).contains(&priority), "Priority {priority} out of bounds");
         }
 
         // Progress boundaries
@@ -69,7 +69,7 @@ mod edge_cases_and_negative_tests {
             
             assert_eq!(progress_notification["progress"], progress);
             assert_eq!(progress_notification["total"], total);
-            assert!(progress <= total, "Progress {} should not exceed total {}", progress, total);
+            assert!(progress <= total, "Progress {progress} should not exceed total {total}");
         }
 
         println!("✅ Boundary value testing completed");
@@ -109,7 +109,7 @@ mod edge_cases_and_negative_tests {
             assert!(tool["description"].as_str().unwrap().contains(unicode_text));
             assert_eq!(tool["title"], unicode_text);
             
-            println!("✅ Unicode case '{}' validated: {}", case_name, unicode_text);
+            println!("✅ Unicode case '{case_name}' validated: {unicode_text}");
         }
     }
 
@@ -151,7 +151,7 @@ mod edge_cases_and_negative_tests {
         let mut large_properties = serde_json::Map::new();
         for i in 0..1000 {
             large_properties.insert(
-                format!("property_{}", i),
+                format!("property_{i}"),
                 json!({
                     "type": "string",
                     "description": format!("Property number {} with detailed description", i),
@@ -163,7 +163,7 @@ mod edge_cases_and_negative_tests {
         let large_schema = json!({
             "type": "object",
             "properties": large_properties,
-            "required": (0..100).map(|i| format!("property_{}", i)).collect::<Vec<_>>()
+            "required": (0..100).map(|i| format!("property_{i}")).collect::<Vec<_>>()
         });
         
         assert_eq!(large_schema["type"], "object");
@@ -229,7 +229,7 @@ mod edge_cases_and_negative_tests {
                 _ => {}
             }
             
-            println!("🔍 Invalid JSON-RPC case '{}' detected", case_name);
+            println!("🔍 Invalid JSON-RPC case '{case_name}' detected");
         }
     }
 
@@ -271,26 +271,26 @@ mod edge_cases_and_negative_tests {
                 "text" => {
                     // Should have text but not data
                     if invalid_content.get("data").is_some() {
-                        println!("🔍 Invalid: Text content with binary data field ({})", case_name);
+                        println!("🔍 Invalid: Text content with binary data field ({case_name})");
                     }
                 }
                 "image" | "audio" => {
                     // Should have both data and mimeType
                     if invalid_content.get("data").is_none() {
-                        println!("🔍 Invalid: {} content missing data field ({})", content_type, case_name);
+                        println!("🔍 Invalid: {content_type} content missing data field ({case_name})");
                     }
                     if invalid_content.get("mimeType").is_none() {
-                        println!("🔍 Invalid: {} content missing mimeType field ({})", content_type, case_name);
+                        println!("🔍 Invalid: {content_type} content missing mimeType field ({case_name})");
                     }
                 }
                 "resource_link" => {
                     // Should have uri and name
                     if invalid_content.get("name").is_none() {
-                        println!("🔍 Invalid: ResourceLink missing name field ({})", case_name);
+                        println!("🔍 Invalid: ResourceLink missing name field ({case_name})");
                     }
                 }
                 _ => {
-                    println!("🔍 Invalid: Unknown content type '{}' ({})", content_type, case_name);
+                    println!("🔍 Invalid: Unknown content type '{content_type}' ({case_name})");
                 }
             }
         }
@@ -325,14 +325,14 @@ mod edge_cases_and_negative_tests {
         
         for i in 1..=20 {
             *current = json!({format!("level_{}", i): {}});
-            current = &mut current[format!("level_{}", i)];
+            current = &mut current[format!("level_{i}")];
         }
         *current = json!({"final_value": "reached maximum depth"});
         
         // Navigate to the deep value to verify structure
         let mut nav = &deep_nested;
         for i in 0..=20 {
-            nav = &nav[format!("level_{}", i)];
+            nav = &nav[format!("level_{i}")];
         }
         assert_eq!(nav["final_value"], "reached maximum depth");
         
@@ -405,8 +405,8 @@ mod edge_cases_and_negative_tests {
                 }
             }
             
-            println!("✅ Error recovery pattern '{}' validated ({} messages)", 
-                   pattern_name, messages.len());
+            println!("✅ Error recovery pattern '{pattern_name}' validated ({} messages)", 
+                   messages.len());
         }
     }
 
@@ -415,7 +415,7 @@ mod edge_cases_and_negative_tests {
         // Test concurrent operation handling
         
         // Multiple simultaneous tool calls
-        let concurrent_tool_calls = vec![
+        let concurrent_tool_calls = [
             json!({
                 "jsonrpc": "2.0",
                 "id": "concurrent-1",
@@ -475,7 +475,7 @@ mod edge_cases_and_negative_tests {
         
         println!("Edge Case Areas Validated:");
         for (area, status) in &edge_case_areas {
-            println!("  {} {}", status, area);
+            println!("  {status} {area}");
         }
         
         println!("\n=== EDGE CASE TESTING SUMMARY ===\n");

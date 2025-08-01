@@ -63,9 +63,9 @@ impl ToolHandler for StoreHandler {
         db.insert(id.to_string(), record);
 
         let message = if was_update {
-            format!("Updated record with ID: {}", id)
+            format!("Updated record with ID: {id}")
         } else {
-            format!("Created record with ID: {}", id)
+            format!("Created record with ID: {id}")
         };
 
         Ok(ToolResult {
@@ -109,7 +109,7 @@ impl ToolHandler for RetrieveHandler {
                 })
             }
             None => Ok(ToolResult {
-                content: vec![Content::text(format!("No record found with ID: {}", id))],
+                content: vec![Content::text(format!("No record found with ID: {id}"))],
                 is_error: Some(true),
                 structured_content: None,
                 meta: None,
@@ -178,13 +178,13 @@ impl ToolHandler for DeleteHandler {
 
         match db.remove(id) {
             Some(_) => Ok(ToolResult {
-                content: vec![Content::text(format!("Deleted record with ID: {}", id))],
+                content: vec![Content::text(format!("Deleted record with ID: {id}"))],
                 is_error: None,
                 structured_content: None,
                 meta: None,
             }),
             None => Ok(ToolResult {
-                content: vec![Content::text(format!("No record found with ID: {}", id))],
+                content: vec![Content::text(format!("No record found with ID: {id}"))],
                 is_error: Some(true),
                 structured_content: None,
                 meta: None,
@@ -299,13 +299,13 @@ impl ResourceHandler for DatabaseResourceHandler {
         // Add individual record resources
         for id in db.keys() {
             resources.push(ResourceInfo {
-                uri: format!("db:///record/{}", id),
-                name: format!("Record: {}", id),
-                description: Some(format!("Individual database record with ID: {}", id)),
+                uri: format!("db:///record/{id}"),
+                name: format!("Record: {id}"),
+                description: Some(format!("Individual database record with ID: {id}")),
                 mime_type: Some("application/json".to_string()),
                 annotations: None,
                 size: None,
-                title: Some(format!("Record: {}", id)),
+                title: Some(format!("Record: {id}")),
                 meta: None,
             });
         }

@@ -68,8 +68,7 @@ impl ToolHandler for CalculatorHandler {
             _ => {
                 return Ok(ToolResult {
                     content: vec![Content::text(format!(
-                        "Error: Unknown operation '{}'",
-                        operation
+                        "Error: Unknown operation '{operation}'"
                     ))],
                     is_error: Some(true),
                     structured_content: None,
@@ -80,8 +79,7 @@ impl ToolHandler for CalculatorHandler {
 
         Ok(ToolResult {
             content: vec![Content::text(format!(
-                "{} {} {} = {}",
-                a, operation, b, result
+                "{a} {operation} {b} = {result}"
             ))],
             is_error: None,
             structured_content: None,
@@ -114,7 +112,7 @@ impl ToolHandler for EchoHandler {
         let formatted_message = if uppercase {
             format!("{}: {}", prefix, message.to_uppercase())
         } else {
-            format!("{}: {}", prefix, message)
+            format!("{prefix}: {message}")
         };
 
         Ok(ToolResult {
@@ -192,7 +190,7 @@ impl ResourceHandler for FileSystemHandler {
         Ok(files
             .keys()
             .map(|uri| {
-                let name = uri.split('/').last().unwrap_or(uri);
+                let name = uri.split('/').next_back().unwrap_or(uri);
                 let mime_type = if uri.ends_with(".json") {
                     Some("application/json".to_string())
                 } else if uri.ends_with(".csv") {
@@ -204,8 +202,8 @@ impl ResourceHandler for FileSystemHandler {
                 ResourceInfo {
                     uri: uri.clone(),
                     name: name.to_string(),
-                    title: Some(format!("Demo file: {}", name)),
-                    description: Some(format!("Demo file: {}", name)),
+                    title: Some(format!("Demo file: {name}")),
+                    description: Some(format!("Demo file: {name}")),
                     mime_type,
                     annotations: None,
                     size: None,
@@ -247,8 +245,7 @@ impl PromptHandler for CodeReviewPromptHandler {
             .unwrap_or("general");
 
         let system_prompt = format!(
-            "You are an expert code reviewer specializing in {} code. Focus on {} aspects of code quality.",
-            language, focus
+            "You are an expert code reviewer specializing in {language} code. Focus on {focus} aspects of code quality."
         );
 
         let user_prompt = match focus {
@@ -260,8 +257,7 @@ impl PromptHandler for CodeReviewPromptHandler {
 
         Ok(PromptResult {
             description: Some(format!(
-                "Code review prompt for {} focusing on {}",
-                language, focus
+                "Code review prompt for {language} focusing on {focus}"
             )),
             messages: vec![
                 PromptMessage {
@@ -296,15 +292,15 @@ impl PromptHandler for DocumentationPromptHandler {
 
         let (system_prompt, user_prompt) = match doc_type {
             "api" => (
-                format!("You are a technical writer specializing in API documentation for {} applications.", language),
+                format!("You are a technical writer specializing in API documentation for {language} applications."),
                 "Please generate comprehensive API documentation for the provided code, including endpoints, parameters, responses, and usage examples."
             ),
             "class" => (
-                format!("You are a technical writer specializing in {} class documentation.", language),
+                format!("You are a technical writer specializing in {language} class documentation."),
                 "Please generate detailed class documentation including purpose, methods, properties, usage examples, and relationships with other classes."
             ),
             "function" => (
-                format!("You are a technical writer specializing in {} function documentation.", language),
+                format!("You are a technical writer specializing in {language} function documentation."),
                 "Please generate comprehensive function documentation including purpose, parameters, return values, exceptions, and usage examples."
             ),
             _ => (
@@ -315,8 +311,7 @@ impl PromptHandler for DocumentationPromptHandler {
 
         Ok(PromptResult {
             description: Some(format!(
-                "Documentation prompt for {} {}",
-                language, doc_type
+                "Documentation prompt for {language} {doc_type}"
             )),
             messages: vec![
                 PromptMessage {

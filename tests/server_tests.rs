@@ -10,7 +10,7 @@ use mcp_protocol_sdk::{
 };
 use serde_json::json;
 use std::collections::HashMap;
-use tokio;
+
 
 #[cfg(test)]
 mod server_tests {
@@ -20,7 +20,7 @@ mod server_tests {
     async fn test_server_creation() {
         let _server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
         // Basic test that server can be created
-        assert!(true);
+        // Server created successfully - no assertion needed
     }
 
     #[tokio::test]
@@ -44,7 +44,7 @@ mod server_tests {
             .unwrap();
 
         // Test that tool was added successfully
-        assert!(true);
+        // Tool added without error - success confirmed
     }
 
     #[tokio::test]
@@ -62,7 +62,7 @@ mod server_tests {
     fn test_server_capabilities() {
         let _capabilities = ServerCapabilities::default();
         // Test that capabilities can be created
-        assert!(true);
+        // Capabilities created successfully
     }
 
     #[test]

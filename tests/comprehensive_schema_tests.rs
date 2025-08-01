@@ -732,7 +732,7 @@ mod comprehensive_schema_validation {
     /// Test that all new 2025-03-26 features are properly implemented
     #[test]
     fn test_all_2025_features_comprehensive() {
-        println!("✓ Protocol version: {}", LATEST_PROTOCOL_VERSION);
+        println!("✓ Protocol version: {LATEST_PROTOCOL_VERSION}");
 
         // Audio content
         let audio = Content::audio("audiodata", "audio/wav");
@@ -821,8 +821,8 @@ mod comprehensive_schema_validation {
     #[test]
     fn test_final_schema_compliance_report() {
         println!("\n=== COMPREHENSIVE SCHEMA COMPLIANCE REPORT ===");
-        println!("Protocol Version: {}", LATEST_PROTOCOL_VERSION);
-        println!("JSON-RPC Version: {}", JSONRPC_VERSION);
+        println!("Protocol Version: {LATEST_PROTOCOL_VERSION}");
+        println!("JSON-RPC Version: {JSONRPC_VERSION}");
 
         let mut checks_passed = 0;
         let total_checks = 15;
@@ -940,7 +940,7 @@ mod comprehensive_schema_validation {
         println!("✓ 2025-03-26 new features");
 
         println!("\n=== COMPLIANCE SUMMARY ===");
-        println!("Checks passed: {}/{}", checks_passed, total_checks);
+        println!("Checks passed: {checks_passed}/{total_checks}");
         println!(
             "Compliance rate: {:.1}%",
             (checks_passed as f64 / total_checks as f64) * 100.0

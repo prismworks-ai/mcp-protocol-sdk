@@ -70,7 +70,7 @@ impl StdioClientTransport {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| McpError::transport(format!("Failed to start server process: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to start server process: {e}")))?;
 
         let stdin = child
             .stdin
@@ -184,15 +184,15 @@ impl Transport for StdioClientTransport {
         writer
             .write_all(request_line.as_bytes())
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write request: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write request: {e}")))?;
         writer
             .write_all(b"\n")
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write newline: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write newline: {e}")))?;
         writer
             .flush()
             .await
-            .map_err(|e| McpError::transport(format!("Failed to flush: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to flush: {e}")))?;
 
         // Wait for response with timeout
         let timeout_duration = Duration::from_millis(self.config.read_timeout_ms.unwrap_or(60_000));
@@ -219,15 +219,15 @@ impl Transport for StdioClientTransport {
         writer
             .write_all(notification_line.as_bytes())
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write notification: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write notification: {e}")))?;
         writer
             .write_all(b"\n")
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write newline: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write newline: {e}")))?;
         writer
             .flush()
             .await
-            .map_err(|e| McpError::transport(format!("Failed to flush: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to flush: {e}")))?;
 
         Ok(())
     }
@@ -281,7 +281,8 @@ impl Transport for StdioClientTransport {
     }
 
     fn connection_info(&self) -> String {
-        format!("STDIO transport (state: {:?})", self.state)
+        let state = &self.state;
+        format!("STDIO transport (state: {state:?})")
     }
 }
 
@@ -414,13 +415,13 @@ impl ServerTransport for StdioServerTransport {
                                 .write_all(response_line.as_bytes())
                                 .await
                                 .map_err(|e| {
-                                    McpError::transport(format!("Failed to write response: {}", e))
+                                    McpError::transport(format!("Failed to write response: {e}"))
                                 })?;
                             writer.write_all(b"\n").await.map_err(|e| {
-                                McpError::transport(format!("Failed to write newline: {}", e))
+                                McpError::transport(format!("Failed to write newline: {e}"))
                             })?;
                             writer.flush().await.map_err(|e| {
-                                McpError::transport(format!("Failed to flush: {}", e))
+                                McpError::transport(format!("Failed to flush: {e}"))
                             })?;
                         }
                         Err(e) => {
@@ -462,15 +463,15 @@ impl ServerTransport for StdioServerTransport {
         writer
             .write_all(notification_line.as_bytes())
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write notification: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write notification: {e}")))?;
         writer
             .write_all(b"\n")
             .await
-            .map_err(|e| McpError::transport(format!("Failed to write newline: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to write newline: {e}")))?;
         writer
             .flush()
             .await
-            .map_err(|e| McpError::transport(format!("Failed to flush: {}", e)))?;
+            .map_err(|e| McpError::transport(format!("Failed to flush: {e}")))?;
 
         Ok(())
     }

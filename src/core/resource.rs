@@ -55,8 +55,7 @@ pub trait ResourceHandler: Send + Sync {
     async fn subscribe(&self, uri: &str) -> McpResult<()> {
         // Default implementation - subscription not supported
         Err(McpError::protocol(format!(
-            "Subscription not supported for resource: {}",
-            uri
+            "Subscription not supported for resource: {uri}"
         )))
     }
 
@@ -70,8 +69,7 @@ pub trait ResourceHandler: Send + Sync {
     async fn unsubscribe(&self, uri: &str) -> McpResult<()> {
         // Default implementation - subscription not supported
         Err(McpError::protocol(format!(
-            "Subscription not supported for resource: {}",
-            uri
+            "Subscription not supported for resource: {uri}"
         )))
     }
 }
@@ -224,9 +222,9 @@ impl Resource {
         params: &HashMap<String, String>,
     ) -> McpResult<Vec<ResourceContents>> {
         if !self.enabled {
+            let name = self.info.name.as_str();
             return Err(McpError::validation(format!(
-                "Resource '{}' is disabled",
-                self.info.name.as_str()
+                "Resource '{name}' is disabled"
             )));
         }
 
@@ -245,9 +243,9 @@ impl Resource {
     /// Subscribe to resource changes
     pub async fn subscribe(&self, uri: &str) -> McpResult<()> {
         if !self.enabled {
+            let name = self.info.name.as_str();
             return Err(McpError::validation(format!(
-                "Resource '{}' is disabled",
-                self.info.name.as_str()
+                "Resource '{name}' is disabled"
             )));
         }
 
@@ -257,9 +255,9 @@ impl Resource {
     /// Unsubscribe from resource changes
     pub async fn unsubscribe(&self, uri: &str) -> McpResult<()> {
         if !self.enabled {
+            let name = self.info.name.as_str();
             return Err(McpError::validation(format!(
-                "Resource '{}' is disabled",
-                self.info.name.as_str()
+                "Resource '{name}' is disabled"
             )));
         }
 
@@ -434,7 +432,8 @@ impl ResourceHandler for FileSystemResource {
                         .strip_prefix(&self.base_path)
                         .map_err(|_| McpError::internal("Path computation error"))?;
 
-                    let uri = format!("file://{}", relative_path.display());
+                    let path_display = relative_path.display();
+                    let uri = format!("file://{path_display}");
                     let name = path
                         .file_name()
                         .and_then(|n| n.to_str())

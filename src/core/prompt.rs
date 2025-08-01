@@ -156,7 +156,7 @@ impl PromptHandler for GreetingPrompt {
             description: Some("A friendly greeting".to_string()),
             messages: vec![
                 PromptMessage::system("You are a friendly assistant."),
-                PromptMessage::user(format!("Hello, {}!", name)),
+                PromptMessage::user(format!("Hello, {name}!")),
             ],
             meta: None,
         })
@@ -185,14 +185,12 @@ impl PromptHandler for CodeReviewPrompt {
             .unwrap_or("general");
 
         let system_prompt = format!(
-            "You are an expert code reviewer. Focus on {} aspects of the code. \
-             Provide constructive feedback and suggestions for improvement.",
-            focus
+            "You are an expert code reviewer. Focus on {focus} aspects of the code. \
+             Provide constructive feedback and suggestions for improvement."
         );
 
         let user_prompt = format!(
-            "Please review this {} code:\n\n```{}\n{}\n```",
-            language, language, code
+            "Please review this {language} code:\n\n```{language}\n{code}\n```"
         );
 
         Ok(PromptResult {
@@ -228,14 +226,12 @@ impl PromptHandler for SqlQueryPrompt {
             .unwrap_or("PostgreSQL");
 
         let system_prompt = format!(
-            "You are an expert SQL developer. Generate efficient and safe {} queries. \
-             Always use proper escaping and avoid SQL injection vulnerabilities.",
-            dialect
+            "You are an expert SQL developer. Generate efficient and safe {dialect} queries. \
+             Always use proper escaping and avoid SQL injection vulnerabilities."
         );
 
         let user_prompt = format!(
-            "Database Schema:\n{}\n\nRequest: {}\n\nPlease generate a {} query for this request.",
-            schema, request, dialect
+            "Database Schema:\n{schema}\n\nRequest: {request}\n\nPlease generate a {dialect} query for this request."
         );
 
         Ok(PromptResult {

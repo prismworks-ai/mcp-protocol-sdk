@@ -132,8 +132,7 @@ impl ParameterValidator {
 
             if !params.contains_key(prop_name) {
                 return Err(McpError::validation(format!(
-                    "Missing required parameter: '{}'",
-                    prop_name
+                    "Missing required parameter: '{prop_name}'"
                 )));
             }
         }
@@ -168,7 +167,7 @@ impl ParameterValidator {
         field_name: &str,
     ) -> McpResult<()> {
         let schema_obj = schema.as_object().ok_or_else(|| {
-            McpError::validation(format!("Schema for '{}' must be an object", field_name))
+            McpError::validation(format!("Schema for '{field_name}' must be an object"))
         })?;
 
         // Get expected type
@@ -216,7 +215,7 @@ impl ParameterValidator {
         }
 
         let string_val = value.as_str().ok_or_else(|| {
-            McpError::validation(format!("Parameter '{}' must be a string", field_name))
+            McpError::validation(format!("Parameter '{field_name}' must be a string"))
         })?;
 
         // Length validation
@@ -260,8 +259,7 @@ impl ParameterValidator {
             // For now, we'll do basic validation checks
             if pattern.contains("^") && !string_val.starts_with(&pattern[1..pattern.len().min(2)]) {
                 return Err(McpError::validation(format!(
-                    "String '{}' does not match pattern",
-                    field_name
+                    "String '{field_name}' does not match pattern"
                 )));
             }
         }
@@ -290,15 +288,14 @@ impl ParameterValidator {
         }
 
         let num_val = value.as_f64().ok_or_else(|| {
-            McpError::validation(format!("Parameter '{}' must be a number", field_name))
+            McpError::validation(format!("Parameter '{field_name}' must be a number"))
         })?;
 
         // Range validation
         if let Some(minimum) = schema.get("minimum").and_then(|v| v.as_f64()) {
             if num_val < minimum {
                 return Err(McpError::validation(format!(
-                    "Number '{}' too small: {} < {}",
-                    field_name, num_val, minimum
+                    "Number '{field_name}' too small: {num_val} < {minimum}"
                 )));
             }
         }
@@ -306,8 +303,7 @@ impl ParameterValidator {
         if let Some(maximum) = schema.get("maximum").and_then(|v| v.as_f64()) {
             if num_val > maximum {
                 return Err(McpError::validation(format!(
-                    "Number '{}' too large: {} > {}",
-                    field_name, num_val, maximum
+                    "Number '{field_name}' too large: {num_val} > {maximum}"
                 )));
             }
         }
@@ -318,8 +314,7 @@ impl ParameterValidator {
                 *value = Value::Number(serde_json::Number::from(num_val.round() as i64));
             } else {
                 return Err(McpError::validation(format!(
-                    "Parameter '{}' must be an integer",
-                    field_name
+                    "Parameter '{field_name}' must be an integer"
                 )));
             }
         }
@@ -344,8 +339,7 @@ impl ParameterValidator {
 
         if !value.is_boolean() {
             return Err(McpError::validation(format!(
-                "Parameter '{}' must be a boolean",
-                field_name
+                "Parameter '{field_name}' must be a boolean"
             )));
         }
 
@@ -360,7 +354,7 @@ impl ParameterValidator {
         field_name: &str,
     ) -> McpResult<()> {
         let array = value.as_array_mut().ok_or_else(|| {
-            McpError::validation(format!("Parameter '{}' must be an array", field_name))
+            McpError::validation(format!("Parameter '{field_name}' must be an array"))
         })?;
 
         // Length validation
@@ -400,7 +394,7 @@ impl ParameterValidator {
         // Validate each item if items schema is provided
         if let Some(items_schema) = schema.get("items") {
             for (i, item) in array.iter_mut().enumerate() {
-                let item_field = format!("{}[{}]", field_name, i);
+                let item_field = format!("{field_name}[{i}]");
                 self.validate_and_coerce_value(item, items_schema, &item_field)?;
             }
         }
@@ -416,7 +410,7 @@ impl ParameterValidator {
         field_name: &str,
     ) -> McpResult<()> {
         let obj = value.as_object().ok_or_else(|| {
-            McpError::validation(format!("Parameter '{}' must be an object", field_name))
+            McpError::validation(format!("Parameter '{field_name}' must be an object"))
         })?;
 
         // Object size validation
@@ -438,8 +432,7 @@ impl ParameterValidator {
     fn validate_null(&self, value: &Value, field_name: &str) -> McpResult<()> {
         if !value.is_null() {
             return Err(McpError::validation(format!(
-                "Parameter '{}' must be null",
-                field_name
+                "Parameter '{field_name}' must be null"
             )));
         }
         Ok(())
@@ -453,8 +446,7 @@ impl ParameterValidator {
 
         if !enum_array.contains(value) {
             return Err(McpError::validation(format!(
-                "Parameter '{}' must be one of: {:?}",
-                field_name, enum_array
+                "Parameter '{field_name}' must be one of: {enum_array:?}"
             )));
         }
 
@@ -474,8 +466,7 @@ impl ParameterValidator {
 
             if !additional.is_empty() {
                 return Err(McpError::validation(format!(
-                    "Additional properties not allowed: {:?}",
-                    additional
+                    "Additional properties not allowed: {additional:?}"
                 )));
             }
         }
@@ -552,7 +543,7 @@ impl ParameterType for String {
             .get(name)
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
-            .ok_or_else(|| McpError::validation(format!("Missing string parameter: {}", name)))
+            .ok_or_else(|| McpError::validation(format!("Missing string parameter: {name}")))
     }
 }
 
@@ -567,7 +558,7 @@ impl ParameterType for i64 {
         params
             .get(name)
             .and_then(|v| v.as_i64())
-            .ok_or_else(|| McpError::validation(format!("Missing integer parameter: {}", name)))
+            .ok_or_else(|| McpError::validation(format!("Missing integer parameter: {name}")))
     }
 }
 
@@ -582,7 +573,7 @@ impl ParameterType for f64 {
         params
             .get(name)
             .and_then(|v| v.as_f64())
-            .ok_or_else(|| McpError::validation(format!("Missing number parameter: {}", name)))
+            .ok_or_else(|| McpError::validation(format!("Missing number parameter: {name}")))
     }
 }
 
@@ -597,7 +588,7 @@ impl ParameterType for bool {
         params
             .get(name)
             .and_then(|v| v.as_bool())
-            .ok_or_else(|| McpError::validation(format!("Missing boolean parameter: {}", name)))
+            .ok_or_else(|| McpError::validation(format!("Missing boolean parameter: {name}")))
     }
 }
 

@@ -58,7 +58,7 @@ mod e2e_stdio_tests {
 
             Ok(ToolResult {
                 content: vec![Content::Text {
-                    text: format!("Echo: {}", message),
+                    text: format!("Echo: {message}"),
                     annotations: None,
                     meta: None,
                 }],
@@ -95,7 +95,7 @@ mod e2e_stdio_tests {
         async fn read(&self, uri: &str) -> McpResult<String> {
             match self.resources.get(uri) {
                 Some(content) => Ok(content.clone()),
-                None => Err(McpError::validation(format!("Resource not found: {}", uri))),
+                None => Err(McpError::validation(format!("Resource not found: {uri}"))),
             }
         }
 
@@ -105,7 +105,7 @@ mod e2e_stdio_tests {
                 .keys()
                 .map(|uri| mcp_protocol_sdk::protocol::types::ResourceInfo {
                     uri: uri.clone(),
-                    name: format!("Resource: {}", uri),
+                    name: format!("Resource: {uri}"),
                     description: None,
                     mime_type: Some("text/plain".to_string()),
                     annotations: None,
@@ -184,7 +184,7 @@ mod e2e_stdio_tests {
 
         match missing.unwrap_err() {
             McpError::Validation(_) => {} // Expected
-            other => panic!("Expected Validation error, got: {:?}", other),
+            other => panic!("Expected Validation error, got: {other:?}"),
         }
 
         println!("Resource handler integration test passed");
@@ -209,20 +209,17 @@ mod e2e_stdio_tests {
             // Test basic transport properties
             assert!(
                 !transport.is_running(),
-                "Transport {} should not be running initially",
-                i
+                "Transport {i} should not be running initially"
             );
 
             let info = transport.server_info();
             assert!(
                 info.contains("STDIO"),
-                "Transport {} info should mention STDIO",
-                i
+                "Transport {i} info should mention STDIO"
             );
             assert!(
                 info.contains("running: false"),
-                "Transport {} should show not running",
-                i
+                "Transport {i} should show not running"
             );
         }
 
@@ -287,7 +284,7 @@ mod e2e_stdio_tests {
             );
 
             let result = handler.call(args).await;
-            assert!(result.is_ok(), "Tool call {} should succeed", i);
+            assert!(result.is_ok(), "Tool call {i} should succeed");
         }
 
         let elapsed = start_time.elapsed();
@@ -295,8 +292,7 @@ mod e2e_stdio_tests {
         // Basic performance check - all calls should complete quickly
         assert!(
             elapsed < Duration::from_millis(100),
-            "10 tool calls should complete in under 100ms, took: {:?}",
-            elapsed
+            "10 tool calls should complete in under 100ms, took: {elapsed:?}"
         );
 
         assert_eq!(handler.get_call_count().await, 10, "Should have 10 calls");
@@ -351,7 +347,7 @@ mod e2e_stdio_tests {
         }
 
         // If we reach here without panicking, cleanup worked correctly
-        assert!(true, "Resource cleanup completed successfully");
+        // Resource cleanup completed successfully - no assertion needed
 
         println!("Memory and resource cleanup test passed");
     }

@@ -157,7 +157,7 @@ impl Tool {
 
         // Check for deprecation warning
         if let Some(warning) = self.enhanced_metadata.deprecation_warning() {
-            eprintln!("Warning: {}", warning);
+            eprintln!("Warning: {warning}");
         }
 
         // Validate and coerce parameters if validator is present
@@ -951,8 +951,7 @@ impl ToolHandler for CalculatorTool {
             }
             _ => {
                 return Err(McpError::validation(format!(
-                    "Unsupported operation: {}",
-                    operation
+                    "Unsupported operation: {operation}"
                 )));
             }
         };
@@ -1025,8 +1024,7 @@ impl ToolHandler for TextProcessorTool {
             "char_count" => text.len().to_string(),
             _ => {
                 return Err(McpError::validation(format!(
-                    "Unsupported operation: {}",
-                    operation
+                    "Unsupported operation: {operation}"
                 )))
             }
         };
@@ -1387,7 +1385,7 @@ pub trait ParameterExt {
 impl ParameterExt for HashMap<String, Value> {
     fn get_string(&self, key: &str) -> McpResult<&str> {
         self.get(key).and_then(|v| v.as_str()).ok_or_else(|| {
-            McpError::validation(format!("Missing or invalid string parameter: {}", key))
+            McpError::validation(format!("Missing or invalid string parameter: {key}"))
         })
     }
 
@@ -1397,7 +1395,7 @@ impl ParameterExt for HashMap<String, Value> {
 
     fn get_number(&self, key: &str) -> McpResult<f64> {
         self.get(key).and_then(|v| v.as_f64()).ok_or_else(|| {
-            McpError::validation(format!("Missing or invalid number parameter: {}", key))
+            McpError::validation(format!("Missing or invalid number parameter: {key}"))
         })
     }
 
@@ -1407,7 +1405,7 @@ impl ParameterExt for HashMap<String, Value> {
 
     fn get_integer(&self, key: &str) -> McpResult<i64> {
         self.get(key).and_then(|v| v.as_i64()).ok_or_else(|| {
-            McpError::validation(format!("Missing or invalid integer parameter: {}", key))
+            McpError::validation(format!("Missing or invalid integer parameter: {key}"))
         })
     }
 
@@ -1417,7 +1415,7 @@ impl ParameterExt for HashMap<String, Value> {
 
     fn get_boolean(&self, key: &str) -> McpResult<bool> {
         self.get(key).and_then(|v| v.as_bool()).ok_or_else(|| {
-            McpError::validation(format!("Missing or invalid boolean parameter: {}", key))
+            McpError::validation(format!("Missing or invalid boolean parameter: {key}"))
         })
     }
 
@@ -1732,7 +1730,7 @@ mod enhanced_tests {
             .build(handler)
             .expect("Failed to build tool");
 
-        let debug_str = format!("{:?}", tool);
+        let debug_str = format!("{tool:?}");
         assert!(debug_str.contains("debug_tool"));
         assert!(debug_str.contains("enabled"));
         assert!(debug_str.contains("execution_count"));

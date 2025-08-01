@@ -13,7 +13,7 @@ use mcp_protocol_sdk::{
     transport::{ConnectionState, StdioServerTransport, TransportConfig},
 };
 use serde_json::json;
-use tokio;
+
 
 #[cfg(test)]
 mod stdio_transport_tests {
@@ -102,7 +102,7 @@ mod stdio_transport_tests {
 
         // Test Debug formatting (ensure states can be debugged)
         for state in states {
-            let debug_str = format!("{:?}", state);
+            let debug_str = format!("{state:?}");
             assert!(!debug_str.is_empty(), "Debug output should not be empty");
 
             // Verify specific state formatting
@@ -319,7 +319,7 @@ mod stdio_transport_tests {
             };
 
             let result = transport.handle_request(request).await;
-            assert!(result.is_err(), "Method '{}' should return error", method);
+            assert!(result.is_err(), "Method '{method}' should return error");
         }
     }
 

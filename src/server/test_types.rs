@@ -18,6 +18,12 @@ pub struct LifecycleManager {
     state: ServerState,
 }
 
+impl Default for LifecycleManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LifecycleManager {
     pub fn new() -> Self {
         Self {
@@ -128,6 +134,12 @@ impl ServerRunner {
 
 pub struct ShutdownSignalHandler;
 
+impl Default for ShutdownSignalHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShutdownSignalHandler {
     pub fn new() -> Self {
         Self
@@ -152,6 +164,13 @@ pub enum SignalType {
 
 // Additional placeholder types for tests
 pub struct HealthChecker;
+
+impl Default for HealthChecker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HealthChecker {
     pub fn new() -> Self {
         Self
@@ -171,6 +190,13 @@ pub struct OverallHealth {
 }
 
 pub struct ResourceCleanupManager;
+
+impl Default for ResourceCleanupManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceCleanupManager {
     pub fn new() -> Self {
         Self
@@ -185,6 +211,13 @@ impl ResourceCleanupManager {
 }
 
 pub struct ServerMetrics;
+
+impl Default for ServerMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServerMetrics {
     pub fn new() -> Self {
         Self
@@ -217,6 +250,13 @@ pub struct ServerStats {
 }
 
 pub struct ConfigurationManager;
+
+impl Default for ConfigurationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigurationManager {
     pub fn new() -> Self {
         Self
@@ -241,6 +281,13 @@ impl ConfigurationManager {
 }
 
 pub struct StatePersistenceManager;
+
+impl Default for StatePersistenceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StatePersistenceManager {
     pub fn new() -> Self {
         Self
@@ -279,6 +326,12 @@ pub struct ServerMetricsSnapshot {
 
 pub struct PluginManager {
     plugins: Vec<Box<dyn Plugin>>,
+}
+
+impl Default for PluginManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PluginManager {
@@ -329,6 +382,13 @@ pub trait Plugin: Send + Sync {
 }
 
 pub struct AsyncTaskManager;
+
+impl Default for AsyncTaskManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AsyncTaskManager {
     pub fn new() -> Self {
         Self

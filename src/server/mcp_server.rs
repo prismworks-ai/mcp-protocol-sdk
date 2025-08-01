@@ -358,8 +358,7 @@ impl McpServer {
             Some(tool) => {
                 if !tool.enabled {
                     return Err(McpError::ToolNotFound(format!(
-                        "Tool '{}' is disabled",
-                        name
+                        "Tool '{name}' is disabled"
                     )));
                 }
 
@@ -544,10 +543,12 @@ impl McpServer {
             methods::PROMPTS_LIST => self.handle_prompts_list(request.params).await,
             methods::PROMPTS_GET => self.handle_prompts_get(request.params).await,
             methods::LOGGING_SET_LEVEL => self.handle_logging_set_level(request.params).await,
-            _ => Err(McpError::Protocol(format!(
-                "Unknown method: {}",
-                request.method
-            ))),
+            _ => {
+                let method = &request.method;
+                Err(McpError::Protocol(format!(
+                    "Unknown method: {method}"
+                )))
+            }
         };
 
         // Convert the result to a JSON-RPC response

@@ -160,7 +160,7 @@ impl HealthChecker {
                     results.insert(name.clone(), status);
                 }
                 Err(e) => {
-                    let unhealthy = HealthStatus::Unhealthy(format!("Check failed: {}", e));
+                    let unhealthy = HealthStatus::Unhealthy(format!("Check failed: {e}"));
                     overall_status = HealthStatus::Unhealthy("Some checks failed".to_string());
                     results.insert(name.clone(), unhealthy);
                 }
@@ -457,7 +457,7 @@ impl ResourceCleanupManager {
     pub async fn cleanup_all(&self) -> Result<(), McpError> {
         for (name, task) in &self.cleanup_tasks {
             if let Err(e) = task() {
-                eprintln!("Cleanup task '{}' failed: {}", name, e);
+                eprintln!("Cleanup task '{name}' failed: {e}");
             }
         }
         Ok(())
@@ -820,12 +820,12 @@ pub enum TransportError {
 impl std::fmt::Display for TransportError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransportError::ConnectionFailed(msg) => write!(f, "Connection failed: {}", msg),
-            TransportError::SendFailed(msg) => write!(f, "Send failed: {}", msg),
-            TransportError::ReceiveFailed(msg) => write!(f, "Receive failed: {}", msg),
+            TransportError::ConnectionFailed(msg) => write!(f, "Connection failed: {msg}"),
+            TransportError::SendFailed(msg) => write!(f, "Send failed: {msg}"),
+            TransportError::ReceiveFailed(msg) => write!(f, "Receive failed: {msg}"),
             TransportError::Timeout => write!(f, "Operation timed out"),
             TransportError::Closed => write!(f, "Connection closed"),
-            TransportError::InvalidMessage(msg) => write!(f, "Invalid message: {}", msg),
+            TransportError::InvalidMessage(msg) => write!(f, "Invalid message: {msg}"),
         }
     }
 }

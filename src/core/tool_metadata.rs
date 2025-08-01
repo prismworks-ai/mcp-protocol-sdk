@@ -469,10 +469,10 @@ impl EnhancedToolMetadata {
             if d.deprecated {
                 let mut warning = "Tool is deprecated".to_string();
                 if let Some(ref reason) = d.reason {
-                    warning.push_str(&format!(": {}", reason));
+                    warning.push_str(&format!(": {reason}"));
                 }
                 if let Some(ref replacement) = d.replacement {
-                    warning.push_str(&format!(". Use '{}' instead", replacement));
+                    warning.push_str(&format!(". Use '{replacement}' instead"));
                 }
                 Some(warning)
             } else {

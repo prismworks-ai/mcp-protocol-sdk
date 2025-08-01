@@ -12,7 +12,7 @@ pub fn parse_uri_with_params(uri: &str) -> McpResult<(String, HashMap<String, St
     if uri.starts_with("file://") || uri.contains("://") {
         // Full URI
         let parsed = Url::parse(uri)
-            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{}': {}", uri, e)))?;
+            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{uri}': {e}")))?;
 
         let base_uri = format!(
             "{}://{}{}",
@@ -82,9 +82,9 @@ pub fn percent_decode(s: &str) -> McpResult<String> {
                 .next()
                 .ok_or_else(|| McpError::InvalidUri("Incomplete percent encoding".to_string()))?;
 
-            let hex_str = format!("{}{}", hex1, hex2);
+            let hex_str = format!("{hex1}{hex2}");
             let byte = u8::from_str_radix(&hex_str, 16).map_err(|_| {
-                McpError::InvalidUri(format!("Invalid hex in percent encoding: {}", hex_str))
+                McpError::InvalidUri(format!("Invalid hex in percent encoding: {hex_str}"))
             })?;
 
             result.push(byte as char);
@@ -111,7 +111,7 @@ pub fn percent_encode(s: &str) -> String {
                 result.push('+');
             }
             _ => {
-                result.push_str(&format!("%{:02X}", byte));
+                result.push_str(&format!("%{byte:02X}"));
             }
         }
     }
@@ -129,7 +129,7 @@ pub fn validate_uri(uri: &str) -> McpResult<()> {
     if uri.contains("://") {
         // Full URI - try to parse with url crate
         Url::parse(uri)
-            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{}': {}", uri, e)))?;
+            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{uri}': {e}")))?;
     } else if uri.starts_with('/') {
         // Absolute path - basic validation
         if uri.contains('\0') || uri.contains('\n') || uri.contains('\r') {
@@ -156,7 +156,7 @@ pub fn normalize_uri(uri: &str) -> McpResult<String> {
     if uri.contains("://") {
         // Full URI - normalize with url crate
         let parsed = Url::parse(uri)
-            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{}': {}", uri, e)))?;
+            .map_err(|e| McpError::InvalidUri(format!("Invalid URI '{uri}': {e}")))?;
         let mut normalized = parsed.to_string();
 
         // Remove duplicate slashes in path
@@ -212,9 +212,9 @@ pub fn join_uri(base: &str, relative: &str) -> McpResult<String> {
     if base.contains("://") {
         // Full URI base
         let base_url = Url::parse(base)
-            .map_err(|e| McpError::InvalidUri(format!("Invalid base URI '{}': {}", base, e)))?;
+            .map_err(|e| McpError::InvalidUri(format!("Invalid base URI '{base}': {e}")))?;
         let joined = base_url.join(relative).map_err(|e| {
-            McpError::InvalidUri(format!("Cannot join '{}' to '{}': {}", relative, base, e))
+            McpError::InvalidUri(format!("Cannot join '{relative}' to '{base}': {e}"))
         })?;
         Ok(joined.to_string())
     } else {

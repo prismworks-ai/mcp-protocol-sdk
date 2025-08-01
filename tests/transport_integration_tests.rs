@@ -346,7 +346,7 @@ mod transport_integration_tests {
 
         // Setup responses for multiple methods
         for i in 0..5 {
-            let method = format!("method_{}", i);
+            let method = format!("method_{i}");
             let response = JsonRpcResponse {
                 jsonrpc: "2.0".to_string(),
                 id: json!(i),
@@ -361,12 +361,12 @@ mod transport_integration_tests {
             let request = JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
                 id: json!(i),
-                method: format!("method_{}", i),
+                method: format!("method_{i}"),
                 params: None,
             };
 
             let response = transport.send_request(request).await;
-            assert!(response.is_ok(), "Request {} should succeed", i);
+            assert!(response.is_ok(), "Request {i} should succeed");
 
             let response = response.unwrap();
             assert_eq!(response.id, json!(i));
@@ -406,8 +406,7 @@ mod transport_integration_tests {
             // Verify transport was created successfully
             assert!(
                 !transport.is_running(),
-                "Transport {} should not be running initially",
-                i
+                "Transport {i} should not be running initially"
             );
 
             // We can't directly verify config usage without exposing internal state,
@@ -463,15 +462,14 @@ mod transport_integration_tests {
             let request = JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
                 id: id.clone(),
-                method: format!("test_method_{}", i),
+                method: format!("test_method_{i}"),
                 params: None,
             };
 
             let response = transport.send_request(request).await;
             assert!(
                 response.is_ok(),
-                "Request with ID type {} should succeed",
-                i
+                "Request with ID type {i} should succeed"
             );
 
             let response = response.unwrap();
@@ -515,18 +513,18 @@ mod transport_integration_tests {
     #[test]
     fn test_transport_stats_integration() {
         // Test TransportStats with realistic scenarios
-        let mut stats = TransportStats::default();
-
         // Simulate a session with various operations
-        stats.requests_sent = 25;
-        stats.responses_received = 24; // One timeout
-        stats.notifications_sent = 5;
-        stats.notifications_received = 3;
-        stats.connection_errors = 1;
-        stats.protocol_errors = 0;
-        stats.bytes_sent = 12_584; // ~12KB
-        stats.bytes_received = 15_229; // ~15KB
-        stats.uptime_ms = 45_000; // 45 seconds
+        let stats = TransportStats {
+            requests_sent: 25,
+            responses_received: 24, // One timeout
+            notifications_sent: 5,
+            notifications_received: 3,
+            connection_errors: 1,
+            protocol_errors: 0,
+            bytes_sent: 12_584, // ~12KB
+            bytes_received: 15_229, // ~15KB
+            uptime_ms: 45_000, // 45 seconds
+        };
 
         // Verify the stats make sense
         assert!(
@@ -541,8 +539,7 @@ mod transport_integration_tests {
         let success_rate = stats.responses_received as f64 / stats.requests_sent as f64;
         assert!(
             success_rate >= 0.9,
-            "Success rate should be high: {}",
-            success_rate
+            "Success rate should be high: {success_rate}"
         );
 
         // Test that clone works
@@ -595,23 +592,19 @@ mod transport_integration_tests {
             if config.enabled {
                 assert!(
                     config.initial_delay_ms > 0,
-                    "Config {}: Initial delay should be positive",
-                    i
+                    "Config {i}: Initial delay should be positive"
                 );
                 assert!(
                     config.max_delay_ms >= config.initial_delay_ms,
-                    "Config {}: Max delay should be >= initial delay",
-                    i
+                    "Config {i}: Max delay should be >= initial delay"
                 );
                 assert!(
                     config.backoff_multiplier > 1.0,
-                    "Config {}: Backoff multiplier should be > 1.0",
-                    i
+                    "Config {i}: Backoff multiplier should be > 1.0"
                 );
                 assert!(
-                    config.jitter_factor >= 0.0 && config.jitter_factor <= 1.0,
-                    "Config {}: Jitter factor should be between 0.0 and 1.0",
-                    i
+                    (0.0..=1.0).contains(&config.jitter_factor),
+                    "Config {i}: Jitter factor should be between 0.0 and 1.0"
                 );
             }
 

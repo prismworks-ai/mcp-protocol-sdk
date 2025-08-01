@@ -39,7 +39,7 @@ mod cross_transport_tests {
 
             Ok(ToolResult {
                 content: vec![Content::Text {
-                    text: format!("Echo: {}", message),
+                    text: format!("Echo: {message}"),
                     annotations: None,
                     meta: None,
                 }],
@@ -76,7 +76,7 @@ mod cross_transport_tests {
         async fn read(&self, uri: &str) -> McpResult<String> {
             match self.resources.get(uri) {
                 Some(content) => Ok(content.clone()),
-                None => Err(McpError::validation(format!("Resource not found: {}", uri))),
+                None => Err(McpError::validation(format!("Resource not found: {uri}"))),
             }
         }
 
@@ -86,12 +86,12 @@ mod cross_transport_tests {
                 .keys()
                 .map(|uri| ResourceInfo {
                     uri: uri.clone(),
-                    name: format!("Resource: {}", uri),
+                    name: format!("Resource: {uri}"),
                     description: None,
                     mime_type: Some("text/plain".to_string()),
                     annotations: None,
                     meta: None,
-                    title: Some(format!("Resource: {}", uri)),
+                    title: Some(format!("Resource: {uri}")),
                     size: None,
                 })
                 .collect())
@@ -134,7 +134,7 @@ mod cross_transport_tests {
     #[tokio::test]
     async fn test_cross_transport_data_integrity() {
         // Test that data remains intact across transport boundaries
-        let test_data_sets = vec![
+        let test_data_sets = [
             json!({"message": "simple test"}),
             json!({"message": "Unicode: 世界 🌍"}),
             json!({"message": "Special: \"quotes\" 'apostrophes'"}),
@@ -147,7 +147,7 @@ mod cross_transport_tests {
             args.insert("message".to_string(), test_data["message"].clone());
 
             let result = stdio_handler.call(args).await;
-            assert!(result.is_ok(), "Data integrity test {} should succeed", i);
+            assert!(result.is_ok(), "Data integrity test {i} should succeed");
 
             let tool_result = result.unwrap();
             match &tool_result.content[0] {
@@ -181,7 +181,7 @@ mod cross_transport_tests {
             args.insert("message".to_string(), json!(large_text));
 
             let result = stdio_handler.call(args).await;
-            assert!(result.is_ok(), "Size test '{}' should succeed", size_name);
+            assert!(result.is_ok(), "Size test '{size_name}' should succeed");
         }
 
         println!("Cross-transport message size test completed");
@@ -216,21 +216,18 @@ mod cross_transport_tests {
 
             assert_eq!(
                 request.jsonrpc, deserialized.jsonrpc,
-                "Request {}: JSON-RPC version should match",
-                i
+                "Request {i}: JSON-RPC version should match"
             );
             assert_eq!(
                 request.id, deserialized.id,
-                "Request {}: ID should match",
-                i
+                "Request {i}: ID should match"
             );
             assert_eq!(
                 request.method, deserialized.method,
-                "Request {}: Method should match",
-                i
+                "Request {i}: Method should match"
             );
 
-            println!("JSON-RPC request {} serialization: OK", i);
+            println!("JSON-RPC request {i} serialization: OK");
         }
 
         // Test response consistency
@@ -311,7 +308,7 @@ mod cross_transport_tests {
 
         for uri in &invalid_uris {
             let result = resource_handler.read(uri).await;
-            assert!(result.is_err(), "Invalid URI '{}' should fail", uri);
+            assert!(result.is_err(), "Invalid URI '{uri}' should fail");
         }
 
         // Test tool handler with various inputs
@@ -342,7 +339,7 @@ mod cross_transport_tests {
             );
 
             let result = handler.call(args).await;
-            assert!(result.is_ok(), "Tool call {} should succeed", i);
+            assert!(result.is_ok(), "Tool call {i} should succeed");
         }
 
         let elapsed = start_time.elapsed();
@@ -350,8 +347,7 @@ mod cross_transport_tests {
         // Basic performance check - all calls should complete quickly
         assert!(
             elapsed < Duration::from_millis(100),
-            "10 tool calls should complete in under 100ms, took: {:?}",
-            elapsed
+            "10 tool calls should complete in under 100ms, took: {elapsed:?}"
         );
 
         println!("Performance characteristics test completed");

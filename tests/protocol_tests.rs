@@ -134,7 +134,7 @@ mod protocol_validation_tests {
 
         for uri in valid_uris {
             let result = validate_uri(uri);
-            assert!(result.is_ok(), "URI should be valid: {}", uri);
+            assert!(result.is_ok(), "URI should be valid: {uri}");
         }
     }
 
@@ -144,7 +144,7 @@ mod protocol_validation_tests {
 
         for method in valid_methods {
             let result = validate_method_name(method);
-            assert!(result.is_ok(), "Method should be valid: {}", method);
+            assert!(result.is_ok(), "Method should be valid: {method}");
         }
     }
 

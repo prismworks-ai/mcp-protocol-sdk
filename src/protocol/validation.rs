@@ -691,8 +691,7 @@ pub fn validate_method_name(method: &str) -> McpResult<()> {
                 Ok(())
             } else {
                 Err(McpError::Validation(format!(
-                    "Unknown or invalid method name: {}",
-                    method
+                    "Unknown or invalid method name: {method}"
                 )))
             }
         }
@@ -745,55 +744,55 @@ pub fn validate_mcp_request(method: &str, params: Option<&Value>) -> McpResult<(
             methods::INITIALIZE => {
                 let params: InitializeParams = serde_json::from_value(params_value.clone())
                     .map_err(|e| {
-                        McpError::Validation(format!("Invalid initialize params: {}", e))
+                        McpError::Validation(format!("Invalid initialize params: {e}"))
                     })?;
                 validate_initialize_params(&params)?;
             }
             methods::TOOLS_CALL => {
                 let params: CallToolParams =
                     serde_json::from_value(params_value.clone()).map_err(|e| {
-                        McpError::Validation(format!("Invalid call tool params: {}", e))
+                        McpError::Validation(format!("Invalid call tool params: {e}"))
                     })?;
                 validate_call_tool_params(&params)?;
             }
             methods::RESOURCES_READ => {
                 let params: ReadResourceParams = serde_json::from_value(params_value.clone())
                     .map_err(|e| {
-                        McpError::Validation(format!("Invalid read resource params: {}", e))
+                        McpError::Validation(format!("Invalid read resource params: {e}"))
                     })?;
                 validate_read_resource_params(&params)?;
             }
             methods::PROMPTS_GET => {
                 let params: GetPromptParams = serde_json::from_value(params_value.clone())
                     .map_err(|e| {
-                        McpError::Validation(format!("Invalid get prompt params: {}", e))
+                        McpError::Validation(format!("Invalid get prompt params: {e}"))
                     })?;
                 validate_get_prompt_params(&params)?;
             }
             methods::SAMPLING_CREATE_MESSAGE => {
                 let params: CreateMessageParams = serde_json::from_value(params_value.clone())
                     .map_err(|e| {
-                        McpError::Validation(format!("Invalid create message params: {}", e))
+                        McpError::Validation(format!("Invalid create message params: {e}"))
                     })?;
                 validate_create_message_params(&params)?;
             }
             methods::COMPLETION_COMPLETE => {
                 // New in 2025-03-26
                 let params: CompleteParams = serde_json::from_value(params_value.clone())
-                    .map_err(|e| McpError::Validation(format!("Invalid complete params: {}", e)))?;
+                    .map_err(|e| McpError::Validation(format!("Invalid complete params: {e}")))?;
                 validate_complete_params(&params)?;
             }
             methods::PROGRESS => {
                 let params: ProgressNotificationParams =
                     serde_json::from_value(params_value.clone()).map_err(|e| {
-                        McpError::Validation(format!("Invalid progress params: {}", e))
+                        McpError::Validation(format!("Invalid progress params: {e}"))
                     })?;
                 validate_progress_params(&params)?;
             }
             methods::LOGGING_MESSAGE => {
                 let params: LoggingMessageNotificationParams =
                     serde_json::from_value(params_value.clone()).map_err(|e| {
-                        McpError::Validation(format!("Invalid logging message params: {}", e))
+                        McpError::Validation(format!("Invalid logging message params: {e}"))
                     })?;
                 validate_logging_message_params(&params)?;
             }
