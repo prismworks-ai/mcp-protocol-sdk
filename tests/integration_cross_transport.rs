@@ -250,7 +250,7 @@ mod cross_transport_tests {
     #[tokio::test]
     async fn test_protocol_version_compatibility() {
         // Test protocol version consistency
-        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-03-26");
+        assert_eq!(LATEST_PROTOCOL_VERSION, "2025-06-18");
         assert_eq!(JSONRPC_VERSION, "2.0");
 
         // Test capabilities structure
