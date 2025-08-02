@@ -5,29 +5,29 @@
 
 use async_trait::async_trait;
 use axum::{
+    Json, Router,
     extract::State,
     http::{HeaderMap, StatusCode},
-    response::{sse::Event, Sse},
+    response::{Sse, sse::Event},
     routing::{get, post},
-    Json, Router,
 };
 use reqwest::Client;
 use serde_json::Value;
 use std::{collections::HashMap, convert::Infallible, sync::Arc, time::Duration};
-use tokio::sync::{broadcast, mpsc, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 #[cfg(all(feature = "futures", feature = "tokio-stream"))]
 use futures::stream::Stream;
 
 #[cfg(feature = "tokio-stream")]
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{
-    error_codes, JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse,
+    JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, error_codes,
 };
 use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
 
@@ -91,7 +91,7 @@ impl HttpClientTransport {
 
         let client = client_builder
             .build()
-            .map_err(|e| McpError::Http(format!("Failed to create HTTP client: {}", e)))?;
+            .map_err(|e| McpError::Http(format!("Failed to create HTTP client: {e}")))?;
 
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
@@ -159,7 +159,7 @@ impl HttpClientTransport {
         let response = request
             .send()
             .await
-            .map_err(|e| McpError::Http(format!("SSE connection failed: {}", e)))?;
+            .map_err(|e| McpError::Http(format!("SSE connection failed: {e}")))?;
 
         let mut stream = response.bytes_stream();
 
@@ -170,8 +170,8 @@ impl HttpClientTransport {
                     Ok(bytes) => {
                         let text = String::from_utf8_lossy(&bytes);
                         for line in text.lines() {
-                            if line.starts_with("data: ") {
-                                let data = &line[6..]; // Remove "data: " prefix
+                            if let Some(data) = line.strip_prefix("data: ") {
+                                // Remove "data: " prefix
                                 if let Ok(notification) =
                                     serde_json::from_str::<JsonRpcNotification>(data)
                                 {
@@ -273,7 +273,7 @@ impl Transport for HttpClientTransport {
                     let mut pending = pending_requests.lock().await;
                     pending.remove(&request_id);
                 });
-                McpError::Http(format!("HTTP request failed: {}", e))
+                McpError::Http(format!("HTTP request failed: {e}"))
             })?;
 
         if !response.status().is_success() {
@@ -294,7 +294,7 @@ impl Transport for HttpClientTransport {
                 let mut pending = pending_requests.lock().await;
                 pending.remove(&request_id);
             });
-            McpError::Http(format!("Failed to parse response: {}", e))
+            McpError::Http(format!("Failed to parse response: {e}"))
         })?;
 
         // Validate response ID matches request ID
@@ -333,7 +333,7 @@ impl Transport for HttpClientTransport {
             .json(&notification)
             .send()
             .await
-            .map_err(|e| McpError::Http(format!("HTTP notification failed: {}", e)))?;
+            .map_err(|e| McpError::Http(format!("HTTP notification failed: {e}")))?;
 
         if !response.status().is_success() {
             return Err(McpError::Http(format!(
@@ -485,7 +485,7 @@ impl ServerTransport for HttpServerTransport {
         // Start the server
         let listener = tokio::net::TcpListener::bind(&bind_addr)
             .await
-            .map_err(|e| McpError::Http(format!("Failed to bind to {}: {}", bind_addr, e)))?;
+            .map_err(|e| McpError::Http(format!("Failed to bind to {bind_addr}: {e}")))?;
 
         *running.write().await = true;
 
@@ -529,7 +529,7 @@ impl ServerTransport for HttpServerTransport {
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
         let state = self.state.read().await;
 
-        if let Err(_) = state.notification_sender.send(notification) {
+        if state.notification_sender.send(notification).is_err() {
             tracing::warn!("No SSE clients connected to receive notification");
         }
 

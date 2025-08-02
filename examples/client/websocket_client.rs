@@ -10,8 +10,8 @@ use mcp_protocol_sdk::{
     client::session::SessionConfig,
     client::{ClientSession, McpClient},
     core::error::McpResult,
+    protocol::types::ContentBlock as Content,
     transport::websocket::WebSocketClientTransport,
-    Content,
 };
 
 #[tokio::main]

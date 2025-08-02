@@ -273,10 +273,12 @@ mod protocol_validation_comprehensive {
         for (i, notification) in notification_sequence.iter().enumerate() {
             assert_eq!(notification["jsonrpc"], "2.0");
             assert!(notification["method"].is_string());
-            assert!(notification["method"]
-                .as_str()
-                .unwrap()
-                .starts_with("notifications/"));
+            assert!(
+                notification["method"]
+                    .as_str()
+                    .unwrap()
+                    .starts_with("notifications/")
+            );
             assert!(
                 notification.get("id").is_none(),
                 "Notification {i} should not have id"

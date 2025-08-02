@@ -10,11 +10,11 @@ use std::process::Stdio;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::process::{Child, Command};
-use tokio::sync::{mpsc, Mutex};
-use tokio::time::{timeout, Duration};
+use tokio::sync::{Mutex, mpsc};
+use tokio::time::{Duration, timeout};
 
 use crate::core::error::{McpError, McpResult};
-use crate::protocol::types::{error_codes, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
+use crate::protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, error_codes};
 use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
 
 /// STDIO transport for MCP clients
@@ -130,13 +130,16 @@ impl StdioClientTransport {
                     // Try to parse as response first
                     if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(line) {
                         let mut pending = pending_requests.lock().await;
-                        if let Some(sender) = pending.remove(&response.id) {
-                            let _ = sender.send(response);
-                        } else {
-                            tracing::warn!(
-                                "Received response for unknown request ID: {:?}",
-                                response.id
-                            );
+                        match pending.remove(&response.id) {
+                            Some(sender) => {
+                                let _ = sender.send(response);
+                            }
+                            _ => {
+                                tracing::warn!(
+                                    "Received response for unknown request ID: {:?}",
+                                    response.id
+                                );
+                            }
                         }
                     }
                     // Try to parse as notification

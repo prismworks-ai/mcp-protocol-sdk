@@ -247,24 +247,28 @@ fn print_benchmark_results(
 
     // Print header
     info!(
-        "{:<25} {:>12} {:>15} {:>12} {:>10}",
-        "Transport", "Req/Sec", "Avg Latency", "Success %", "Errors"
+        "{:<25} {:>12} {:>15} {:>12} {:>10} {:>12}",
+        "Transport", "Req/Sec", "Avg Latency", "Success %", "Errors", "Total Time"
     );
-    info!("───────────────────────────────────────────────────────────────");
+    info!("─────────────────────────────────────────────────────────────────────────");
 
     // Print results
     for result in &results {
         info!(
-            "{:<25} {:>12.0} {:>13.2}ms {:>11.1}% {:>10}",
+            "{:<25} {:>12.0} {:>13.2}ms {:>11.1}% {:>10} {:>10.2}s",
             result.name,
             result.requests_per_second,
             result.average_latency.as_secs_f64() * 1000.0,
             result.success_rate * 100.0,
-            result.errors
+            result.errors,
+            result.total_time.as_secs_f64()
         );
     }
 
-    info!("───────────────────────────────────────────────────────────────");
+    info!("─────────────────────────────────────────────────────────────────────────");
+
+    info!("\n📊 SUMMARY:");
+    info!("Total requests per transport: {}", fast.total_requests);
 
     // Calculate improvements
     if standard.requests_per_second > 0.0 {
@@ -296,7 +300,7 @@ fn print_benchmark_results(
 
 /// Demo server for benchmarking
 async fn demo_benchmark_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use axum::{response::Json, routing::post, Router};
+    use axum::{Router, response::Json, routing::post};
     use std::net::SocketAddr;
 
     let app = Router::new().route(

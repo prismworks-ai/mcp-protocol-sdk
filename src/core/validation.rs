@@ -601,69 +601,69 @@ impl ParameterType for bool {
 #[macro_export]
 macro_rules! param_schema {
     // String parameter
-    (string $name:expr) => {
+    (string $name:expr_2021) => {
         ($name, serde_json::json!({"type": "string"}))
     };
 
     // String with constraints
-    (string $name:expr, min: $min:expr) => {
+    (string $name:expr_2021, min: $min:expr_2021) => {
         ($name, serde_json::json!({"type": "string", "minLength": $min}))
     };
 
-    (string $name:expr, max: $max:expr) => {
+    (string $name:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "string", "maxLength": $max}))
     };
 
-    (string $name:expr, min: $min:expr, max: $max:expr) => {
+    (string $name:expr_2021, min: $min:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "string", "minLength": $min, "maxLength": $max}))
     };
 
     // Number parameter
-    (number $name:expr) => {
+    (number $name:expr_2021) => {
         ($name, serde_json::json!({"type": "number"}))
     };
 
-    (number $name:expr, min: $min:expr) => {
+    (number $name:expr_2021, min: $min:expr_2021) => {
         ($name, serde_json::json!({"type": "number", "minimum": $min}))
     };
 
-    (number $name:expr, max: $max:expr) => {
+    (number $name:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "number", "maximum": $max}))
     };
 
-    (number $name:expr, min: $min:expr, max: $max:expr) => {
+    (number $name:expr_2021, min: $min:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "number", "minimum": $min, "maximum": $max}))
     };
 
     // Integer parameter
-    (integer $name:expr) => {
+    (integer $name:expr_2021) => {
         ($name, serde_json::json!({"type": "integer"}))
     };
 
-    (integer $name:expr, min: $min:expr) => {
+    (integer $name:expr_2021, min: $min:expr_2021) => {
         ($name, serde_json::json!({"type": "integer", "minimum": $min}))
     };
 
-    (integer $name:expr, max: $max:expr) => {
+    (integer $name:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "integer", "maximum": $max}))
     };
 
-    (integer $name:expr, min: $min:expr, max: $max:expr) => {
+    (integer $name:expr_2021, min: $min:expr_2021, max: $max:expr_2021) => {
         ($name, serde_json::json!({"type": "integer", "minimum": $min, "maximum": $max}))
     };
 
     // Boolean parameter
-    (boolean $name:expr) => {
+    (boolean $name:expr_2021) => {
         ($name, serde_json::json!({"type": "boolean"}))
     };
 
     // Array parameter
-    (array $name:expr, items: $items:expr) => {
+    (array $name:expr_2021, items: $items:expr_2021) => {
         ($name, serde_json::json!({"type": "array", "items": $items}))
     };
 
     // Enum parameter
-    (enum $name:expr, values: [$($val:expr),*]) => {
+    (enum $name:expr_2021, values: [$($val:expr_2021),*]) => {
         ($name, serde_json::json!({"type": "string", "enum": [$($val),*]}))
     };
 }

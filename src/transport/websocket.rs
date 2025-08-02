@@ -12,17 +12,30 @@ use serde_json::Value;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::{broadcast, mpsc, Mutex, RwLock},
+    sync::{Mutex, RwLock, broadcast, mpsc},
     time::timeout,
 };
 use tokio_tungstenite::{
-    accept_async, connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream,
+    MaybeTlsStream, WebSocketStream, accept_async, connect_async, tungstenite::Message,
 };
 use url::Url;
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
 use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
+
+// Type aliases to reduce complexity warnings
+type RequestHandler = Arc<
+    RwLock<
+        Option<
+            Arc<
+                dyn Fn(JsonRpcRequest) -> tokio::sync::oneshot::Receiver<JsonRpcResponse>
+                    + Send
+                    + Sync,
+            >,
+        >,
+    >,
+>;
 
 // ============================================================================
 // WebSocket Client Transport
@@ -67,7 +80,7 @@ impl WebSocketClientTransport {
 
         // Validate URL format
         let _url_parsed = Url::parse(url_str)
-            .map_err(|e| McpError::WebSocket(format!("Invalid WebSocket URL: {}", e)))?;
+            .map_err(|e| McpError::WebSocket(format!("Invalid WebSocket URL: {e}")))?;
 
         tracing::debug!("Connecting to WebSocket: {}", url_str);
 
@@ -77,7 +90,7 @@ impl WebSocketClientTransport {
         let (ws_stream, _) = timeout(connect_timeout, connect_async(url_str))
             .await
             .map_err(|_| McpError::WebSocket("Connection timeout".to_string()))?
-            .map_err(|e| McpError::WebSocket(format!("Failed to connect: {}", e)))?;
+            .map_err(|e| McpError::WebSocket(format!("Failed to connect: {e}")))?;
 
         let (ws_sender, ws_receiver) = ws_stream.split();
 
@@ -119,7 +132,7 @@ impl WebSocketClientTransport {
                     if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(&text) {
                         let mut pending = pending_requests.lock().await;
                         if let Some(sender) = pending.remove(&response.id) {
-                            if let Err(_) = sender.send(response) {
+                            if sender.send(response).is_err() {
                                 tracing::warn!("Failed to send response to waiting request");
                             }
                         } else {
@@ -133,7 +146,7 @@ impl WebSocketClientTransport {
                     else if let Ok(notification) =
                         serde_json::from_str::<JsonRpcNotification>(&text)
                     {
-                        if let Err(_) = notification_sender.send(notification) {
+                        if notification_sender.send(notification).is_err() {
                             tracing::debug!("Notification receiver dropped");
                             break;
                         }
@@ -176,7 +189,7 @@ impl WebSocketClientTransport {
             sender
                 .send(message)
                 .await
-                .map_err(|e| McpError::WebSocket(format!("Failed to send message: {}", e)))?;
+                .map_err(|e| McpError::WebSocket(format!("Failed to send message: {e}")))?;
         } else {
             return Err(McpError::WebSocket("WebSocket not connected".to_string()));
         }
@@ -290,17 +303,7 @@ pub struct WebSocketServerTransport {
     bind_addr: String,
     config: TransportConfig, // Used for connection timeouts and limits
     clients: Arc<RwLock<HashMap<String, WebSocketConnection>>>,
-    request_handler: Arc<
-        RwLock<
-            Option<
-                Arc<
-                    dyn Fn(JsonRpcRequest) -> tokio::sync::oneshot::Receiver<JsonRpcResponse>
-                        + Send
-                        + Sync,
-                >,
-            >,
-        >,
-    >,
+    request_handler: RequestHandler,
     server_handle: Option<tokio::task::JoinHandle<()>>,
     running: Arc<RwLock<bool>>,
     shutdown_sender: Option<broadcast::Sender<()>>,
@@ -368,17 +371,7 @@ impl WebSocketServerTransport {
     async fn handle_client_connection(
         stream: TcpStream,
         clients: Arc<RwLock<HashMap<String, WebSocketConnection>>>,
-        request_handler: Arc<
-            RwLock<
-                Option<
-                    Arc<
-                        dyn Fn(JsonRpcRequest) -> tokio::sync::oneshot::Receiver<JsonRpcResponse>
-                            + Send
-                            + Sync,
-                    >,
-                >,
-            >,
-        >,
+        request_handler: RequestHandler,
         mut shutdown_receiver: broadcast::Receiver<()>,
     ) {
         let client_id = uuid::Uuid::new_v4().to_string();

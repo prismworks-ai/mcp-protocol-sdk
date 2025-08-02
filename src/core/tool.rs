@@ -388,10 +388,10 @@ impl std::fmt::Debug for Tool {
 /// ```
 #[macro_export]
 macro_rules! tool {
-    ($name:expr, $schema:expr, $handler:expr) => {
+    ($name:expr_2021, $schema:expr_2021, $handler:expr_2021) => {
         $crate::core::tool::Tool::new($name.to_string(), None, $schema, $handler)
     };
-    ($name:expr, $description:expr, $schema:expr, $handler:expr) => {
+    ($name:expr_2021, $description:expr_2021, $schema:expr_2021, $handler:expr_2021) => {
         $crate::core::tool::Tool::new(
             $name.to_string(),
             Some($description.to_string()),
@@ -774,12 +774,12 @@ impl ToolHandler for ValidationChainTool {
 #[macro_export]
 macro_rules! validated_tool {
     (
-        name: $name:expr,
-        description: $desc:expr,
+        name: $name:expr_2021,
+        description: $desc:expr_2021,
         parameters: {
-            $( $param_name:ident: $param_type:ident $( ( $( $constraint:ident: $value:expr ),* ) )? ),*
+            $( $param_name:ident: $param_type:ident $( ( $( $constraint:ident: $value:expr_2021 ),* ) )? ),*
         },
-        handler: $handler:expr
+        handler: $handler:expr_2021
     ) => {{
         use $crate::core::validation::{create_tool_schema, param_schema};
 
@@ -852,7 +852,7 @@ pub fn create_typed_tool<H>(
 where
     H: ToolHandler + 'static,
 {
-    use serde_json::{json, Map};
+    use serde_json::{Map, json};
 
     let mut properties = Map::new();
     for (param_name, param_desc, param_schema) in parameters {

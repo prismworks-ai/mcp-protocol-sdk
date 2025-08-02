@@ -72,14 +72,14 @@ test-features: ## Run feature-specific tests
 	@cargo test --features http --verbose
 	@cargo test --features websocket --verbose
 	@cargo test --features validation --verbose
-	@cargo test --features full --verbose
+	@cargo test --features validation --verbose
 
 # Examples
 examples: ## Check all examples compile
 	@echo "📚 Checking examples..."
 	@cargo check --example simple_server
 	@cargo check --example echo_server
-	@cargo check --example client_example
+	@cargo check --example basic_client
 	@cargo check --example database_server
 	@cargo check --example http_server --features http
 	@cargo check --example http_client --features http

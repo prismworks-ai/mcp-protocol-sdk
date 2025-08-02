@@ -4,7 +4,7 @@
 //! over HTTP with Server-Sent Events for real-time notifications.
 
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use mcp_protocol_sdk::{
