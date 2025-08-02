@@ -74,7 +74,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 🔥 Key Features
 
-### Multi-Transport Architecture
+### Multi-Platform & Multi-Transport
+- **🌍 Cross-Platform**: Native support for Linux, macOS, Windows (x86_64, ARM64)
 - **STDIO Transport**: Efficient process-based communication
 - **HTTP Transport**: RESTful API with Server-Sent Events
 - **WebSocket Transport**: Real-time bidirectional communication
@@ -120,6 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## 📚 Documentation
 
 - [**Getting Started Guide**](getting-started.md) - Step-by-step tutorial
+- [**Platform Support**](platform-support.md) - Multi-platform deployment guide
 - [**API Reference**](https://docs.rs/mcp-protocol-sdk) - Complete API documentation
 - [**Rust Documentation**](rust-docs/) - Generated code documentation
 - [**Examples Collection**](examples.md) - Real-world usage examples

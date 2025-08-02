@@ -5,6 +5,7 @@
 ## Core Documentation
 - **Project README**: ../README.md - Main project documentation and quick start
 - **Getting Started**: getting-started.md - Installation and basic setup guide
+- **Platform Support**: platform-support.md - Multi-platform deployment and cross-compilation guide
 - **Architecture**: architecture.md - System design and component overview
 - **Implementation Guide**: implementation-guide.md - Detailed technical implementation
 - **Configuration**: configuration.md - Configuration options and settings

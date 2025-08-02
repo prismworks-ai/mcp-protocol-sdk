@@ -14,6 +14,7 @@ permalink: /nav/
 - [**Installation**](getting-started#installation) - Add to your project
 
 ### 📚 Learning Resources  
+- [**Platform Support**](platform-support) - Multi-platform deployment guide
 - [**Examples Collection**](examples) - Real-world usage examples
 - [**Transport Guide**](transports) - Deep dive into transport options
 - [**Architecture Overview**](architecture) - System design and patterns

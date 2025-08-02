@@ -21,13 +21,14 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 
 ## 📚 [Documentation](./docs/README.md) | 📖 [API Reference](https://docs.rs/mcp-protocol-sdk) | 🚀 [Getting Started](./docs/getting-started.md) | 🆚 [vs Official SDK](./docs/comparison-official-sdk.md)
 
-### 🎯 Quick Links: 📖 [Implementation Guide](./docs/implementation-guide.md) | 🔧 [Examples](./examples/) | 🚀 [Transports](./docs/transports.md)
+### 🎯 Quick Links: 📖 [Implementation Guide](./docs/implementation-guide.md) | 🌍 [Platform Support](./docs/platform-support.md) | 🔧 [Examples](./examples/) | 🚀 [Transports](./docs/transports.md)
 
 ---
 
 ## ✨ Features
 
 - 🦀 **Pure Rust** - Zero-cost abstractions, memory safety, and blazing performance
+- 🌍 **Multi-Platform** - Native support for Linux, macOS, Windows + ARM64/Intel architectures
 - 🔌 **Multiple Transports** - STDIO, HTTP, WebSocket support with optional features
 - ⚡ **Advanced HTTP Transport** - Connection pooling, retry logic, 45% faster performance
 - 🛠️ **Complete MCP Support** - Tools, resources, prompts, logging, and sampling
@@ -300,6 +301,39 @@ With 100% schema compliance, this SDK guarantees compatibility with:
 - **Future Protocol Versions** - Forward compatibility design
 
 **[📖 View Full Schema Compliance Details](./docs/SCHEMA_COMPLIANCE.md)**
+
+## 🌍 Multi-Platform Support
+
+### 💻 Supported Platforms
+
+| Platform | Architecture | Testing | Status |
+|----------|-------------|---------|--------|
+| **Linux** | x86_64, ARM64, musl | ✅ Automated | ✅ Production Ready |
+| **macOS** | Intel, Apple Silicon | ✅ Automated | ✅ Production Ready |
+| **Windows** | x86_64, GNU | ✅ Automated | ✅ Production Ready |
+
+### 🚀 Cross-Compilation
+
+```bash
+# Add targets for cross-compilation
+rustup target add aarch64-apple-darwin      # macOS Apple Silicon
+rustup target add x86_64-pc-windows-gnu     # Windows GNU
+rustup target add x86_64-unknown-linux-musl # Linux static
+rustup target add aarch64-unknown-linux-gnu # Linux ARM64
+
+# Build for different platforms
+cargo build --target aarch64-apple-darwin
+cargo build --target x86_64-unknown-linux-musl
+```
+
+### 🔧 Platform-Specific Features
+
+- **Process Management**: Native tokio::process on all platforms
+- **File System**: Platform-aware path handling and permissions
+- **TLS/SSL**: OpenSSL on Linux, native TLS on macOS/Windows
+- **Performance**: Optimized builds for each architecture
+
+**[📖 Complete Platform Guide](./docs/platform-support.md)**
 
 ## 🌍 Integration Ecosystem
 
