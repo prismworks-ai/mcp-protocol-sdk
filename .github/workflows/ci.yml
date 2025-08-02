@@ -142,6 +142,9 @@ jobs:
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
             sudo apt-get install -y gcc-aarch64-linux-gnu
           fi
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
+            sudo apt-get install -y gcc-mingw-w64-x86-64
+          fi
 
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -154,12 +157,17 @@ jobs:
           shared-key: "cross-${{ matrix.target }}"
           cache-on-failure: true
 
-      - name: Configure linker for musl
-        if: matrix.target == 'x86_64-unknown-linux-musl'
+      - name: Configure cross-compilation linkers
         run: |
           mkdir -p ~/.cargo
-          echo '[target.x86_64-unknown-linux-musl]' >> ~/.cargo/config.toml
-          echo 'linker = "x86_64-linux-musl-gcc"' >> ~/.cargo/config.toml
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
+            echo '[target.x86_64-unknown-linux-musl]' >> ~/.cargo/config.toml
+            echo 'linker = "x86_64-linux-musl-gcc"' >> ~/.cargo/config.toml
+          fi
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
+            echo '[target.x86_64-pc-windows-gnu]' >> ~/.cargo/config.toml
+            echo 'linker = "x86_64-w64-mingw32-gcc"' >> ~/.cargo/config.toml
+          fi
 
       - name: Check compilation for ${{ matrix.target }}
         run: cargo check --target ${{ matrix.target }} --all-features
