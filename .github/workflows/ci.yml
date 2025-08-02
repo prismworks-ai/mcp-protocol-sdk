@@ -123,7 +123,6 @@ jobs:
       matrix:
         target: 
           - x86_64-pc-windows-gnu
-          - aarch64-apple-darwin
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-gnu
 
@@ -161,6 +160,33 @@ jobs:
           mkdir -p ~/.cargo
           echo '[target.x86_64-unknown-linux-musl]' >> ~/.cargo/config.toml
           echo 'linker = "x86_64-linux-musl-gcc"' >> ~/.cargo/config.toml
+
+      - name: Check compilation for ${{ matrix.target }}
+        run: cargo check --target ${{ matrix.target }} --all-features
+
+  cross-compile-apple:
+    name: Apple Cross Compilation
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: 
+          - aarch64-apple-darwin
+          - x86_64-apple-darwin
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "cross-apple-${{ matrix.target }}"
+          cache-on-failure: true
 
       - name: Check compilation for ${{ matrix.target }}
         run: cargo check --target ${{ matrix.target }} --all-features
