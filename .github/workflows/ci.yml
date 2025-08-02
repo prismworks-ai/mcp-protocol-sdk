@@ -136,7 +136,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev
           if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
-            sudo apt-get install -y musl-tools
+            sudo apt-get install -y musl-tools musl-dev
+            # Create symlink for musl gcc
+            sudo ln -sf /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           fi
           if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
             sudo apt-get install -y gcc-aarch64-linux-gnu
@@ -152,6 +154,13 @@ jobs:
         with:
           shared-key: "cross-${{ matrix.target }}"
           cache-on-failure: true
+
+      - name: Configure linker for musl
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          mkdir -p ~/.cargo
+          echo '[target.x86_64-unknown-linux-musl]' >> ~/.cargo/config.toml
+          echo 'linker = "x86_64-linux-musl-gcc"' >> ~/.cargo/config.toml
 
       - name: Check compilation for ${{ matrix.target }}
         run: cargo check --target ${{ matrix.target }} --all-features
