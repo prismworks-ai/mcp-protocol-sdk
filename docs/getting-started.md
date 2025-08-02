@@ -6,7 +6,7 @@ Get up and running with the **production-ready MCP Protocol SDK** (v0.4.0) in ju
 
 ## Prerequisites
 
-- Rust 1.75+ installed
+- Rust 1.85+ installed
 - Basic familiarity with async Rust
 
 ## Installation

@@ -31,7 +31,7 @@ Thank you for your interest in contributing to the MCP Protocol SDK! This docume
 ## 🛠️ Development Setup
 
 ### Prerequisites
-- Rust 1.75 or later
+- Rust 1.85 or later
 - Git
 - A GitHub account
 

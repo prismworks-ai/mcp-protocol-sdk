@@ -332,7 +332,7 @@ With 100% schema compliance, this SDK guarantees compatibility with:
 ## 🛠️ Development
 
 ### Prerequisites
-- Rust 1.75+ 
+- Rust 1.85+
 - Cargo
 
 ### Build & Test
