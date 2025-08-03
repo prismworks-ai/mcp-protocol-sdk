@@ -36,6 +36,9 @@ jobs:
           shared-key: "deps"
           cache-on-failure: true
 
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
       - name: Update dependencies
         run: |
           echo "## Dependency Updates" > update_summary.md
