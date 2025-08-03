@@ -112,7 +112,7 @@ impl PromptMessage {
     /// Create a system message
     pub fn system<S: Into<String>>(content: S) -> Self {
         Self {
-            role: Role::User, // Note: 2025-03-26 only has User and Assistant roles
+            role: Role::User, // Note: 2025-06-18 only has User and Assistant roles
             content: Content::text(content.into()),
         }
     }

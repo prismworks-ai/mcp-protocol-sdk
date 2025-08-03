@@ -559,7 +559,7 @@ impl McpServer {
                     _ => (INTERNAL_ERROR, error.to_string()),
                 };
                 // For now, return errors as part of the result
-                // TODO: Implement proper JSON-RPC error handling for 2025-03-26
+                // TODO: Implement proper JSON-RPC error handling for 2025-06-18
                 Ok(JsonRpcResponse::success(
                     request.id,
                     serde_json::json!({
