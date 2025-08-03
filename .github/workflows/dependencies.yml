@@ -5,6 +5,10 @@ on:
     - cron: '0 2 * * 1' # Monday at 2 AM UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
@@ -13,9 +17,6 @@ jobs:
   update:
     name: Update Dependencies
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -79,3 +80,5 @@ jobs:
           labels: |
             dependencies
             automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
