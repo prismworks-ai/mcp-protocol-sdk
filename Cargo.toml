@@ -1,6 +1,6 @@
 [package]
 name = "mcp-protocol-sdk"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 rust-version = "1.85" # Minimum for Rust 2024 Edition
 authors = ["MCP Rust Contributors <mcp-rust@users.noreply.github.com>"]

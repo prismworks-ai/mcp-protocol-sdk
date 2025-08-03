@@ -261,6 +261,6 @@ server.run(transport).await?;
 
 ---
 
-*Last updated: August 2025 for mcp-protocol-sdk v0.4.0*
+*Last updated: August 2025 for mcp-protocol-sdk v0.5.0*
 
 **Have questions about choosing the right SDK?** Open an issue or discussion on our GitHub repository!

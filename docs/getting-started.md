@@ -1,6 +1,6 @@
 # 🚀 Quick Start Guide
 
-Get up and running with the **production-ready MCP Protocol SDK** (v0.4.0) in just a few minutes!
+Get up and running with the **production-ready MCP Protocol SDK** (v0.5.0) in just a few minutes!
 
 🎯 **Latest Release**: Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 97 comprehensive tests.
 

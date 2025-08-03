@@ -7,7 +7,7 @@
 [![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](./SCHEMA_COMPLIANCE.md)
 [![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
 
-🎯 **v0.4.0 Released** - Complete MCP 2025-06-18 schema upgrade with enhanced tool results and comprehensive test coverage.
+🎯 **v0.5.0 Released** - Production-ready SDK with comprehensive GitHub Actions CI/CD, enhanced documentation, and complete development infrastructure.
 
 ---
 

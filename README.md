@@ -3,8 +3,14 @@
 [![Crates.io](https://img.shields.io/crates/v/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
 [![Documentation](https://docs.rs/mcp-protocol-sdk/badge.svg)](https://docs.rs/mcp-protocol-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
-[![Security Audit](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security%20Audit/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+
+[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![Security](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml)
+[![Dependencies](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Dependencies/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml)
+[![Documentation](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Documentation/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml)
+[![Benchmarks](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Benchmarks/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml)
+[![Release](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Release/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml)
+
 [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
 [![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](#-mcp-protocol-schema-compliance)
 [![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
@@ -15,7 +21,7 @@
 
 The MCP Protocol SDK enables seamless integration between AI models and external systems through a standardized protocol. Build powerful tools, resources, and capabilities that AI can discover and use dynamically.
 
-🚀 **v0.4.0 Released** - Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 97 comprehensive tests.
+🚀 **v0.5.0 Released** - Production-ready SDK with comprehensive GitHub Actions CI/CD, enhanced documentation, and complete development infrastructure.
 
 ---
 
@@ -34,7 +40,7 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 - 🛠️ **Complete MCP Support** - Tools, resources, prompts, logging, and sampling
 - 🎯 **Type-Safe** - Comprehensive type system with compile-time guarantees  
 - 🚀 **Async/Await** - Built on Tokio for high-performance concurrent operations
-- 📦 **Unified Architecture** - All functionality in one crate (v0.3.0)
+- 📦 **Unified Architecture** - All functionality in one crate
 - 🔒 **Production Ready** - 97 comprehensive tests, full validation, and error handling
 - 🆕 **Latest Schema** - 100% compliant with MCP 2025-06-18 specification
 - 📊 **Built-in Metrics** - Performance monitoring and health checks
@@ -46,10 +52,10 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 
 # Or with specific features only:
-mcp-protocol-sdk = { version = "0.4.0", features = ["stdio", "validation"] }
+mcp-protocol-sdk = { version = "0.5.0", features = ["stdio", "validation"] }
 ```
 
 ### Build an MCP Server (5 minutes)
@@ -168,7 +174,7 @@ Optimize your binary size by selecting only needed features:
 
 **Minimal Example** (STDIO only):
 ```toml
-mcp-protocol-sdk = { version = "0.3.0", default-features = false, features = ["stdio"] }
+mcp-protocol-sdk = { version = "0.5.0", default-features = false, features = ["stdio"] }
 ```
 
 ## 🚀 Performance

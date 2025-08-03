@@ -12,6 +12,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Monitoring integration (Prometheus metrics)
 - Plugin system for dynamic tool loading
 
+## [0.5.0] - 2025-08-02
+
+🏗️ **Foundation Setup & Infrastructure Release**
+
+### Added
+- **🚀 Complete CI/CD Pipeline**: 6 comprehensive GitHub Actions workflows
+  - CI workflow with cross-platform testing (Linux, macOS, Windows)
+  - Security audit and dependency scanning
+  - Documentation build and deployment
+  - Performance benchmarking automation
+  - Release workflow with automated publishing
+- **📊 Workflow Visibility**: GitHub status badges for all workflows in README
+- **🛠️ Development Infrastructure**: Comprehensive development environment setup
+  - Automated dev environment setup script (`scripts/setup-dev.sh`)
+  - Local CI validation tools (`scripts/ci-check.sh`)
+  - Pre-commit hooks for code quality
+  - Cross-compilation support for all target platforms
+- **📚 Documentation Enhancement**: Complete project documentation structure
+  - Comprehensive API documentation and guides
+  - Platform-specific setup instructions
+  - Integration guides for Claude Desktop, Cursor, VS Code
+  - Contributing guidelines and community standards
+- **🏛️ Project Governance**: Standard open-source project files
+  - Root-level `CONTRIBUTING.md` for easy discovery
+  - `CODE_OF_CONDUCT.md` with community guidelines
+  - Enhanced README with comprehensive project overview
+
+### Changed
+- **📋 Task Management**: Reorganized project planning with clear milestones
+- **🔧 Build System**: Enhanced cross-platform build configuration
+- **📖 Documentation**: Updated all version references to v0.5.0
+
+### Infrastructure
+- **✅ Cross-Platform CI**: Validated builds on all major platforms
+- **🔒 Security**: Automated security scanning and dependency audits
+- **📈 Performance**: Automated benchmarking and performance monitoring
+- **🚀 Release Automation**: Complete automated release pipeline
+
+### Quality Assurance
+- **🧪 Comprehensive Testing**: 97 tests maintaining 100% schema compliance
+- **🔍 Code Quality**: Automated linting, formatting, and quality checks
+- **📊 Coverage**: Code coverage tracking and reporting
+- **🎯 Validation**: End-to-end integration testing
+
 ## [0.4.0] - 2025-08-01
 
 🎯 **Major Schema Upgrade Release: MCP 2025-06-18 Compliance**
