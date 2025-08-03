@@ -1,5 +1,10 @@
 name: Dependencies
 
+# Automated dependency updates with pull request creation
+# Requires GH_TOKEN secret with 'repo' and 'pull_request' scopes for PR creation
+# Repository Settings → Secrets and variables → Actions → New repository secret:
+# Name: GH_TOKEN, Value: <your-personal-access-token>
+
 on:
   schedule:
     - cron: '0 2 * * 1' # Monday at 2 AM UTC
@@ -21,7 +26,8 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT for checkout to enable PR creation
+          token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Install OpenSSL
         run: |
@@ -68,10 +74,22 @@ jobs:
           cargo install cargo-audit
           cargo audit
 
+      - name: Check PAT availability
+        id: check-token
+        run: |
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "pat_available=false" >> $GITHUB_OUTPUT
+            echo "::warning::GH_TOKEN secret not configured. See .github/SETUP_PAT.md for setup instructions."
+          else
+            echo "pat_available=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Pull Request
+        if: steps.check-token.outputs.pat_available == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT for pull request creation (required for automated PRs)
+          token: ${{ secrets.GH_TOKEN }}
           commit-message: 'deps: update dependencies'
           title: 'deps: update dependencies'
           body-path: update_summary.md
@@ -80,5 +98,26 @@ jobs:
           labels: |
             dependencies
             automated
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: PAT Setup Required
+        if: steps.check-token.outputs.pat_available == 'false'
+        run: |
+          echo "::error::Cannot create pull request - GH_TOKEN secret not configured"
+          echo "::error::Repository admin needs to set up Personal Access Token"
+          echo "::error::See .github/SETUP_PAT.md for detailed setup instructions"
+          echo "::error::Workflow completed successfully but pull request creation was skipped"
+          echo ""
+          echo "Summary of completed steps:"
+          echo "✅ Dependencies updated successfully"
+          echo "✅ Tests passed with all features"
+          echo "✅ Security audit completed"
+          echo "❌ Pull request creation skipped (PAT required)"
+          echo ""
+          echo "To enable automated pull requests:"
+          echo "1. Repository admin generates PAT with 'repo' scope"
+          echo "2. Add PAT as repository secret named 'GH_TOKEN'"
+          echo "3. See .github/SETUP_PAT.md for step-by-step instructions"
