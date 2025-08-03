@@ -20,12 +20,22 @@ The Dependencies workflow requires a Personal Access Token (PAT) to create pull 
 
 ### 2. Add Token to Repository Secrets
 
+**Option A: Using GitHub Web Interface (Recommended)**
 1. Go to **Repository Settings** → **Secrets and variables** → **Actions**
 2. Click **"New repository secret"**
 3. Configure the secret:
    - **Name**: `GH_TOKEN`
    - **Secret**: Paste the generated PAT from step 1
 4. Click **"Add secret"**
+
+**Option B: Using GitHub CLI**
+```bash
+# Set the PAT as a repository secret using gh CLI
+gh secret set GH_TOKEN --body "your-personal-access-token-here"
+
+# Verify the secret was added
+gh secret list
+```
 
 ### 3. Verify Setup
 
