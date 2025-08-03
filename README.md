@@ -3,17 +3,19 @@
 [![Crates.io](https://img.shields.io/crates/v/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
 [![Documentation](https://docs.rs/mcp-protocol-sdk/badge.svg)](https://docs.rs/mcp-protocol-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/crates/d/mcp-protocol-sdk.svg)](https://crates.io/crates/mcp-protocol-sdk)
 
-[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/CI/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
-[![Security](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Security/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml)
-[![Dependencies](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Dependencies/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml)
-[![Documentation](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Documentation/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml)
-[![Benchmarks](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Benchmarks/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml)
-[![Release](https://github.com/mcp-rust/mcp-protocol-sdk/workflows/Release/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml)
+[![CI](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![Security](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml)
+[![Dependencies](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml)
+[![Documentation](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml)
+[![Benchmarks](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml)
+[![Release](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml)
 
 [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
 [![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](#-mcp-protocol-schema-compliance)
-[![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+[![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![Rust Version](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
 
