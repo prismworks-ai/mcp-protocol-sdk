@@ -646,22 +646,20 @@ impl ServerTransport for WebSocketServerTransport {
             let handler_future = handler(request);
             tokio::spawn(async move {
                 let result = handler_future.await;
-                let _ = tx.send(result.unwrap_or_else(|e| {
-                    JsonRpcResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id: serde_json::Value::Null,
-                        result: Some(serde_json::json!({
-                            "error": {
-                                "code": -32603,
-                                "message": e.to_string()
-                            }
-                        })),
-                    }
+                let _ = tx.send(result.unwrap_or_else(|e| JsonRpcResponse {
+                    jsonrpc: "2.0".to_string(),
+                    id: serde_json::Value::Null,
+                    result: Some(serde_json::json!({
+                        "error": {
+                            "code": -32603,
+                            "message": e.to_string()
+                        }
+                    })),
                 }));
             });
             rx
         });
-        
+
         // Set the handler in the WebSocket transport's request_handler field
         tokio::spawn(async move {
             // Note: This is a limitation - we can't easily update the async field from sync method

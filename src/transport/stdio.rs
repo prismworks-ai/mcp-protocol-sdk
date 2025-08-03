@@ -15,7 +15,9 @@ use tokio::time::{Duration, timeout};
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, error_codes};
-use crate::transport::traits::{ConnectionState, ServerTransport, ServerRequestHandler, Transport, TransportConfig};
+use crate::transport::traits::{
+    ConnectionState, ServerRequestHandler, ServerTransport, Transport, TransportConfig,
+};
 
 /// STDIO transport for MCP clients
 ///
@@ -330,8 +332,6 @@ impl StdioServerTransport {
             request_handler: None,
         }
     }
-
-
 }
 
 #[async_trait]
@@ -442,8 +442,6 @@ impl ServerTransport for StdioServerTransport {
     fn set_request_handler(&mut self, handler: ServerRequestHandler) {
         self.request_handler = Some(handler);
     }
-
-
 
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
         let writer = self

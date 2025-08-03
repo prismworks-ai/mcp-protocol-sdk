@@ -62,8 +62,11 @@ pub trait Transport: Send + Sync {
 
 /// Server request handler function type
 pub type ServerRequestHandler = std::sync::Arc<
-    dyn Fn(JsonRpcRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = McpResult<JsonRpcResponse>> + Send + 'static>>
-        + Send
+    dyn Fn(
+            JsonRpcRequest,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = McpResult<JsonRpcResponse>> + Send + 'static>,
+        > + Send
         + Sync,
 >;
 

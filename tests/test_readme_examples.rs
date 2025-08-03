@@ -3,10 +3,10 @@
 //! This file contains all the examples from the README to ensure they are
 //! accurate and functional.
 
-use mcp_protocol_sdk::prelude::*;
 use async_trait::async_trait;
-use std::collections::HashMap;
+use mcp_protocol_sdk::prelude::*;
 use serde_json::{Value, json};
+use std::collections::HashMap;
 
 // =============================================================================
 // Test 1: Basic Server Example from README
@@ -22,14 +22,14 @@ impl ToolHandler for CalculatorHandler {
             .get("a")
             .and_then(|v| v.as_f64())
             .ok_or_else(|| McpError::Validation("Missing 'a' parameter".to_string()))?;
-        
+
         let b = arguments
             .get("b")
             .and_then(|v| v.as_f64())
             .ok_or_else(|| McpError::Validation("Missing 'b' parameter".to_string()))?;
-        
+
         let result = a + b;
-        
+
         Ok(ToolResult {
             content: vec![Content::text(result.to_string())],
             is_error: None,
@@ -56,7 +56,7 @@ fn test_server_creation() -> Result<(), Box<dyn std::error::Error>> {
 
 fn test_tool_builder() -> McpResult<()> {
     use mcp_protocol_sdk::core::tool::ToolBuilder;
-    
+
     // This should compile and create a tool successfully
     let _tool = ToolBuilder::new("enhanced_calculator")
         .description("Advanced calculator with validation")
@@ -74,7 +74,7 @@ fn test_tool_builder() -> McpResult<()> {
         .idempotent()
         .cacheable()
         .build(CalculatorHandler)?;
-    
+
     Ok(())
 }
 
@@ -86,7 +86,7 @@ fn test_tool_builder() -> McpResult<()> {
 fn test_client_config() -> Result<(), Box<dyn std::error::Error>> {
     use mcp_protocol_sdk::client::McpClient;
     use mcp_protocol_sdk::transport::traits::TransportConfig;
-    
+
     // This should compile without errors
     let _config = TransportConfig {
         connect_timeout_ms: Some(5_000),
@@ -97,9 +97,9 @@ fn test_client_config() -> Result<(), Box<dyn std::error::Error>> {
         compression: true,
         headers: std::collections::HashMap::new(),
     };
-    
+
     let _client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
-    
+
     Ok(())
 }
 
@@ -116,7 +116,7 @@ impl ToolHandler for EchoHandler {
             .get("message")
             .and_then(|v| v.as_str())
             .unwrap_or("Hello, World!");
-        
+
         Ok(ToolResult {
             content: vec![Content::text(message.to_string())],
             is_error: None,
@@ -129,21 +129,23 @@ impl ToolHandler for EchoHandler {
 // Test async server setup (compilation test)
 async fn test_async_server_setup() -> McpResult<()> {
     let mut server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
-    
+
     // Test adding a tool with the actual API
-    server.add_tool(
-        "echo".to_string(),
-        Some("Echo a message".to_string()),
-        json!({
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"}
-            },
-            "required": ["message"]
-        }),
-        EchoHandler,
-    ).await?;
-    
+    server
+        .add_tool(
+            "echo".to_string(),
+            Some("Echo a message".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"}
+                },
+                "required": ["message"]
+            }),
+            EchoHandler,
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -153,7 +155,7 @@ async fn test_async_server_setup() -> McpResult<()> {
 
 fn test_schema_types() -> Result<(), Box<dyn std::error::Error>> {
     use mcp_protocol_sdk::protocol::types::*;
-    
+
     // Test that schema types can be created (from README example)
     let tool_info = ToolInfo {
         name: "calculator".to_string(),
@@ -168,10 +170,10 @@ fn test_schema_types() -> Result<(), Box<dyn std::error::Error>> {
         title: None,
         meta: None,
     };
-    
+
     // Test that it can be serialized to JSON
     let _json = serde_json::to_value(&tool_info)?;
-    
+
     Ok(())
 }
 
@@ -182,39 +184,44 @@ fn test_schema_types() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_all_readme_examples_compile() {
         // Test 1: Server creation
         test_server_creation().expect("Server creation should work");
-        
+
         // Test 2: ToolBuilder
         test_tool_builder().expect("ToolBuilder should work");
-        
+
         // Test 3: Client config (only if http feature enabled)
         #[cfg(feature = "http")]
         test_client_config().expect("Client config should work");
-        
+
         // Test 4: Schema types
         test_schema_types().expect("Schema types should work");
     }
-    
+
     #[tokio::test]
     async fn test_async_examples() {
         // Test async server setup
-        test_async_server_setup().await.expect("Async server setup should work");
+        test_async_server_setup()
+            .await
+            .expect("Async server setup should work");
     }
-    
+
     #[tokio::test]
     async fn test_tool_handler_execution() {
         let handler = CalculatorHandler;
-        
+
         let mut args = HashMap::new();
         args.insert("a".to_string(), json!(5.0));
         args.insert("b".to_string(), json!(3.0));
-        
-        let result = handler.call(args).await.expect("Tool should execute successfully");
-        
+
+        let result = handler
+            .call(args)
+            .await
+            .expect("Tool should execute successfully");
+
         // Verify the result
         assert_eq!(result.content.len(), 1);
         if let Content::Text { text, .. } = &result.content[0] {
@@ -231,14 +238,14 @@ mod tests {
 
 fn main() {
     println!("All README examples compile successfully!");
-    
+
     // Run basic tests
     test_server_creation().expect("Server creation test failed");
     test_tool_builder().expect("ToolBuilder test failed");
     test_schema_types().expect("Schema types test failed");
-    
+
     #[cfg(feature = "http")]
     test_client_config().expect("Client config test failed");
-    
+
     println!("✅ All README examples are working!");
 }
