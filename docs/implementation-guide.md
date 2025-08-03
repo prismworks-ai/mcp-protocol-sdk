@@ -61,31 +61,32 @@ mcp-protocol-sdk/
 │   │   └── websocket.rs       # WebSocket transport for real-time
 │   ├── server/                # Server implementation
 │   │   ├── mod.rs             # Server module exports
-│   │   ├── server.rs          # Core McpServer implementation
-│   │   ├── handlers/          # Request handler implementations
-│   │   │   ├── mod.rs         # Handler module
-│   │   │   ├── tools.rs       # Tool-related handlers
-│   │   │   ├── resources.rs   # Resource handlers
-│   │   │   └── prompts.rs     # Prompt handlers
+│   │   ├── mcp_server.rs      # Core McpServer implementation
+│   │   ├── handlers.rs        # Request handler implementations
 │   │   └── lifecycle.rs       # Server lifecycle management
 │   ├── client/                # Client implementation
 │   │   ├── mod.rs             # Client module exports
-│   │   ├── client.rs          # Core McpClient implementation
+│   │   ├── mcp_client.rs      # Core McpClient implementation
 │   │   └── session.rs         # Session management and reconnection
-│   └── utils/                 # Utility modules
-│       ├── mod.rs             # Utilities module
-│       ├── uri.rs             # URI handling utilities
-│       └── validation.rs      # Input validation helpers
+│   └── core/                  # Core abstractions
+│       ├── mod.rs             # Core module
+│       ├── tool.rs            # Tool system and handlers
+│       ├── resource.rs        # Resource management
+│       ├── prompt.rs          # Prompt templates
+│       └── error.rs           # Error handling
 ├── examples/                  # Comprehensive examples
-│   ├── simple_server.rs       # Basic STDIO server
-│   ├── echo_server.rs         # Echo server with tools
-│   ├── database_server.rs     # Database integration example
-│   ├── http_server.rs         # HTTP server example
-│   ├── websocket_server.rs    # WebSocket server
-│   ├── client_example.rs      # Basic client example
-│   ├── advanced_http_client.rs # Advanced HTTP client with pooling
-│   ├── conservative_http_demo.rs # Production-ready HTTP demo
-│   └── transport_benchmark.rs  # Performance benchmarking
+│   ├── server/
+│   │   ├── simple_server.rs   # Basic STDIO server
+│   │   ├── echo_server.rs     # Echo server with tools
+│   │   ├── database_server.rs # Database integration example
+│   │   ├── http_server.rs     # HTTP server example
+│   │   └── websocket_server.rs# WebSocket server
+│   ├── client/
+│   │   ├── basic_client.rs    # Basic client example
+│   │   ├── advanced_http_client.rs # Advanced HTTP client with pooling
+│   │   └── conservative_http_demo.rs # Production-ready HTTP demo
+│   └── utilities/
+│       └── transport_benchmark.rs  # Performance benchmarking
 ├── tests/                     # Integration and unit tests
 ├── benches/                   # Performance benchmarks
 ├── docs/                      # Comprehensive documentation
@@ -102,11 +103,11 @@ mcp-protocol-sdk/
 - **Pluggable Design**: Easy to add new transport types through trait system
 
 ### 2. **100% MCP Schema Compliance**
-- Complete implementation of MCP Protocol Schema (2025-03-26)
+- Complete implementation of MCP Protocol Schema (2025-06-18)
 - Full type definitions for all MCP protocol messages
 - JSON-RPC 2.0 compliant request/response handling
 - Strong type safety with compile-time validation
-- Comprehensive test suite with 26/26 tests passing
+- Comprehensive test suite with 299/299 tests passing
 
 ### 3. **Advanced Tool System**
 - Dynamic tool registration and discovery
@@ -139,7 +140,7 @@ mcp-protocol-sdk/
 ## 📊 Testing and Quality
 
 ### Test Coverage
-- **Comprehensive Test Suite**: 26/26 schema compliance tests passing
+- **Comprehensive Test Suite**: 299/299 schema compliance tests passing
 - **Integration Tests**: Client-server communication testing
 - **Transport-Specific Tests**: All transport types thoroughly tested
 - **Error Handling Tests**: Failure scenarios and recovery testing
@@ -159,7 +160,7 @@ mcp-protocol-sdk/
 [features]
 default = ["stdio", "tracing-subscriber", "chrono"]
 full = ["stdio", "http", "websocket", "validation", "tracing-subscriber", "chrono"]
-stdio = []  # STDIO transport (Claude Desktop)
+stdio = ["chrono"]  # STDIO transport (Claude Desktop)
 http = ["axum", "tower", "tower-http", "reqwest", "chrono", "tokio-stream", "futures", "fastrand"]
 websocket = ["tokio-tungstenite", "http", "futures", "futures-util"]
 validation = ["jsonschema"]
@@ -167,6 +168,8 @@ validation = ["jsonschema"]
 
 ### Transport Configuration
 ```rust
+use mcp_protocol_sdk::transport::traits::TransportConfig;
+
 // Advanced HTTP Transport Configuration
 let config = TransportConfig {
     connect_timeout_ms: Some(5_000),
@@ -175,11 +178,7 @@ let config = TransportConfig {
     max_message_size: Some(1024 * 1024), // 1MB
     keep_alive_ms: Some(60_000),         // 1 minute
     compression: true,
-    max_concurrent_requests: Some(100),
-    connection_pool_size: Some(10),
-    retry_attempts: Some(3),
-    retry_delay_ms: Some(1000),
-    ..Default::default()
+    headers: std::collections::HashMap::new(),
 };
 ```
 
@@ -196,7 +195,7 @@ let config = TransportConfig {
 ### Transport Performance Comparison
 
 | Transport | Requests/Second | Average Latency | Success Rate | Key Features |
-|-----------|-----------------|-----------------|--------------|--------------|
+|-----------|-----------------|-----------------|--------------||--------------|
 | **Advanced HTTP** | **802 req/sec** | **0.02ms** | **100%** | Connection pooling, retry logic |
 | Standard HTTP | 551 req/sec | 0.04ms | 100% | Basic HTTP client |
 | WebSocket | ~1000 req/sec | 0.01ms | 100% | Real-time bidirectional |
@@ -207,26 +206,57 @@ let config = TransportConfig {
 ### Basic STDIO Server (Claude Desktop)
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use serde_json::json;
+use async_trait::async_trait;
+use serde_json::{json, Value};
+use std::collections::HashMap;
+
+// Step 1: Create a tool handler (required by API)
+struct CalculatorHandler;
+
+#[async_trait]
+impl ToolHandler for CalculatorHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let a = arguments
+            .get("a")
+            .and_then(|v| v.as_f64())
+            .ok_or_else(|| McpError::Validation("Missing 'a' parameter".to_string()))?;
+        let b = arguments
+            .get("b")
+            .and_then(|v| v.as_f64())
+            .ok_or_else(|| McpError::Validation("Missing 'b' parameter".to_string()))?;
+        
+        Ok(ToolResult {
+            content: vec![Content::text((a + b).to_string())],
+            is_error: None,
+            structured_content: Some(json!({ "result": a + b })),
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("calculator", "1.0.0");
+    // Create server (note: requires String parameters)
+    let mut server = McpServer::new("calculator".to_string(), "1.0.0".to_string());
     
-    let add_tool = Tool::new("add", "Add two numbers")
-        .with_parameter("a", "First number", true)
-        .with_parameter("b", "Second number", true);
+    // Add tool using the actual API
+    server.add_tool(
+        "add".to_string(),
+        Some("Add two numbers".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "a": {"type": "number", "description": "First number"},
+                "b": {"type": "number", "description": "Second number"}
+            },
+            "required": ["a", "b"]
+        }),
+        CalculatorHandler,
+    ).await?;
     
-    server.add_tool(add_tool);
-    
-    server.set_tool_handler("add", |params| async move {
-        let a = params["a"].as_f64().unwrap_or(0.0);
-        let b = params["b"].as_f64().unwrap_or(0.0);
-        Ok(json!({ "result": a + b }))
-    });
-    
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
@@ -235,10 +265,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Advanced HTTP Client with Connection Pooling
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
+use mcp_protocol_sdk::client::McpClient;
+use mcp_protocol_sdk::transport::traits::TransportConfig;
 
+#[cfg(feature = "http")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use mcp_protocol_sdk::transport::http::HttpClientTransport;
+    
     // Configure advanced HTTP transport
     let config = TransportConfig {
         connect_timeout_ms: Some(5_000),
@@ -246,10 +280,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         max_message_size: Some(1024 * 1024),
         keep_alive_ms: Some(60_000),
         compression: true,
-        connection_pool_size: Some(10),
-        max_concurrent_requests: Some(100),
-        retry_attempts: Some(3),
-        ..Default::default()
+        headers: std::collections::HashMap::new(),
+        write_timeout_ms: Some(30_000),
     };
     
     let transport = HttpClientTransport::with_config(
@@ -258,17 +290,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config,
     ).await?;
     
-    let client = McpClient::new("advanced-client".to_string(), "1.0.0".to_string());
+    let mut client = McpClient::new("advanced-client".to_string(), "1.0.0".to_string());
     
-    client.connect(transport).await?;
-    client.initialize().await?;
+    // connect() returns InitializeResult and calls initialize() internally
+    let init_result = client.connect(transport).await?;
     
-    // Use server capabilities with connection pooling benefits
-    let tools = client.list_tools().await?;
-    let result = client.call_tool("add".to_string(), Some(json!({"a": 5, "b": 3}).as_object().unwrap().clone())).await?;
+    println!("Connected to: {} v{}", 
+        init_result.server_info.name,
+        init_result.server_info.version
+    );
     
-    println!("Available tools: {:?}", tools);
-    println!("Result: {:?}", result);
+    // Check server capabilities
+    if let Some(capabilities) = client.server_capabilities().await {
+        if capabilities.tools.is_some() {
+            println!("✅ Server supports tools");
+        }
+    }
     
     Ok(())
 }
@@ -277,25 +314,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### WebSocket Server for Real-time Applications
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use mcp_protocol_sdk::transport::WebSocketServerTransport;
+use async_trait::async_trait;
+use serde_json::{json, Value};
+use std::collections::HashMap;
 
+// Real-time data handler
+struct StreamHandler;
+
+#[async_trait]
+impl ToolHandler for StreamHandler {
+    async fn call(&self, _arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        // Simulate real-time data streaming
+        Ok(ToolResult {
+            content: vec![Content::text("Streaming data...".to_string())],
+            is_error: None,
+            structured_content: Some(json!({
+                "stream": "data",
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            })),
+            meta: None,
+        })
+    }
+}
+
+#[cfg(feature = "websocket")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("realtime-server", "1.0.0");
+    use mcp_protocol_sdk::transport::websocket::WebSocketServerTransport;
+    
+    let mut server = McpServer::new("realtime-server".to_string(), "1.0.0".to_string());
     
     // Add real-time capabilities
-    server.add_tool(Tool::new("stream_data", "Stream real-time data"));
+    server.add_tool(
+        "stream_data".to_string(),
+        Some("Stream real-time data".to_string()),
+        json!({
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+        }),
+        StreamHandler,
+    ).await?;
     
-    server.set_tool_handler("stream_data", |_params| async move {
-        // Simulate real-time data streaming
-        Ok(json!({
-            "stream": "data",
-            "timestamp": chrono::Utc::now().to_rfc3339()
-        }))
-    });
-    
-    let transport = WebSocketServerTransport::new("0.0.0.0:8080").await?;
-    server.run(transport).await?;
+    let transport = WebSocketServerTransport::new("0.0.0.0:8080".to_string());
+    server.start(transport).await?;
     
     Ok(())
 }
@@ -327,47 +389,77 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```rust
 use async_trait::async_trait;
 use mcp_protocol_sdk::prelude::*;
+use std::collections::HashMap;
+use serde_json::{json, Value};
 
 pub struct DatabaseTool {
-    connection_pool: sqlx::PgPool,
+    // Your database connection here
+    connection_info: String,
 }
 
 #[async_trait]
 impl ToolHandler for DatabaseTool {
-    async fn call(&self, params: serde_json::Map<String, serde_json::Value>) -> Result<ToolResult, McpError> {
-        let query = params.get("query")
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let query = arguments
+            .get("query")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidParams("Missing query parameter".to_string()))?;
+            .ok_or_else(|| McpError::Validation("Missing query parameter".to_string()))?;
         
-        // Execute database query
-        let rows = sqlx::query(query)
-            .fetch_all(&self.connection_pool)
-            .await
-            .map_err(|e| McpError::ToolExecution(format!("Database error: {}", e)))?;
+        // Execute database query (implement your database logic)
+        let result = format!("Executed query: {}", query);
         
-        Ok(ToolResult::new(json!({
-            "rows": rows.len(),
-            "data": "Database query executed successfully"
-        })))
+        Ok(ToolResult {
+            content: vec![Content::text(result)],
+            is_error: None,
+            structured_content: Some(json!({
+                "query": query,
+                "rows_affected": 0,
+                "execution_time_ms": 10
+            })),
+            meta: None,
+        })
     }
 }
 ```
 
-### Plugin System Integration
+### Resource Handler Implementation
 ```rust
-pub trait McpPlugin: Send + Sync {
-    fn name(&self) -> &str;
-    fn version(&self) -> &str;
-    
-    async fn initialize(&self, server: &mut McpServer) -> Result<(), McpError>;
-    async fn shutdown(&self) -> Result<(), McpError>;
-}
+use async_trait::async_trait;
+use mcp_protocol_sdk::prelude::*;
+use std::collections::HashMap;
 
-impl McpServer {
-    pub async fn load_plugin(&mut self, plugin: Box<dyn McpPlugin>) -> Result<(), McpError> {
-        plugin.initialize(self).await?;
-        self.plugins.insert(plugin.name().to_string(), plugin);
-        Ok(())
+pub struct FileResourceHandler;
+
+#[async_trait]
+impl ResourceHandler for FileResourceHandler {
+    async fn read(&self, uri: &str, _params: &HashMap<String, String>) -> McpResult<Vec<ResourceContents>> {
+        if uri.starts_with("file://") {
+            let path = &uri[7..];
+            match std::fs::read_to_string(path) {
+                Ok(content) => Ok(vec![ResourceContents::Text {
+                    uri: uri.to_string(),
+                    mime_type: Some("text/plain".to_string()),
+                    text: content,
+                    meta: None,
+                }]),
+                Err(_) => Err(McpError::ResourceNotFound(uri.to_string())),
+            }
+        } else {
+            Err(McpError::ResourceNotFound(uri.to_string()))
+        }
+    }
+
+    async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
+        Ok(vec![ResourceInfo {
+            uri: "file://example.txt".to_string(),
+            name: "Example File".to_string(),
+            description: Some("Example text file".to_string()),
+            mime_type: Some("text/plain".to_string()),
+            annotations: None,
+            size: None,
+            title: None,
+            meta: None,
+        }])
     }
 }
 ```
@@ -378,10 +470,13 @@ impl McpServer {
 1. **Add to your project**:
    ```toml
    [dependencies]
-   mcp-protocol-sdk = "0.3.0"
+   mcp-protocol-sdk = "0.5.0"
+   tokio = { version = "1.0", features = ["full"] }
+   async-trait = "0.1"
+   serde_json = "1.0"
    
    # Or with specific features only:
-   mcp-protocol-sdk = { version = "0.3.0", features = ["stdio", "validation"] }
+   mcp-protocol-sdk = { version = "0.5.0", features = ["stdio", "validation"] }
    ```
 
 2. **Run an example**:
@@ -404,5 +499,19 @@ impl McpServer {
 - [Transport Guide](transports.md) - Deep dive into transport options
 - [Examples](examples.md) - Real-world usage examples
 - [API Reference](https://docs.rs/mcp-protocol-sdk) - Complete API documentation
+
+## ⚠️ Important API Notes
+
+### Working Patterns
+- **Tool Handlers**: Must implement `ToolHandler` trait with `#[async_trait]`
+- **String Parameters**: Use `.to_string()` for all names (not `&str`)
+- **JSON Schemas**: Required for tool parameter validation
+- **Error Handling**: Use `McpResult<T>` and proper error types
+
+### Avoid These Patterns
+- ❌ `Tool::new().with_parameter()` - This API doesn't exist
+- ❌ `server.set_tool_handler()` - Method not available
+- ❌ Closure-based handlers - Not supported
+- ❌ String literals without `.to_string()` - Type errors
 
 This MCP Rust SDK provides a solid, production-ready foundation for building Model Context Protocol applications in Rust, with excellent performance, safety, and developer experience.

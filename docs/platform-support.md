@@ -63,7 +63,7 @@ sudo apt-get install -y pkg-config libssl-dev
 
 # Add to Cargo.toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 #### CentOS/RHEL/Fedora
@@ -76,7 +76,7 @@ sudo dnf install -y pkgconf-devel openssl-devel  # Fedora
 
 # Add to Cargo.toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 #### Alpine Linux (musl)
@@ -102,7 +102,7 @@ brew install rust
 
 # Add to Cargo.toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 #### Apple Silicon Macs (aarch64)
@@ -115,7 +115,7 @@ rustc --print target-list | grep aarch64-apple-darwin
 
 # Add to Cargo.toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 ### Windows
@@ -133,7 +133,7 @@ scoop install rust
 
 # Add to Cargo.toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 #### Windows with WSL2
@@ -372,7 +372,7 @@ lto = true
 
 # For minimal deployments
 [dependencies]
-mcp-protocol-sdk = { version = "0.4.0", default-features = false, features = ["stdio"] }
+mcp-protocol-sdk = { version = "0.5.0", default-features = false, features = ["stdio"] }
 ```
 
 #### macOS Optimizations

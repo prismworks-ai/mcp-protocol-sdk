@@ -17,17 +17,56 @@ First, ensure your server uses STDIO transport:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use async_trait::async_trait;
+use serde_json::{json, Value};
+use std::collections::HashMap;
+
+// Tool handler example
+struct MyToolHandler;
+
+#[async_trait]
+impl ToolHandler for MyToolHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        // Your tool implementation
+        Ok(ToolResult {
+            content: vec![Content::text("Tool executed successfully".to_string())],
+            is_error: None,
+            structured_content: None,
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("my-server", "1.0.0");
+    // Create server (note: requires String parameters)
+    let mut server = McpServer::new("my-server".to_string(), "1.0.0".to_string());
     
-    // Add your tools, resources, prompts...
+    // Add your tools using the actual API
     setup_capabilities(&mut server).await?;
     
     // Use STDIO transport for Claude Desktop
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
+    
+    Ok(())
+}
+
+async fn setup_capabilities(server: &mut McpServer) -> McpResult<()> {
+    // Add tools using the correct API
+    server.add_tool(
+        "example_tool".to_string(),
+        Some("Example tool description".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "input": {"type": "string", "description": "Tool input"}
+            },
+            "required": ["input"]
+        }),
+        MyToolHandler,
+    ).await?;
     
     Ok(())
 }
@@ -76,61 +115,124 @@ Perfect for file operations:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use serde_json::json;
+use async_trait::async_trait;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+
+// File read handler
+struct FileReadHandler;
+
+#[async_trait]
+impl ToolHandler for FileReadHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let path = arguments
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| McpError::Validation("Missing path parameter".to_string()))?;
+        
+        match tokio::fs::read_to_string(path).await {
+            Ok(content) => Ok(ToolResult {
+                content: vec![Content::text(content.clone())],
+                is_error: None,
+                structured_content: Some(json!({
+                    "content": content,
+                    "path": path,
+                    "size": content.len()
+                })),
+                meta: None,
+            }),
+            Err(e) => Ok(ToolResult {
+                content: vec![Content::text(format!("Failed to read file: {}", e))],
+                is_error: Some(true),
+                structured_content: None,
+                meta: None,
+            }),
+        }
+    }
+}
+
+// File write handler
+struct FileWriteHandler;
+
+#[async_trait]
+impl ToolHandler for FileWriteHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let path = arguments
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| McpError::Validation("Missing path parameter".to_string()))?;
+            
+        let content = arguments
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| McpError::Validation("Missing content parameter".to_string()))?;
+        
+        match tokio::fs::write(path, content).await {
+            Ok(_) => Ok(ToolResult {
+                content: vec![Content::text(format!("Successfully wrote {} bytes to {}", content.len(), path))],
+                is_error: None,
+                structured_content: Some(json!({
+                    "success": true,
+                    "path": path,
+                    "bytes_written": content.len()
+                })),
+                meta: None,
+            }),
+            Err(e) => Ok(ToolResult {
+                content: vec![Content::text(format!("Failed to write file: {}", e))],
+                is_error: Some(true),
+                structured_content: None,
+                meta: None,
+            }),
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("filesystem-server", "1.0.0")
-        .with_description("File system operations for Claude");
+    let mut server = McpServer::new("filesystem-server".to_string(), "1.0.0".to_string());
     
-    // Read file tool
-    let read_tool = Tool::new("read_file", "Read a text file")
-        .with_parameter("path", "File path to read", true);
-    server.add_tool(read_tool);
+    // Add read file tool
+    server.add_tool(
+        "read_file".to_string(),
+        Some("Read a text file".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "File path to read"
+                }
+            },
+            "required": ["path"]
+        }),
+        FileReadHandler,
+    ).await?;
     
-    server.set_tool_handler("read_file", |params: HashMap<String, Value>| async move {
-        let path = params.get("path")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing path parameter")?;
-        
-        let content = tokio::fs::read_to_string(path).await
-            .map_err(|e| format!("Failed to read file: {}", e))?;
-        
-        Ok(json!({
-            "content": content,
-            "path": path,
-            "size": content.len()
-        }))
-    });
+    // Add write file tool
+    server.add_tool(
+        "write_file".to_string(),
+        Some("Write content to a file".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "File path to write"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Content to write"
+                }
+            },
+            "required": ["path", "content"]
+        }),
+        FileWriteHandler,
+    ).await?;
     
-    // Write file tool
-    let write_tool = Tool::new("write_file", "Write content to a file")
-        .with_parameter("path", "File path to write", true)
-        .with_parameter("content", "Content to write", true);
-    server.add_tool(write_tool);
-    
-    server.set_tool_handler("write_file", |params: HashMap<String, Value>| async move {
-        let path = params.get("path")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing path parameter")?;
-            
-        let content = params.get("content")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing content parameter")?;
-        
-        tokio::fs::write(path, content).await
-            .map_err(|e| format!("Failed to write file: {}", e))?;
-        
-        Ok(json!({
-            "success": true,
-            "path": path,
-            "bytes_written": content.len()
-        }))
-    });
-    
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
@@ -150,157 +252,178 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Database Query Server
 
-For database interactions:
+Access your databases from Claude:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use serde_json::json;
+use async_trait::async_trait;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+
+// SQL query handler (simplified - use proper database driver in production)
+struct SqlQueryHandler;
+
+#[async_trait]
+impl ToolHandler for SqlQueryHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let query = arguments
+            .get("query")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| McpError::Validation("Missing query parameter".to_string()))?;
+        
+        // Simulate database query (implement actual database logic)
+        let simulated_result = if query.trim().to_lowercase().starts_with("select") {
+            json!({
+                "rows": [
+                    {"id": 1, "name": "Example", "value": 42},
+                    {"id": 2, "name": "Another", "value": 84}
+                ],
+                "row_count": 2
+            })
+        } else {
+            json!({
+                "affected_rows": 1,
+                "message": "Query executed successfully"
+            })
+        };
+        
+        Ok(ToolResult {
+            content: vec![Content::text(format!("Query executed: {}", query))],
+            is_error: None,
+            structured_content: Some(simulated_result),
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("database-server", "1.0.0")
-        .with_description("Database query interface for Claude");
+    let mut server = McpServer::new("database-server".to_string(), "1.0.0".to_string());
     
-    // SQL query tool
-    let query_tool = Tool::new("execute_sql", "Execute a SQL query")
-        .with_parameter("query", "SQL query to execute", true)
-        .with_parameter("database", "Database name", false);
-    server.add_tool(query_tool);
+    // Add SQL query tool
+    server.add_tool(
+        "execute_sql".to_string(),
+        Some("Execute SQL query".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "SQL query to execute"
+                }
+            },
+            "required": ["query"]
+        }),
+        SqlQueryHandler,
+    ).await?;
     
-    server.set_tool_handler("execute_sql", |params: HashMap<String, Value>| async move {
-        let query = params.get("query")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing query parameter")?;
-            
-        let database = params.get("database")
-            .and_then(|v| v.as_str())
-            .unwrap_or("default");
-        
-        // Execute query (implement your database logic)
-        let results = execute_database_query(database, query).await?;
-        
-        Ok(json!({
-            "results": results,
-            "query": query,
-            "database": database,
-            "row_count": results.len()
-        }))
-    });
-    
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
-
-async fn execute_database_query(database: &str, query: &str) -> Result<Vec<serde_json::Value>, String> {
-    // Your database implementation here
-    Ok(vec![])
-}
 ```
 
-**Configuration with environment:**
+**Configuration:**
 ```json
 {
   "mcpServers": {
     "database": {
       "command": "/usr/local/bin/database-server",
-      "args": ["--db-url", "postgresql://user:pass@localhost/mydb"],
-      "env": {
-        "DATABASE_URL": "postgresql://user:pass@localhost/mydb"
-      }
+      "args": []
     }
   }
 }
 ```
 
-### Web API Server
+### API Integration Server
 
-For external API integration:
+Connect Claude to external APIs:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use serde_json::json;
+use async_trait::async_trait;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+
+// Weather API handler (simplified example)
+struct WeatherHandler;
+
+#[async_trait]
+impl ToolHandler for WeatherHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let location = arguments
+            .get("location")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| McpError::Validation("Missing location parameter".to_string()))?;
+        
+        // Simulate weather API call (implement actual API integration)
+        let weather_data = json!({
+            "location": location,
+            "temperature": 22,
+            "condition": "Sunny",
+            "humidity": 65,
+            "wind_speed": 10
+        });
+        
+        Ok(ToolResult {
+            content: vec![Content::text(
+                format!("Weather in {}: 22°C, Sunny, 65% humidity, 10 km/h wind", location)
+            )],
+            is_error: None,
+            structured_content: Some(weather_data),
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut server = McpServer::new("web-api-server", "1.0.0")
-        .with_description("Web API integration for Claude");
+    let mut server = McpServer::new("weather-server".to_string(), "1.0.0".to_string());
     
-    // Weather API tool
-    let weather_tool = Tool::new("get_weather", "Get current weather for a location")
-        .with_parameter("location", "City name or coordinates", true)
-        .with_parameter("units", "Temperature units (celsius/fahrenheit)", false);
-    server.add_tool(weather_tool);
+    // Add weather tool
+    server.add_tool(
+        "get_weather".to_string(),
+        Some("Get current weather for a location".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "City or location name"
+                }
+            },
+            "required": ["location"]
+        }),
+        WeatherHandler,
+    ).await?;
     
-    server.set_tool_handler("get_weather", |params: HashMap<String, Value>| async move {
-        let location = params.get("location")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing location parameter")?;
-            
-        let units = params.get("units")
-            .and_then(|v| v.as_str())
-            .unwrap_or("celsius");
-        
-        // Call weather API
-        let weather_data = fetch_weather(location, units).await?;
-        
-        Ok(json!({
-            "location": location,
-            "temperature": weather_data.temperature,
-            "condition": weather_data.condition,
-            "humidity": weather_data.humidity,
-            "units": units
-        }))
-    });
-    
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
 ```
 
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "/usr/local/bin/weather-server",
+      "args": []
+    }
+  }
+}
+```
+
 ## Advanced Configuration
 
-### Server with Arguments
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "/usr/local/bin/my-server",
-      "args": [
-        "--config", "/path/to/config.json",
-        "--log-level", "info",
-        "--feature", "advanced"
-      ]
-    }
-  }
-}
-```
-
-### Server with Environment Variables
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "/usr/local/bin/my-server",
-      "args": [],
-      "env": {
-        "DATABASE_URL": "postgresql://localhost/mydb",
-        "API_KEY": "your-api-key-here",
-        "LOG_LEVEL": "debug"
-      }
-    }
-  }
-}
-```
-
 ### Multiple Servers
+
+You can run multiple MCP servers simultaneously:
 
 ```json
 {
@@ -311,240 +434,216 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     },
     "database": {
       "command": "/usr/local/bin/database-server",
-      "args": ["--readonly"],
-      "env": {
-        "DATABASE_URL": "postgresql://localhost/mydb"
-      }
+      "args": ["--database", "production"]
     },
-    "web-apis": {
-      "command": "/usr/local/bin/api-server",
-      "args": ["--config", "/etc/api-config.json"]
+    "weather": {
+      "command": "/usr/local/bin/weather-server",
+      "args": ["--api-key", "your-api-key"]
     }
   }
 }
 ```
 
-## Server Development Best Practices
+### Server with Arguments
 
-### Error Handling
-
-```rust
-server.set_tool_handler("risky_operation", |params| async move {
-    match perform_operation(params).await {
-        Ok(result) => Ok(json!({"success": true, "data": result})),
-        Err(e) => {
-            // Log detailed error internally
-            eprintln!("Operation failed: {:?}", e);
-            
-            // Return user-friendly error to Claude
-            Err(format!("Unable to complete operation: {}", e.user_message()))
-        }
-    }
-});
-```
-
-### Input Validation
+Pass configuration arguments to your server:
 
 ```rust
-server.set_tool_handler("validate_input", |params| async move {
-    let path = params.get("path")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing path parameter")?;
-    
-    // Validate path security
-    if path.contains("..") || path.starts_with('/') {
-        return Err("Invalid path: security violation".to_string());
-    }
-    
-    // Validate path exists
-    if !std::path::Path::new(path).exists() {
-        return Err(format!("Path does not exist: {}", path));
-    }
-    
-    // Continue with operation...
-    Ok(json!({"validated": true}))
-});
-```
-
-### Resource Management
-
-```rust
-use std::sync::Arc;
-use tokio::sync::Semaphore;
-
-struct DatabaseServer {
-    connection_pool: Arc<ConnectionPool>,
-    concurrency_limit: Arc<Semaphore>,
-}
-
-impl DatabaseServer {
-    pub async fn handle_query(&self, query: &str) -> Result<Value, String> {
-        // Limit concurrent operations
-        let _permit = self.concurrency_limit.acquire().await
-            .map_err(|_| "Server overloaded")?;
-            
-        // Use connection pool
-        let conn = self.connection_pool.get().await
-            .map_err(|e| format!("Database connection failed: {}", e))?;
-            
-        // Execute query with timeout
-        let result = tokio::time::timeout(
-            Duration::from_secs(30),
-            conn.execute(query)
-        ).await
-        .map_err(|_| "Query timeout")?
-        .map_err(|e| format!("Query failed: {}", e))?;
-        
-        Ok(json!({"results": result}))
-    }
-}
-```
-
-## Testing Your Integration
-
-### 1. Test Server Standalone
-
-```bash
-# Test your server directly
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | ./my-server
-```
-
-### 2. Test with Claude Desktop
-
-1. Add server to configuration
-2. Restart Claude Desktop
-3. Start a conversation and ask Claude to use your tools
-4. Check server logs for errors
-
-### 3. Debug Configuration Issues
-
-Check Claude Desktop logs:
-- **macOS**: `~/Library/Logs/Claude/`
-- **Windows**: `%APPDATA%\Claude\logs\`
-- **Linux**: `~/.local/share/Claude/logs/`
-
-## Common Issues & Solutions
-
-### Server Not Loading
-
-**Problem**: Server doesn't appear in Claude Desktop
-
-**Solutions**:
-1. Check configuration file syntax with JSON validator
-2. Verify server binary path and permissions
-3. Test server execution manually
-4. Check Claude Desktop logs for errors
-
-### Tool Calls Failing
-
-**Problem**: Tools are visible but calls fail
-
-**Solutions**:
-1. Validate tool parameter definitions
-2. Add proper error handling in tool handlers
-3. Test with minimal examples first
-4. Check server output for error messages
-
-### Performance Issues
-
-**Problem**: Server responses are slow
-
-**Solutions**:
-1. Add timeout handling
-2. Implement connection pooling
-3. Cache expensive operations
-4. Use async/await properly
-
-### Security Considerations
-
-**Important**: Your server runs with Claude Desktop's permissions!
-
-1. **Validate all inputs** thoroughly
-2. **Restrict file system access** to safe directories
-3. **Sanitize database queries** to prevent injection
-4. **Rate limit** expensive operations
-5. **Log security events** for monitoring
-
-## Production Deployment
-
-### Binary Distribution
-
-```bash
-# Build optimized binary
-cargo build --release --features stdio
-
-# Strip debug symbols
-strip target/release/my-server
-
-# Create installer package
-# (platform-specific packaging)
-```
-
-### Configuration Management
-
-```json
-{
-  "mcpServers": {
-    "my-server": {
-      "command": "/opt/my-company/bin/my-server",
-      "args": ["--config", "/opt/my-company/etc/config.json"],
-      "env": {
-        "RUST_LOG": "info"
-      }
-    }
-  }
-}
-```
-
-### Monitoring & Logging
-
-```rust
-use tracing::{info, warn, error};
+use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .with_thread_ids(true)
-        .with_file(true)
-        .with_line_number(true)
-        .init();
+    let args: Vec<String> = env::args().collect();
     
-    info!("Starting MCP server");
+    // Parse command line arguments
+    let api_key = args.iter()
+        .position(|x| x == "--api-key")
+        .and_then(|i| args.get(i + 1))
+        .map(|s| s.as_str())
+        .unwrap_or("default-key");
     
-    let mut server = McpServer::new("my-server", "1.0.0");
+    let mut server = McpServer::new("configurable-server".to_string(), "1.0.0".to_string());
     
-    // Log tool calls
-    server.set_tool_call_middleware(|tool_name, params| async move {
-        info!("Tool called: {} with params: {:?}", tool_name, params);
-    });
+    // Use configuration in your server setup
+    println!("Starting server with API key: {}", api_key);
     
-    // Log errors
-    server.set_error_handler(|error| async move {
-        error!("Server error: {:?}", error);
-    });
-    
-    let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    // ... rest of server setup
     
     Ok(())
 }
 ```
 
-## Example Projects
+### Environment Variables
 
-Check out these complete examples:
+Use environment variables for sensitive configuration:
 
-1. **[Filesystem Server](../../examples/simple_server.rs)** - File operations
-2. **[Database Server](../../examples/database_server.rs)** - SQL queries  
-3. **[Echo Server](../../examples/echo_server.rs)** - Simple echo tool
+```rust
+use std::env;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let database_url = env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "sqlite:///tmp/default.db".to_string());
+    
+    let api_key = env::var("API_KEY")
+        .unwrap_or_else(|_| "default-key".to_string());
+    
+    let mut server = McpServer::new("env-server".to_string(), "1.0.0".to_string());
+    
+    // Use environment configuration
+    println!("Connecting to database: {}", database_url);
+    
+    // ... server setup with environment config
+    
+    Ok(())
+}
+```
+
+## Best Practices
+
+### 1. Error Handling
+
+Always provide helpful error messages:
+
+```rust
+#[async_trait]
+impl ToolHandler for SafeToolHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        match self.process_arguments(&arguments) {
+            Ok(result) => Ok(ToolResult {
+                content: vec![Content::text(result)],
+                is_error: None,
+                structured_content: None,
+                meta: None,
+            }),
+            Err(e) => Ok(ToolResult {
+                content: vec![Content::text(format!("Error: {}", e))],
+                is_error: Some(true),
+                structured_content: None,
+                meta: None,
+            }),
+        }
+    }
+}
+```
+
+### 2. Input Validation
+
+Validate all inputs thoroughly:
+
+```rust
+fn validate_file_path(path: &str) -> Result<(), String> {
+    if path.is_empty() {
+        return Err("Path cannot be empty".to_string());
+    }
+    
+    if path.contains("..") {
+        return Err("Path traversal not allowed".to_string());
+    }
+    
+    Ok(())
+}
+```
+
+### 3. Resource Cleanup
+
+Ensure proper resource cleanup:
+
+```rust
+#[async_trait]
+impl ToolHandler for ResourceHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let _guard = self.acquire_resource().await?;
+        
+        // Resource is automatically cleaned up when _guard is dropped
+        let result = self.perform_operation(&arguments).await?;
+        
+        Ok(result)
+    }
+}
+```
+
+### 4. Logging and Debugging
+
+Add proper logging for troubleshooting:
+
+```rust
+use tracing::{info, error, debug};
+
+#[async_trait]
+impl ToolHandler for LoggingHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        debug!("Tool called with arguments: {:?}", arguments);
+        
+        match self.execute(&arguments).await {
+            Ok(result) => {
+                info!("Tool executed successfully");
+                Ok(result)
+            }
+            Err(e) => {
+                error!("Tool execution failed: {}", e);
+                Err(e)
+            }
+        }
+    }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Server not appearing in Claude Desktop**:
+   - Check the configuration file path
+   - Verify the binary path is correct
+   - Restart Claude Desktop after configuration changes
+
+2. **Tools not working**:
+   - Check server logs for errors
+   - Verify JSON schema validation
+   - Ensure proper error handling in tool implementations
+
+3. **Performance issues**:
+   - Use async I/O for all blocking operations
+   - Implement proper timeouts
+   - Consider connection pooling for database access
+
+### Debugging Configuration
+
+Enable detailed logging in your server:
+
+```toml
+[dependencies]
+mcp-protocol-sdk = { version = "0.5.0", features = ["stdio", "tracing-subscriber"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+```
+
+```rust
+use tracing_subscriber;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize logging
+    tracing_subscriber::fmt::init();
+    
+    // ... rest of server setup
+    
+    Ok(())
+}
+```
 
 ## Next Steps
 
-1. **Build your first server** using the examples above
-2. **Test integration** with Claude Desktop
-3. **Add monitoring** and error handling
-4. **Share with others** in the MCP community
+- [🚀 Getting Started](../getting-started.md) - Basic server development
+- [📖 Implementation Guide](../implementation-guide.md) - Complete development guide
+- [🔧 Examples](../../examples/) - Working example projects
+- [⚡ Cursor Integration](./cursor.md) - IDE integration guide
 
-Your tools are now available to Claude! Start experimenting with natural language interactions that trigger your custom functionality. 🚀
+## Resources
+
+- [Claude Desktop Documentation](https://docs.anthropic.com/claude/docs/desktop-app)
+- [MCP Protocol Specification](https://modelcontextprotocol.io/)
+- [Example Servers Repository](../../examples/)
+
+Your MCP server will seamlessly integrate with Claude Desktop, giving Claude powerful new capabilities! 🎉

@@ -55,39 +55,83 @@ The MCP Protocol SDK enables seamless integration between AI models and external
 ```toml
 [dependencies]
 mcp-protocol-sdk = "0.5.0"
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+serde_json = "1.0"
 
 # Or with specific features only:
 mcp-protocol-sdk = { version = "0.5.0", features = ["stdio", "validation"] }
 ```
 
-### Build an MCP Server (5 minutes)
+### Build an MCP Server (Working Example)
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use serde_json::json;
+use async_trait::async_trait;
+use std::collections::HashMap;
+use serde_json::{Value, json};
+
+// Step 1: Create a tool handler (required by actual API)
+struct CalculatorHandler;
+
+#[async_trait]
+impl ToolHandler for CalculatorHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let a = arguments
+            .get("a")
+            .and_then(|v| v.as_f64())
+            .ok_or_else(|| McpError::Validation("Missing 'a' parameter".to_string()))?;
+        
+        let b = arguments
+            .get("b")
+            .and_then(|v| v.as_f64())
+            .ok_or_else(|| McpError::Validation("Missing 'b' parameter".to_string()))?;
+        
+        let result = a + b;
+        
+        Ok(ToolResult {
+            content: vec![Content::text(result.to_string())],
+            is_error: None,
+            structured_content: Some(json!({
+                "operation": "addition",
+                "operands": [a, b],
+                "result": result
+            })),
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create server
-    let mut server = McpServer::new("my-calculator", "1.0.0");
+    // Create server (note: requires String parameters)
+    let mut server = McpServer::new("my-calculator".to_string(), "1.0.0".to_string());
     
-    // Add a tool
-    let calc_tool = Tool::new("add", "Add two numbers")
-        .with_parameter("a", "First number", true)
-        .with_parameter("b", "Second number", true);
-    
-    server.add_tool(calc_tool);
-    
-    // Handle tool calls
-    server.set_tool_handler("add", |params| async move {
-        let a = params["a"].as_f64().unwrap_or(0.0);
-        let b = params["b"].as_f64().unwrap_or(0.0);
-        Ok(json!({ "result": a + b }))
-    });
+    // Add a tool (actual working API)
+    server.add_tool(
+        "add".to_string(),
+        Some("Add two numbers".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "a": {
+                    "type": "number",
+                    "description": "First number"
+                },
+                "b": {
+                    "type": "number", 
+                    "description": "Second number"
+                }
+            },
+            "required": ["a", "b"]
+        }),
+        CalculatorHandler,
+    ).await?;
     
     // Start server (compatible with Claude Desktop)
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
@@ -97,10 +141,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
-use mcp_protocol_sdk::transport::{HttpClientTransport, TransportConfig};
+use mcp_protocol_sdk::client::McpClient;
+use mcp_protocol_sdk::transport::traits::TransportConfig;
 
+#[cfg(feature = "http")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use mcp_protocol_sdk::transport::http::HttpClientTransport;
+    
     // Connect with advanced HTTP transport (45% faster!)
     let config = TransportConfig {
         connect_timeout_ms: Some(5_000),
@@ -109,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         max_message_size: Some(1024 * 1024), // 1MB
         keep_alive_ms: Some(60_000),         // 1 minute
         compression: true,
-        ..Default::default()
+        headers: std::collections::HashMap::new(),
     };
     
     let transport = HttpClientTransport::with_config(
@@ -118,21 +166,64 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config,
     ).await?;
     
-    let client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
+    let mut client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
     
-    client.connect(transport).await?;
-    client.initialize().await?;
+    // connect() returns InitializeResult and calls initialize() internally
+    let init_result = client.connect(transport).await?;
     
-    // Use server capabilities
-    let tools = client.list_tools().await?;
-    let result = client.call_tool("add".to_string(), Some(json!({"a": 5, "b": 3}).as_object().unwrap().clone())).await?;
+    println!("Connected to: {} v{}", 
+        init_result.server_info.name,
+        init_result.server_info.version
+    );
     
-    println!("Available tools: {:?}", tools);
-    println!("Result: {:?}", result);
+    // Note: Use server capabilities to check what's available
+    if let Some(capabilities) = client.server_capabilities().await {
+        if capabilities.tools.is_some() {
+            println!("Server supports tools");
+        }
+    }
     
     Ok(())
 }
 ```
+
+### Alternative: Using ToolBuilder (Advanced)
+
+```rust
+use mcp_protocol_sdk::core::tool::ToolBuilder;
+
+// Create tools with advanced features and validation
+let tool = ToolBuilder::new("enhanced_calculator")
+    .description("Advanced calculator with validation")
+    .version("1.0.0")
+    .schema(json!({
+        "type": "object",
+        "properties": {
+            "a": {"type": "number"},
+            "b": {"type": "number"}
+        },
+        "required": ["a", "b"]
+    }))
+    .strict_validation()
+    .read_only()
+    .idempotent()
+    .cacheable()
+    .build(CalculatorHandler)?;
+```
+
+## ⚠️ Important API Notes
+
+### Server Requirements
+- **Tool Handlers**: Must implement the `ToolHandler` trait with `async fn call()`
+- **String Parameters**: Server and tool names require `String`, not `&str`
+- **JSON Schemas**: Tools require explicit JSON schema definitions
+- **Async Traits**: Use `#[async_trait]` for all handler implementations
+
+### Getting Started Tips
+1. **Start with STDIO**: Easiest transport for Claude Desktop integration
+2. **Implement ToolHandler**: Required for all tools - no closure shortcuts
+3. **Handle Errors**: Use `McpResult<T>` and proper error handling
+4. **Add Dependencies**: Don't forget `async-trait`, `tokio`, and `serde_json`
 
 ## 🎯 Use Cases
 
@@ -184,7 +275,7 @@ mcp-protocol-sdk = { version = "0.5.0", default-features = false, features = ["s
 The advanced HTTP transport provides significant performance improvements:
 
 | Transport | Requests/Second | Average Latency | Success Rate | Key Features |
-|-----------|-----------------|-----------------|--------------|--------------|
+|-----------|-----------------|-----------------|--------------||--------------|
 | **Advanced HTTP** | **802 req/sec** | **0.02ms** | **100%** | Connection pooling, retry logic |
 | Standard HTTP | 551 req/sec | 0.04ms | 100% | Basic HTTP client |
 
@@ -232,7 +323,7 @@ cargo test --test comprehensive_schema_tests -- --nocapture
 ### 📊 Schema Compliance Report
 
 | Component | Status | Features Validated |
-|-----------|--------|-------------------|
+|-----------|--------|-----------------|
 | **Core Types** | ✅ 100% | Implementation, Capabilities, Content |
 | **JSON-RPC** | ✅ 100% | Requests, Responses, Errors, Notifications, Batching |
 | **Tools** | ✅ 100% | Definitions, Parameters, Annotations, Execution |
@@ -263,16 +354,22 @@ Full support for all latest MCP protocol enhancements:
 use mcp_protocol_sdk::protocol::types::*;
 
 // All types are schema-compliant by construction
-let tool = Tool::new("calculator", "Performs mathematical operations")
-    .with_annotations(
-        Annotations::new()
-            .for_audience(vec![AnnotationAudience::User])
-            .with_danger_level(DangerLevel::Low)
-            .read_only()
-    );
+let tool_info = ToolInfo {
+    name: "calculator".to_string(),
+    description: Some("Performs mathematical operations".to_string()),
+    input_schema: ToolInputSchema {
+        schema_type: "object".to_string(),
+        properties: Some(std::collections::HashMap::new()),
+        required: Some(vec!["a".to_string(), "b".to_string()]),
+        additional_properties: std::collections::HashMap::new(),
+    },
+    annotations: None,
+    title: None,
+    meta: None,
+};
 
 // JSON serialization matches schema exactly
-assert_eq!(tool.to_json()["annotations"]["readOnly"], true);
+let json = serde_json::to_value(&tool_info)?;
 ```
 
 ### 🔍 Manual Verification

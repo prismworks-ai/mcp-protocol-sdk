@@ -31,7 +31,7 @@ Adding "protocol" helps distinguish our SDK as:
 ```rust
 // When you see this in Cargo.toml:
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 
 // It's immediately clear you're getting:
 // - MCP (Model Context Protocol) functionality
@@ -77,11 +77,11 @@ Just like:
 
 ```toml
 # Clear intent:
-mcp-protocol-sdk = "0.4.0"  # ✅ I know what this does
+mcp-protocol-sdk = "0.5.0"  # ✅ I know what this does
 
 # vs potentially confusing:
-mcp-sdk = "0.4.0"          # ❓ Which MCP SDK? Official? Community?
-mcp = "0.4.0"              # ❓ Just the protocol? Client? Server?
+mcp-sdk = "0.5.0"          # ❓ Which MCP SDK? Official? Community?
+mcp = "0.5.0"              # ❓ Just the protocol? Client? Server?
 ```
 
 ## 🔄 Alternative Names Considered

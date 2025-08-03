@@ -60,6 +60,13 @@ pub trait Transport: Send + Sync {
     }
 }
 
+/// Server request handler function type
+pub type ServerRequestHandler = std::sync::Arc<
+    dyn Fn(JsonRpcRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = McpResult<JsonRpcResponse>> + Send + 'static>>
+        + Send
+        + Sync,
+>;
+
 /// Transport trait for MCP servers
 ///
 /// This trait defines the interface for handling incoming requests and
@@ -72,14 +79,11 @@ pub trait ServerTransport: Send + Sync {
     /// Result indicating success or an error
     async fn start(&mut self) -> McpResult<()>;
 
-    /// Handle an incoming JSON-RPC request and return a response
+    /// Set the request handler that will process incoming requests
     ///
     /// # Arguments
-    /// * `request` - The incoming JSON-RPC request
-    ///
-    /// # Returns
-    /// Result containing the JSON-RPC response or an error
-    async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse>;
+    /// * `handler` - The request handler function
+    fn set_request_handler(&mut self, handler: ServerRequestHandler);
 
     /// Send a JSON-RPC notification to the client
     ///

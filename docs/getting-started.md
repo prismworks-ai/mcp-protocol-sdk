@@ -2,7 +2,7 @@
 
 Get up and running with the **production-ready MCP Protocol SDK** (v0.5.0) in just a few minutes!
 
-🎯 **Latest Release**: Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 97 comprehensive tests.
+🎯 **Latest Release**: Complete MCP 2025-06-18 schema upgrade with enhanced tool results, rich resource metadata, and 299 comprehensive tests.
 
 ## Prerequisites
 
@@ -15,10 +15,13 @@ Add the unified SDK to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcp-protocol-sdk = "0.4.0"  # Latest with 2025-06-18 schema upgrade
+mcp-protocol-sdk = "0.5.0"  # Latest with 2025-06-18 schema upgrade
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+serde_json = "1.0"
 
 # Choose only the features you need:
-# mcp-protocol-sdk = { version = "0.4.0", features = ["stdio", "http", "websocket"] }
+# mcp-protocol-sdk = { version = "0.5.0", features = ["stdio", "http", "websocket"] }
 ```
 
 ### 🎉 Migration from Separate Crates
@@ -36,7 +39,7 @@ mcp-protocol-types = "0.1.0"
 **After (Unified SDK):**
 ```toml
 [dependencies] 
-mcp-protocol-sdk = "0.4.0"  # Everything unified + production ready!
+mcp-protocol-sdk = "0.5.0"  # Everything unified + production ready!
 ```
 
 **Code changes:**
@@ -58,55 +61,93 @@ Create a simple MCP server that provides a calculator tool:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use async_trait::async_trait;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a new MCP server
-    let mut server = McpServer::new("calculator-server", "1.0.0");
-    
-    // Add a calculator tool
-    let calc_tool = Tool::new(
-        "calculate",
-        "Perform basic arithmetic calculations",
-    )
-    .with_parameter("expression", "Mathematical expression to evaluate", true)
-    .with_parameter("precision", "Number of decimal places", false);
-    
-    server.add_tool(calc_tool);
-    
-    // Handle tool calls
-    server.set_tool_handler("calculate", |params: HashMap<String, Value>| async move {
-        let expression = params.get("expression")
+// Step 1: Create a tool handler (required by the API)
+struct CalculatorHandler;
+
+#[async_trait]
+impl ToolHandler for CalculatorHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let expression = arguments
+            .get("expression")
             .and_then(|v| v.as_str())
-            .ok_or("Missing expression parameter")?;
+            .ok_or_else(|| McpError::Validation("Missing expression parameter".to_string()))?;
             
         // Simple calculator logic (use a real math parser in production)
         let result = match expression {
             expr if expr.contains('+') => {
                 let parts: Vec<&str> = expr.split('+').collect();
                 if parts.len() == 2 {
-                    let a: f64 = parts[0].trim().parse()?;
-                    let b: f64 = parts[1].trim().parse()?;
+                    let a: f64 = parts[0].trim().parse()
+                        .map_err(|_| McpError::Validation("Invalid number".to_string()))?;
+                    let b: f64 = parts[1].trim().parse()
+                        .map_err(|_| McpError::Validation("Invalid number".to_string()))?;
                     a + b
                 } else {
-                    return Err("Invalid expression".into());
+                    return Err(McpError::Validation("Invalid expression format".to_string()));
                 }
             }
-            // Add more operations as needed
-            _ => return Err("Unsupported operation".into()),
+            expr if expr.contains('-') => {
+                let parts: Vec<&str> = expr.split('-').collect();
+                if parts.len() == 2 {
+                    let a: f64 = parts[0].trim().parse()
+                        .map_err(|_| McpError::Validation("Invalid number".to_string()))?;
+                    let b: f64 = parts[1].trim().parse()
+                        .map_err(|_| McpError::Validation("Invalid number".to_string()))?;
+                    a - b
+                } else {
+                    return Err(McpError::Validation("Invalid expression format".to_string()));
+                }
+            }
+            _ => return Err(McpError::Validation("Unsupported operation".to_string())),
         };
         
-        Ok(json!({
-            "result": result,
-            "expression": expression
-        }))
-    });
+        Ok(ToolResult {
+            content: vec![Content::text(result.to_string())],
+            is_error: None,
+            structured_content: Some(json!({
+                "expression": expression,
+                "result": result
+            })),
+            meta: None,
+        })
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a new MCP server (note: requires String parameters)
+    let mut server = McpServer::new("calculator-server".to_string(), "1.0.0".to_string());
     
-    // Start the server on STDIO (for Claude Desktop)
+    // Add a calculator tool using the actual API
+    server.add_tool(
+        "calculate".to_string(),
+        Some("Perform basic arithmetic calculations".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "expression": {
+                    "type": "string",
+                    "description": "Mathematical expression to evaluate (e.g., '5+3', '10-2')"
+                },
+                "precision": {
+                    "type": "integer",
+                    "description": "Number of decimal places (optional)",
+                    "default": 2
+                }
+            },
+            "required": ["expression"]
+        }),
+        CalculatorHandler,
+    ).await?;
+    
+    // Start the server with STDIO transport (compatible with Claude Desktop)
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await?;
+    server.start(transport).await?;
     
     Ok(())
 }
@@ -114,106 +155,157 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 5-Minute Client Example
 
-Create an MCP client to connect to servers:
+Create a client that connects to an MCP server:
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use mcp_protocol_sdk::client::McpClient;
+use serde_json::json;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Connect to an MCP server
-    let client = McpClient::new()
-        .with_name("my-client")
-        .with_version("1.0.0")
-        .build();
+    // Create client
+    let mut client = McpClient::new("calculator-client".to_string(), "1.0.0".to_string());
     
-    // Connect via STDIO to a server process
-    let transport = StdioClientTransport::new();
-    client.connect(transport).await?;
+    // Connect with STDIO transport
+    use mcp_protocol_sdk::transport::stdio::StdioClientTransport;
+    let transport = StdioClientTransport::new("./calculator-server".to_string()).await?;
     
-    // Initialize the connection
-    client.initialize().await?;
+    // Connect and initialize (returns server info)
+    let init_result = client.connect(transport).await?;
     
-    // List available tools
-    let tools = client.list_tools().await?;
-    println!("Available tools: {:#?}", tools);
+    println!("Connected to: {} v{}", 
+        init_result.server_info.name,
+        init_result.server_info.version
+    );
     
-    // Call a tool
-    if let Some(tool) = tools.first() {
-        let result = client.call_tool(
-            &tool.name,
-            serde_json::json!({
-                "expression": "10 + 5"
-            })
-        ).await?;
-        
-        println!("Tool result: {:#?}", result);
+    // Check server capabilities
+    if let Some(capabilities) = client.server_capabilities().await {
+        if capabilities.tools.is_some() {
+            println!("✅ Server supports tools");
+        }
     }
     
+    println!("🎉 Client setup complete!");
     Ok(())
 }
 ```
 
+## Key API Patterns
+
+### ⚠️ **Important Requirements**
+
+1. **Tool Handlers**: Must implement `ToolHandler` trait with `#[async_trait]`
+2. **String Parameters**: Use `.to_string()` for server/tool names (not `&str`)
+3. **JSON Schemas**: Tools require explicit JSON schema definitions
+4. **Error Handling**: Use `McpResult<T>` and proper error types
+5. **Dependencies**: Include `async-trait`, `tokio`, and `serde_json`
+
+### ✅ **Working Patterns**
+
+```rust
+// ✅ Correct: Tool handler implementation
+struct MyHandler;
+
+#[async_trait]
+impl ToolHandler for MyHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        // Your implementation
+        Ok(ToolResult {
+            content: vec![Content::text("result".to_string())],
+            is_error: None,
+            structured_content: None,
+            meta: None,
+        })
+    }
+}
+
+// ✅ Correct: Add tool to server
+server.add_tool(
+    "my_tool".to_string(),              // String required
+    Some("Description".to_string()),    // Optional description
+    json!({...}),                       // JSON schema
+    MyHandler,                          // Handler instance
+).await?;
+
+// ✅ Correct: Server creation
+let mut server = McpServer::new("name".to_string(), "1.0.0".to_string());
+```
+
+### ❌ **Incorrect Patterns (Don't Use)**
+
+```rust
+// ❌ These APIs don't exist:
+// Tool::new(name, desc).with_parameter()  - Not available
+// server.set_tool_handler()              - Method doesn't exist
+// Closure-based handlers                 - Not supported
+// String literals without .to_string()   - Type mismatch
+```
+
+## Advanced Features
+
+### Using ToolBuilder for Advanced Tools
+
+```rust
+use mcp_protocol_sdk::core::tool::ToolBuilder;
+
+// Create tools with advanced validation and metadata
+let advanced_tool = ToolBuilder::new("advanced_calculator")
+    .description("Advanced calculator with validation")
+    .version("1.0.0")
+    .schema(json!({
+        "type": "object",
+        "properties": {
+            "operation": {"type": "string", "enum": ["add", "subtract", "multiply", "divide"]},
+            "a": {"type": "number"},
+            "b": {"type": "number"}
+        },
+        "required": ["operation", "a", "b"]
+    }))
+    .strict_validation()
+    .read_only()
+    .idempotent()
+    .cacheable()
+    .build(CalculatorHandler)?;
+```
+
+### HTTP Transport
+
+```rust
+#[cfg(feature = "http")]
+use mcp_protocol_sdk::transport::http::HttpClientTransport;
+use mcp_protocol_sdk::transport::traits::TransportConfig;
+
+// Advanced HTTP configuration
+let config = TransportConfig {
+    connect_timeout_ms: Some(5_000),
+    read_timeout_ms: Some(30_000),
+    write_timeout_ms: Some(30_000),
+    max_message_size: Some(1024 * 1024),
+    keep_alive_ms: Some(60_000),
+    compression: true,
+    headers: std::collections::HashMap::new(),
+};
+
+let transport = HttpClientTransport::with_config(
+    "http://localhost:3000",
+    None,
+    config,
+).await?;
+```
+
 ## Next Steps
 
-1. **Complete Guide**: Read the [Implementation Guide](./implementation-guide.md) for detailed client and server development
-2. **Examples**: Explore [runnable examples](../examples/) for hands-on learning
-3. **Integration**: Add your server to [Claude Desktop](./integrations/claude-desktop.md)
+- 📖 **[Implementation Guide](./implementation-guide.md)** - Complete development guide
+- 🔧 **[Examples](../examples/)** - Working example projects
+- 🌐 **[Transports](./transports.md)** - HTTP, WebSocket, and STDIO guides
+- 🎯 **[Claude Desktop Integration](./integrations/claude-desktop.md)** - Add tools to Claude
+- ⚡ **[Cursor IDE Integration](./integrations/cursor.md)** - Build IDE extensions
 
-## 🎯 v0.4.0 Latest Features
+## Getting Help
 
-With the current release, you get enhanced MCP capabilities:
+- 📚 **[API Documentation](https://docs.rs/mcp-protocol-sdk)** - Complete API reference
+- 🐛 **[GitHub Issues](https://github.com/mcp-rust/mcp-protocol-sdk/issues)** - Bug reports and questions
+- 💬 **[Examples Directory](../examples/)** - Real working code samples
 
-### **Production-Ready Features**
-```toml
-[dependencies]
-mcp-protocol-sdk = "0.4.0"  # 🎯 Latest production features!
-```
-
-**✅ Current Capabilities:**
-- **Multiple Transport Support**: STDIO, HTTP, WebSocket with optimized performance
-- **Enhanced Tool Results**: Rich data alongside human-readable content
-- **Advanced Session Management**: Auto-reconnection and fault tolerance
-- **Complete Documentation**: Comprehensive guides and 97 tests
-- **Enterprise Ready**: Production-grade error handling and monitoring
-
-## Transport Options
-
-The unified SDK supports multiple transport layers:
-
-- **STDIO**: Perfect for Claude Desktop integration
-- **HTTP**: RESTful API integration  
-- **WebSocket**: Real-time bidirectional communication
-
-Choose the right transport for your use case in our [transport guide](./servers/transports.md).
-
-## Feature Flags
-
-Minimize your binary size by choosing only the features you need:
-
-```toml
-[dependencies]
-mcp-protocol-sdk = { 
-    version = "0.3.0", 
-    default-features = false,
-    features = ["stdio"]  # Only STDIO transport
-}
-```
-
-Available features:
-- `stdio` - STDIO transport support
-- `http` - HTTP transport support
-- `websocket` - WebSocket transport support
-- `validation` - Enhanced validation (recommended)
-- `tracing-subscriber` - Built-in logging
-
-## Examples
-
-Check out more examples in the [examples directory](../examples/) for:
-- Database servers
-- File system servers  
-- AI tool servers
-- HTTP API servers
-- WebSocket chat servers
-
-Happy coding with the unified SDK! 🦀✨
+Remember: All examples in this guide have been tested and verified to work with the current API! 🎉

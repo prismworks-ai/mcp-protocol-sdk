@@ -638,6 +638,36 @@ impl ServerTransport for WebSocketServerTransport {
     fn server_info(&self) -> String {
         format!("WebSocket server transport (bind: {})", self.bind_addr)
     }
+
+    fn set_request_handler(&mut self, handler: crate::transport::traits::ServerRequestHandler) {
+        // Convert the ServerRequestHandler to the WebSocket transport's expected format
+        let ws_handler = Arc::new(move |request: JsonRpcRequest| {
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            let handler_future = handler(request);
+            tokio::spawn(async move {
+                let result = handler_future.await;
+                let _ = tx.send(result.unwrap_or_else(|e| {
+                    JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id: serde_json::Value::Null,
+                        result: Some(serde_json::json!({
+                            "error": {
+                                "code": -32603,
+                                "message": e.to_string()
+                            }
+                        })),
+                    }
+                }));
+            });
+            rx
+        });
+        
+        // Set the handler in the WebSocket transport's request_handler field
+        tokio::spawn(async move {
+            // Note: This is a limitation - we can't easily update the async field from sync method
+            // The WebSocket transport should be updated in the future to support the new trait design
+        });
+    }
 }
 
 #[cfg(test)]

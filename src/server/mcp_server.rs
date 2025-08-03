@@ -433,7 +433,7 @@ impl McpServer {
     // ========================================================================
 
     /// Start the server with the given transport
-    pub async fn start<T>(&mut self, transport: T) -> McpResult<()>
+    pub async fn start<T>(&mut self, mut transport: T) -> McpResult<()>
     where
         T: ServerTransport + 'static,
     {
@@ -447,6 +447,42 @@ impl McpServer {
         }
 
         drop(state);
+
+        // Create a request handler that delegates to this server
+        let resources = self.resources.clone();
+        let tools = self.tools.clone();
+        let prompts = self.prompts.clone();
+        let info = self.info.clone();
+        let capabilities = self.capabilities.clone();
+        let config = self.config.clone();
+
+        let request_handler: crate::transport::traits::ServerRequestHandler = Arc::new(move |request| {
+            let resources = resources.clone();
+            let tools = tools.clone();
+            let prompts = prompts.clone();
+            let info = info.clone();
+            let capabilities = capabilities.clone();
+            let config = config.clone();
+            
+            Box::pin(async move {
+                // Create a temporary server instance to handle the request
+                let temp_server = McpServer {
+                    info,
+                    capabilities,
+                    config,
+                    resources,
+                    tools,
+                    prompts,
+                    transport: Arc::new(Mutex::new(None)),
+                    state: Arc::new(RwLock::new(ServerState::Running)),
+                    request_counter: Arc::new(Mutex::new(0)),
+                };
+                temp_server.handle_request(request).await
+            })
+        });
+
+        // Set the request handler on the transport
+        transport.set_request_handler(request_handler);
 
         // Set up the transport
         {

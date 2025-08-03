@@ -15,7 +15,7 @@ use tokio::time::{Duration, timeout};
 
 use crate::core::error::{McpError, McpResult};
 use crate::protocol::types::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, error_codes};
-use crate::transport::traits::{ConnectionState, ServerTransport, Transport, TransportConfig};
+use crate::transport::traits::{ConnectionState, ServerTransport, ServerRequestHandler, Transport, TransportConfig};
 
 /// STDIO transport for MCP clients
 ///
@@ -299,11 +299,7 @@ pub struct StdioServerTransport {
     #[allow(dead_code)]
     config: TransportConfig,
     running: bool,
-    request_handler: Option<
-        Box<
-            dyn Fn(JsonRpcRequest) -> tokio::sync::oneshot::Receiver<JsonRpcResponse> + Send + Sync,
-        >,
-    >,
+    request_handler: Option<ServerRequestHandler>,
 }
 
 impl StdioServerTransport {
@@ -335,19 +331,7 @@ impl StdioServerTransport {
         }
     }
 
-    /// Set the request handler function
-    ///
-    /// # Arguments
-    /// * `handler` - Function that processes incoming requests
-    pub fn set_request_handler<F>(&mut self, handler: F)
-    where
-        F: Fn(JsonRpcRequest) -> tokio::sync::oneshot::Receiver<JsonRpcResponse>
-            + Send
-            + Sync
-            + 'static,
-    {
-        self.request_handler = Some(Box::new(handler));
-    }
+
 }
 
 #[async_trait]
@@ -365,6 +349,7 @@ impl ServerTransport for StdioServerTransport {
             .ok_or_else(|| McpError::transport("STDOUT writer already taken"))?;
 
         self.running = true;
+        let request_handler = self.request_handler.clone();
 
         let mut line = String::new();
         while self.running {
@@ -386,8 +371,18 @@ impl ServerTransport for StdioServerTransport {
                     // Parse the request
                     match serde_json::from_str::<JsonRpcRequest>(line) {
                         Ok(request) => {
-                            let response_or_error = match self.handle_request(request.clone()).await
-                            {
+                            let response_result = if let Some(ref handler) = request_handler {
+                                // Use the provided request handler
+                                handler(request.clone()).await
+                            } else {
+                                // Fall back to error if no handler is set
+                                Err(McpError::protocol(format!(
+                                    "Method '{}' not found",
+                                    request.method
+                                )))
+                            };
+
+                            let response_or_error = match response_result {
                                 Ok(response) => serde_json::to_string(&response),
                                 Err(error) => {
                                     // Convert McpError to JsonRpcError
@@ -444,13 +439,11 @@ impl ServerTransport for StdioServerTransport {
         Ok(())
     }
 
-    async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
-        // Default implementation - return method not found error
-        Err(McpError::protocol(format!(
-            "Method '{}' not found",
-            request.method
-        )))
+    fn set_request_handler(&mut self, handler: ServerRequestHandler) {
+        self.request_handler = Some(handler);
     }
+
+
 
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
         let writer = self
@@ -491,6 +484,19 @@ impl ServerTransport for StdioServerTransport {
 
     fn server_info(&self) -> String {
         format!("STDIO server transport (running: {})", self.running)
+    }
+}
+
+// Backward compatibility method for tests
+impl StdioServerTransport {
+    /// Backward compatibility method for tests
+    /// This method provides a default response for testing purposes
+    pub async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
+        // Default implementation for tests - return method not found error
+        Err(McpError::protocol(format!(
+            "Method '{}' not found (test mode)",
+            request.method
+        )))
     }
 }
 

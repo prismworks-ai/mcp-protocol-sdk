@@ -115,7 +115,7 @@ rmcp-macros = "0.2.0"
 
 # After: Single unified SDK
 [dependencies]
-mcp-protocol-sdk = "0.4.0"  # Everything included!
+mcp-protocol-sdk = "0.5.0"  # Everything included!
 ```
 
 ## 🎯 When to Choose Each SDK
@@ -152,7 +152,7 @@ rmcp = { version = "0.2.0", features = ["server"] }
 
 # After  
 [dependencies]
-mcp-protocol-sdk = "0.4.0"
+mcp-protocol-sdk = "0.5.0"
 ```
 
 **2. Update Imports**

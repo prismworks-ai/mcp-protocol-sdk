@@ -1,6 +1,6 @@
 # 🔌 Other MCP Clients Integration
 
-Integrate your MCP servers with various AI clients and development tools beyond Claude Desktop, Cursor, and VS Code.
+Integrate your MCP servers with various AI clients and development tools beyond Claude Desktop and Cursor IDE.
 
 ## Overview
 
@@ -52,7 +52,12 @@ class McpHttpClient {
             })
         });
 
-        return await response.json();
+        const result = await response.json();
+        if (result.error) {
+            throw new Error(`Initialization failed: ${result.error.message}`);
+        }
+        
+        return result.result;
     }
 
     async callTool(toolName, params) {
@@ -74,7 +79,7 @@ class McpHttpClient {
 
         const result = await response.json();
         if (result.error) {
-            throw new Error(result.error.message);
+            throw new Error(`Tool call failed: ${result.error.message}`);
         }
         
         return result.result;
@@ -94,6 +99,10 @@ class McpHttpClient {
         });
 
         const result = await response.json();
+        if (result.error) {
+            throw new Error(`Tools list failed: ${result.error.message}`);
+        }
+        
         return result.result.tools || [];
     }
 
@@ -112,25 +121,67 @@ class McpHttpClient {
         });
 
         const result = await response.json();
+        if (result.error) {
+            throw new Error(`Resource read failed: ${result.error.message}`);
+        }
+        
         return result.result;
+    }
+
+    async listResources() {
+        const response = await fetch(`${this.serverUrl}/mcp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: this.requestId++,
+                method: 'resources/list'
+            })
+        });
+
+        const result = await response.json();
+        if (result.error) {
+            throw new Error(`Resources list failed: ${result.error.message}`);
+        }
+        
+        return result.result.resources || [];
     }
 }
 
 // Usage in a web application
 async function initializeAI() {
-    const mcpClient = new McpHttpClient('http://localhost:3000');
-    await mcpClient.initialize();
-    
-    // Get available tools
-    const tools = await mcpClient.listTools();
-    console.log('Available tools:', tools);
-    
-    // Use tools in AI workflow
-    for (const tool of tools) {
-        registerAITool(tool.name, async (params) => {
-            return await mcpClient.callTool(tool.name, params);
-        });
+    try {
+        const mcpClient = new McpHttpClient('http://localhost:3000');
+        const initResult = await mcpClient.initialize();
+        
+        console.log('MCP client initialized:', initResult);
+        
+        // Get available tools
+        const tools = await mcpClient.listTools();
+        console.log('Available tools:', tools);
+        
+        // Register tools in AI workflow
+        for (const tool of tools) {
+            registerAITool(tool.name, async (params) => {
+                return await mcpClient.callTool(tool.name, params);
+            });
+        }
+        
+        // Get available resources
+        const resources = await mcpClient.listResources();
+        console.log('Available resources:', resources);
+        
+    } catch (error) {
+        console.error('Failed to initialize MCP client:', error);
     }
+}
+
+function registerAITool(toolName, handler) {
+    // Register the tool with your AI system
+    console.log(`Registered tool: ${toolName}`);
+    // Implementation depends on your AI framework
 }
 ```
 
@@ -145,30 +196,66 @@ class McpWebSocketClient {
         this.requestId = 1;
         this.pendingRequests = new Map();
         this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 2000;
     }
 
     async connect() {
         return new Promise((resolve, reject) => {
-            this.ws = new WebSocket(this.serverUrl);
-            
-            this.ws.onopen = async () => {
-                await this.initialize();
-                resolve();
-            };
-            
-            this.ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                this.handleMessage(message);
-            };
-            
-            this.ws.onerror = (error) => {
+            try {
+                this.ws = new WebSocket(this.serverUrl);
+                
+                this.ws.onopen = async () => {
+                    console.log('WebSocket connected');
+                    this.reconnectAttempts = 0;
+                    
+                    try {
+                        await this.initialize();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        this.handleMessage(message);
+                    } catch (error) {
+                        console.error('Failed to parse message:', error);
+                    }
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    reject(error);
+                };
+                
+                this.ws.onclose = (event) => {
+                    console.log('WebSocket connection closed:', event.code, event.reason);
+                    this.handleDisconnection();
+                };
+                
+            } catch (error) {
                 reject(error);
-            };
-            
-            this.ws.onclose = () => {
-                console.log('WebSocket connection closed');
-            };
+            }
         });
+    }
+
+    async handleDisconnection() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            
+            setTimeout(() => {
+                this.connect().catch(error => {
+                    console.error('Reconnection failed:', error);
+                });
+            }, this.reconnectDelay * this.reconnectAttempts);
+        } else {
+            console.error('Max reconnection attempts reached');
+        }
     }
 
     handleMessage(message) {
@@ -188,16 +275,22 @@ class McpWebSocketClient {
     }
 
     async sendRequest(method, params = {}) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            throw new Error('WebSocket not connected');
+        }
+        
         return new Promise((resolve, reject) => {
             const id = this.requestId++;
             this.pendingRequests.set(id, { resolve, reject });
             
-            this.ws.send(JSON.stringify({
+            const request = {
                 jsonrpc: '2.0',
                 id,
                 method,
                 params
-            }));
+            };
+            
+            this.ws.send(JSON.stringify(request));
             
             // Set timeout
             setTimeout(() => {
@@ -205,7 +298,7 @@ class McpWebSocketClient {
                     this.pendingRequests.delete(id);
                     reject(new Error('Request timeout'));
                 }
-            }, 10000);
+            }, 30000); // 30 second timeout
         });
     }
 
@@ -231,6 +324,20 @@ class McpWebSocketClient {
         });
     }
 
+    async listTools() {
+        const result = await this.sendRequest('tools/list');
+        return result.tools || [];
+    }
+
+    async readResource(uri) {
+        return await this.sendRequest('resources/read', { uri });
+    }
+
+    async listResources() {
+        const result = await this.sendRequest('resources/list');
+        return result.resources || [];
+    }
+
     handleNotification(message) {
         switch (message.method) {
             case 'notifications/tools/list_changed':
@@ -239,21 +346,47 @@ class McpWebSocketClient {
             case 'notifications/resources/list_changed':
                 this.onResourcesChanged();
                 break;
+            case 'notifications/prompts/list_changed':
+                this.onPromptsChanged();
+                break;
             default:
                 console.log('Unknown notification:', message);
         }
     }
 
-    onToolsChanged() {
-        // Refresh available tools
-        this.listTools().then(tools => {
+    async onToolsChanged() {
+        try {
+            const tools = await this.listTools();
             this.updateAICapabilities(tools);
-        });
+            console.log('Tools updated:', tools.length, 'available');
+        } catch (error) {
+            console.error('Failed to refresh tools:', error);
+        }
     }
 
-    onResourcesChanged() {
-        // Refresh available resources
-        console.log('Resources changed, refreshing...');
+    async onResourcesChanged() {
+        try {
+            const resources = await this.listResources();
+            console.log('Resources updated:', resources.length, 'available');
+        } catch (error) {
+            console.error('Failed to refresh resources:', error);
+        }
+    }
+
+    onPromptsChanged() {
+        console.log('Prompts changed, refreshing...');
+    }
+
+    updateAICapabilities(tools) {
+        // Update your AI system with new tool capabilities
+        console.log('Updating AI with new tools:', tools.map(t => t.name));
+    }
+
+    disconnect() {
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
     }
 }
 ```
@@ -266,30 +399,93 @@ For Python-based AI applications:
 import asyncio
 import json
 import websockets
+import aiohttp
 from typing import Dict, Any, Optional, List
+import logging
+
+logger = logging.getLogger(__name__)
 
 class McpPythonClient:
-    def __init__(self, server_url: str):
+    def __init__(self, server_url: str, transport: str = 'websocket'):
         self.server_url = server_url
+        self.transport = transport
         self.request_id = 1
         self.pending_requests = {}
         self.websocket = None
+        self.session = None
+        self.reconnect_attempts = 0
+        self.max_reconnect_attempts = 5
+        self.reconnect_delay = 2.0
 
     async def connect(self):
-        self.websocket = await websockets.connect(self.server_url)
+        """Connect to the MCP server"""
+        if self.transport == 'websocket':
+            await self._connect_websocket()
+        elif self.transport == 'http':
+            await self._connect_http()
+        else:
+            raise ValueError(f"Unsupported transport: {self.transport}")
         
-        # Start message handler
-        asyncio.create_task(self.message_handler())
-        
-        # Initialize connection
+        # Initialize the connection
         await self.initialize()
 
-    async def message_handler(self):
-        async for message in self.websocket:
-            data = json.loads(message)
-            await self.handle_message(data)
+    async def _connect_websocket(self):
+        """Connect via WebSocket"""
+        try:
+            self.websocket = await websockets.connect(self.server_url)
+            
+            # Start message handler
+            asyncio.create_task(self._message_handler())
+            
+            logger.info(f"Connected to MCP server via WebSocket: {self.server_url}")
+            self.reconnect_attempts = 0
+            
+        except Exception as e:
+            logger.error(f"Failed to connect via WebSocket: {e}")
+            await self._handle_reconnection()
 
-    async def handle_message(self, message: Dict[str, Any]):
+    async def _connect_http(self):
+        """Connect via HTTP"""
+        self.session = aiohttp.ClientSession()
+        logger.info(f"Connected to MCP server via HTTP: {self.server_url}")
+
+    async def _handle_reconnection(self):
+        """Handle reconnection logic"""
+        if self.reconnect_attempts < self.max_reconnect_attempts:
+            self.reconnect_attempts += 1
+            delay = self.reconnect_delay * self.reconnect_attempts
+            
+            logger.info(f"Reconnecting in {delay}s (attempt {self.reconnect_attempts}/{self.max_reconnect_attempts})")
+            await asyncio.sleep(delay)
+            
+            try:
+                await self.connect()
+            except Exception as e:
+                logger.error(f"Reconnection attempt {self.reconnect_attempts} failed: {e}")
+                await self._handle_reconnection()
+        else:
+            logger.error("Max reconnection attempts reached")
+            raise ConnectionError("Failed to reconnect to MCP server")
+
+    async def _message_handler(self):
+        """Handle incoming WebSocket messages"""
+        try:
+            async for message in self.websocket:
+                try:
+                    data = json.loads(message)
+                    await self._handle_message(data)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse message: {e}")
+                except Exception as e:
+                    logger.error(f"Error handling message: {e}")
+        except websockets.exceptions.ConnectionClosed:
+            logger.warning("WebSocket connection closed")
+            await self._handle_reconnection()
+        except Exception as e:
+            logger.error(f"Message handler error: {e}")
+
+    async def _handle_message(self, message: Dict[str, Any]):
+        """Handle a parsed message"""
         if 'id' in message and message['id'] in self.pending_requests:
             future = self.pending_requests.pop(message['id'])
             if 'error' in message:
@@ -297,9 +493,22 @@ class McpPythonClient:
             else:
                 future.set_result(message.get('result'))
         elif 'method' in message:
-            await self.handle_notification(message)
+            await self._handle_notification(message)
 
-    async def send_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    async def _send_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Send a request and wait for response"""
+        if self.transport == 'websocket':
+            return await self._send_websocket_request(method, params)
+        elif self.transport == 'http':
+            return await self._send_http_request(method, params)
+        else:
+            raise ValueError(f"Unsupported transport: {self.transport}")
+
+    async def _send_websocket_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Send request via WebSocket"""
+        if not self.websocket or self.websocket.closed:
+            raise ConnectionError("WebSocket not connected")
+        
         request_id = self.request_id
         self.request_id += 1
         
@@ -318,13 +527,49 @@ class McpPythonClient:
         await self.websocket.send(json.dumps(request))
         
         try:
-            return await asyncio.wait_for(future, timeout=10.0)
+            return await asyncio.wait_for(future, timeout=30.0)
         except asyncio.TimeoutError:
             self.pending_requests.pop(request_id, None)
             raise Exception('Request timeout')
 
+    async def _send_http_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Send request via HTTP"""
+        if not self.session:
+            raise ConnectionError("HTTP session not initialized")
+        
+        request_id = self.request_id
+        self.request_id += 1
+        
+        request = {
+            'jsonrpc': '2.0',
+            'id': request_id,
+            'method': method
+        }
+        
+        if params:
+            request['params'] = params
+        
+        try:
+            async with self.session.post(
+                f"{self.server_url}/mcp",
+                json=request,
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                result = await response.json()
+                
+                if 'error' in result:
+                    raise Exception(result['error']['message'])
+                
+                return result.get('result')
+                
+        except aiohttp.ClientTimeout:
+            raise Exception('Request timeout')
+        except Exception as e:
+            raise Exception(f'HTTP request failed: {e}')
+
     async def initialize(self):
-        return await self.send_request('initialize', {
+        """Initialize the MCP connection"""
+        return await self._send_request('initialize', {
             'protocolVersion': '2024-11-05',
             'capabilities': {
                 'tools': {},
@@ -338,696 +583,127 @@ class McpPythonClient:
         })
 
     async def call_tool(self, tool_name: str, params: Dict[str, Any]) -> Any:
-        return await self.send_request('tools/call', {
+        """Call an MCP tool"""
+        return await self._send_request('tools/call', {
             'name': tool_name,
             'arguments': params
         })
 
     async def list_tools(self) -> List[Dict[str, Any]]:
-        result = await self.send_request('tools/list')
+        """List available tools"""
+        result = await self._send_request('tools/list')
         return result.get('tools', [])
 
     async def read_resource(self, uri: str) -> Any:
-        return await self.send_request('resources/read', {'uri': uri})
+        """Read a resource"""
+        return await self._send_request('resources/read', {'uri': uri})
 
-    async def handle_notification(self, message: Dict[str, Any]):
+    async def list_resources(self) -> List[Dict[str, Any]]:
+        """List available resources"""
+        result = await self._send_request('resources/list')
+        return result.get('resources', [])
+
+    async def get_prompt(self, name: str, arguments: Optional[Dict[str, Any]] = None) -> Any:
+        """Get a prompt"""
+        params = {'name': name}
+        if arguments:
+            params['arguments'] = arguments
+        return await self._send_request('prompts/get', params)
+
+    async def list_prompts(self) -> List[Dict[str, Any]]:
+        """List available prompts"""
+        result = await self._send_request('prompts/list')
+        return result.get('prompts', [])
+
+    async def _handle_notification(self, message: Dict[str, Any]):
+        """Handle notifications from server"""
         method = message.get('method')
         if method == 'notifications/tools/list_changed':
-            await self.on_tools_changed()
+            await self._on_tools_changed()
         elif method == 'notifications/resources/list_changed':
-            await self.on_resources_changed()
+            await self._on_resources_changed()
+        elif method == 'notifications/prompts/list_changed':
+            await self._on_prompts_changed()
+        else:
+            logger.info(f"Unknown notification: {method}")
 
-    async def on_tools_changed(self):
-        tools = await self.list_tools()
-        print(f"Tools updated: {len(tools)} available")
+    async def _on_tools_changed(self):
+        """Handle tools list changed notification"""
+        try:
+            tools = await self.list_tools()
+            logger.info(f"Tools updated: {len(tools)} available")
+        except Exception as e:
+            logger.error(f"Failed to refresh tools: {e}")
 
-    async def on_resources_changed(self):
-        print("Resources changed")
+    async def _on_resources_changed(self):
+        """Handle resources list changed notification"""
+        try:
+            resources = await self.list_resources()
+            logger.info(f"Resources updated: {len(resources)} available")
+        except Exception as e:
+            logger.error(f"Failed to refresh resources: {e}")
 
-# Usage in AI application
+    async def _on_prompts_changed(self):
+        """Handle prompts list changed notification"""
+        try:
+            prompts = await self.list_prompts()
+            logger.info(f"Prompts updated: {len(prompts)} available")
+        except Exception as e:
+            logger.error(f"Failed to refresh prompts: {e}")
+
+    async def disconnect(self):
+        """Disconnect from the server"""
+        if self.websocket:
+            await self.websocket.close()
+            self.websocket = None
+        
+        if self.session:
+            await self.session.close()
+            self.session = None
+        
+        logger.info("Disconnected from MCP server")
+
+    async def __aenter__(self):
+        """Async context manager entry"""
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        await self.disconnect()
+
+# Usage example
 async def main():
-    client = McpPythonClient('ws://localhost:8080/mcp')
-    await client.connect()
-    
-    # Get available tools
-    tools = await client.list_tools()
-    print(f"Available tools: {[tool['name'] for tool in tools]}")
-    
-    # Use tools in AI workflow
-    for tool in tools:
-        result = await client.call_tool(tool['name'], {
-            'example_param': 'value'
-        })
-        print(f"Tool {tool['name']} result: {result}")
+    # Example usage with async context manager
+    async with McpPythonClient('ws://localhost:8080/mcp', 'websocket') as client:
+        # Get available tools
+        tools = await client.list_tools()
+        print(f"Available tools: {[tool['name'] for tool in tools]}")
+        
+        # Call a tool
+        if tools:
+            result = await client.call_tool(tools[0]['name'], {
+                'example_param': 'value'
+            })
+            print(f"Tool result: {result}")
+        
+        # Get available resources
+        resources = await client.list_resources()
+        print(f"Available resources: {[res['uri'] for res in resources]}")
+        
+        # Read a resource
+        if resources:
+            content = await client.read_resource(resources[0]['uri'])
+            print(f"Resource content: {content}")
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
-```
-
-## Specific Integration Examples
-
-### 1. Jupyter Notebook Integration
-
-Create a Jupyter extension for MCP integration:
-
-```python
-# mcp_jupyter_extension.py
-from IPython.core.magic import Magics, magics_class, line_magic, cell_magic
-from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-import asyncio
-import json
-
-@magics_class
-class McpMagics(Magics):
-    def __init__(self, shell, mcp_client):
-        super().__init__(shell)
-        self.mcp_client = mcp_client
-
-    @line_magic
-    @magic_arguments()
-    @argument('tool_name', help='Name of the MCP tool to call')
-    @argument('--params', help='JSON parameters for the tool')
-    def mcp_call(self, line):
-        """Call an MCP tool from Jupyter"""
-        args = parse_argstring(self.mcp_call, line)
-        
-        params = {}
-        if args.params:
-            params = json.loads(args.params)
-        
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(
-            self.mcp_client.call_tool(args.tool_name, params)
-        )
-        
-        return result
-
-    @line_magic
-    def mcp_tools(self, line):
-        """List available MCP tools"""
-        loop = asyncio.get_event_loop()
-        tools = loop.run_until_complete(self.mcp_client.list_tools())
-        
-        for tool in tools:
-            print(f"- {tool['name']}: {tool.get('description', 'No description')}")
-
-# Load extension
-def load_ipython_extension(ipython):
-    # Initialize MCP client
-    client = McpPythonClient('ws://localhost:8080/mcp')
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(client.connect())
-    
-    # Register magics
-    ipython.register_magic_function(McpMagics(ipython, client))
-```
-
-Usage in Jupyter:
-```python
-# Load the extension
-%load_ext mcp_jupyter_extension
-
-# List available tools
-%mcp_tools
-
-# Call a tool
-%mcp_call analyze_data --params '{"dataset": "sales.csv", "analysis_type": "summary"}'
-```
-
-### 2. Streamlit Integration
-
-Create a Streamlit app with MCP integration:
-
-```python
-import streamlit as st
-import asyncio
-import json
-from mcp_client import McpPythonClient
-
-@st.cache_resource
-def get_mcp_client():
-    client = McpPythonClient('ws://localhost:8080/mcp')
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(client.connect())
-    return client, loop
-
-def main():
-    st.title("AI Assistant with MCP Tools")
-    
-    # Initialize MCP client
-    client, loop = get_mcp_client()
-    
-    # Sidebar for tool selection
-    st.sidebar.header("Available Tools")
-    tools = loop.run_until_complete(client.list_tools())
-    
-    selected_tool = st.sidebar.selectbox(
-        "Select a tool:",
-        options=[tool['name'] for tool in tools],
-        format_func=lambda x: f"{x} - {next(t['description'] for t in tools if t['name'] == x)}"
-    )
-    
-    if selected_tool:
-        tool_info = next(t for t in tools if t['name'] == selected_tool)
-        
-        st.header(f"Tool: {selected_tool}")
-        st.write(tool_info.get('description', 'No description available'))
-        
-        # Dynamic parameter input
-        params = {}
-        if 'parameters' in tool_info:
-            st.subheader("Parameters")
-            for param in tool_info['parameters']:
-                if param['type'] == 'string':
-                    params[param['name']] = st.text_input(
-                        param['name'],
-                        help=param.get('description', '')
-                    )
-                elif param['type'] == 'number':
-                    params[param['name']] = st.number_input(
-                        param['name'],
-                        help=param.get('description', '')
-                    )
-                elif param['type'] == 'boolean':
-                    params[param['name']] = st.checkbox(
-                        param['name'],
-                        help=param.get('description', '')
-                    )
-        
-        # Execute tool
-        if st.button("Execute Tool"):
-            with st.spinner("Executing..."):
-                try:
-                    result = loop.run_until_complete(
-                        client.call_tool(selected_tool, params)
-                    )
-                    
-                    st.success("Tool executed successfully!")
-                    st.json(result)
-                    
-                except Exception as e:
-                    st.error(f"Error executing tool: {str(e)}")
-
-    # Chat interface
-    st.header("AI Chat")
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-    
-    if prompt := st.chat_input("Ask the AI assistant..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        
-        with st.chat_message("assistant"):
-            # Here you would integrate with your AI model
-            # and use MCP tools as needed
-            response = process_ai_request(prompt, client, loop)
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-
-def process_ai_request(prompt, client, loop):
-    # This is where you'd integrate with your AI model
-    # and determine which MCP tools to use
-    
-    # For demonstration, we'll just echo back with available tools
-    tools = loop.run_until_complete(client.list_tools())
-    tool_names = [tool['name'] for tool in tools]
-    
-    return f"I understand you want: '{prompt}'. I have these tools available: {', '.join(tool_names)}"
-
-if __name__ == "__main__":
-    main()
-```
-
-### 3. Browser Extension Integration
-
-Create a browser extension that uses MCP tools:
-
-**manifest.json:**
-```json
-{
-  "manifest_version": 3,
-  "name": "MCP Assistant",
-  "version": "1.0.0",
-  "description": "AI assistant with MCP tool integration",
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "MCP Assistant"
-  }
-}
-```
-
-**background.js:**
-```javascript
-class McpExtensionClient {
-    constructor() {
-        this.serverUrl = 'ws://localhost:8080/mcp';
-        this.ws = null;
-        this.requestId = 1;
-        this.pendingRequests = new Map();
-    }
-
-    async connect() {
-        return new Promise((resolve, reject) => {
-            this.ws = new WebSocket(this.serverUrl);
-            
-            this.ws.onopen = async () => {
-                await this.initialize();
-                resolve();
-            };
-            
-            this.ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                this.handleMessage(message);
-            };
-            
-            this.ws.onerror = reject;
-        });
-    }
-
-    async initialize() {
-        return await this.sendRequest('initialize', {
-            protocolVersion: '2024-11-05',
-            capabilities: { tools: {}, resources: {}, prompts: {} },
-            clientInfo: { name: 'browser-extension', version: '1.0.0' }
-        });
-    }
-
-    async sendRequest(method, params = {}) {
-        return new Promise((resolve, reject) => {
-            const id = this.requestId++;
-            this.pendingRequests.set(id, { resolve, reject });
-            
-            this.ws.send(JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                method,
-                params
-            }));
-        });
-    }
-
-    handleMessage(message) {
-        if (message.id && this.pendingRequests.has(message.id)) {
-            const { resolve, reject } = this.pendingRequests.get(message.id);
-            this.pendingRequests.delete(message.id);
-            
-            if (message.error) {
-                reject(new Error(message.error.message));
-            } else {
-                resolve(message.result);
-            }
-        }
-    }
-
-    async callTool(toolName, params) {
-        return await this.sendRequest('tools/call', {
-            name: toolName,
-            arguments: params
-        });
-    }
-
-    async listTools() {
-        const result = await this.sendRequest('tools/list');
-        return result.tools || [];
-    }
-}
-
-// Initialize client
-let mcpClient = new McpExtensionClient();
-
-// Handle messages from popup/content scripts
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'callTool') {
-        mcpClient.callTool(request.toolName, request.params)
-            .then(sendResponse)
-            .catch(error => sendResponse({ error: error.message }));
-        return true; // Async response
-    } else if (request.action === 'listTools') {
-        mcpClient.listTools()
-            .then(sendResponse)
-            .catch(error => sendResponse({ error: error.message }));
-        return true;
-    }
-});
-
-// Connect on startup
-mcpClient.connect().catch(console.error);
-```
-
-**popup.html:**
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { width: 300px; padding: 10px; }
-        .tool { margin: 5px 0; padding: 5px; border: 1px solid #ccc; }
-        .tool button { margin-left: 10px; }
-    </style>
-</head>
-<body>
-    <h3>MCP Assistant</h3>
-    <div id="tools"></div>
-    <script src="popup.js"></script>
-</body>
-</html>
-```
-
-**popup.js:**
-```javascript
-document.addEventListener('DOMContentLoaded', async () => {
-    const toolsDiv = document.getElementById('tools');
-    
-    try {
-        // Get available tools
-        const tools = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ action: 'listTools' }, resolve);
-        });
-        
-        // Display tools
-        tools.forEach(tool => {
-            const toolDiv = document.createElement('div');
-            toolDiv.className = 'tool';
-            toolDiv.innerHTML = `
-                <strong>${tool.name}</strong>
-                <p>${tool.description}</p>
-                <button onclick="executeTool('${tool.name}')">Execute</button>
-            `;
-            toolsDiv.appendChild(toolDiv);
-        });
-        
-    } catch (error) {
-        toolsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
-    }
-});
-
-async function executeTool(toolName) {
-    try {
-        const result = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({
-                action: 'callTool',
-                toolName: toolName,
-                params: {} // You could add parameter input here
-            }, resolve);
-        });
-        
-        alert(`Tool result: ${JSON.stringify(result, null, 2)}`);
-    } catch (error) {
-        alert(`Error: ${error.message}`);
-    }
-}
-```
-
-### 4. Mobile App Integration (React Native)
-
-Create a React Native app with MCP integration:
-
-```javascript
-// McpClient.js
-import { NativeModules, NativeEventEmitter } from 'react-native';
-
-class McpReactNativeClient {
-    constructor(serverUrl) {
-        this.serverUrl = serverUrl;
-        this.requestId = 1;
-        this.pendingRequests = new Map();
-        this.ws = null;
-    }
-
-    connect() {
-        return new Promise((resolve, reject) => {
-            this.ws = new WebSocket(this.serverUrl);
-            
-            this.ws.onopen = async () => {
-                await this.initialize();
-                resolve();
-            };
-            
-            this.ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                this.handleMessage(message);
-            };
-            
-            this.ws.onerror = reject;
-        });
-    }
-
-    async initialize() {
-        return await this.sendRequest('initialize', {
-            protocolVersion: '2024-11-05',
-            capabilities: { tools: {}, resources: {}, prompts: {} },
-            clientInfo: { name: 'react-native-app', version: '1.0.0' }
-        });
-    }
-
-    sendRequest(method, params = {}) {
-        return new Promise((resolve, reject) => {
-            const id = this.requestId++;
-            this.pendingRequests.set(id, { resolve, reject });
-            
-            this.ws.send(JSON.stringify({
-                jsonrpc: '2.0',
-                id,
-                method,
-                params
-            }));
-            
-            // Timeout
-            setTimeout(() => {
-                if (this.pendingRequests.has(id)) {
-                    this.pendingRequests.delete(id);
-                    reject(new Error('Request timeout'));
-                }
-            }, 10000);
-        });
-    }
-
-    handleMessage(message) {
-        if (message.id && this.pendingRequests.has(message.id)) {
-            const { resolve, reject } = this.pendingRequests.get(message.id);
-            this.pendingRequests.delete(message.id);
-            
-            if (message.error) {
-                reject(new Error(message.error.message));
-            } else {
-                resolve(message.result);
-            }
-        }
-    }
-
-    async callTool(toolName, params) {
-        return await this.sendRequest('tools/call', {
-            name: toolName,
-            arguments: params
-        });
-    }
-
-    async listTools() {
-        const result = await this.sendRequest('tools/list');
-        return result.tools || [];
-    }
-}
-
-export default McpReactNativeClient;
-```
-
-```javascript
-// App.js
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
-    Alert,
-    TextInput
-} from 'react-native';
-import McpReactNativeClient from './McpClient';
-
-const App = () => {
-    const [client, setClient] = useState(null);
-    const [tools, setTools] = useState([]);
-    const [messages, setMessages] = useState([]);
-    const [inputText, setInputText] = useState('');
-
-    useEffect(() => {
-        initializeClient();
-    }, []);
-
-    const initializeClient = async () => {
-        try {
-            const mcpClient = new McpReactNativeClient('ws://your-server.com:8080/mcp');
-            await mcpClient.connect();
-            
-            const availableTools = await mcpClient.listTools();
-            setTools(availableTools);
-            setClient(mcpClient);
-            
-            Alert.alert('Success', 'Connected to MCP server');
-        } catch (error) {
-            Alert.alert('Error', `Failed to connect: ${error.message}`);
-        }
-    };
-
-    const executeTool = async (toolName) => {
-        if (!client) return;
-        
-        try {
-            const result = await client.callTool(toolName, {
-                input: inputText
-            });
-            
-            setMessages(prev => [...prev, {
-                type: 'tool_result',
-                tool: toolName,
-                result: JSON.stringify(result, null, 2)
-            }]);
-            
-        } catch (error) {
-            Alert.alert('Error', `Tool execution failed: ${error.message}`);
-        }
-    };
-
-    const renderTool = ({ item }) => (
-        <TouchableOpacity
-            style={styles.toolItem}
-            onPress={() => executeTool(item.name)}
-        >
-            <Text style={styles.toolName}>{item.name}</Text>
-            <Text style={styles.toolDescription}>{item.description}</Text>
-        </TouchableOpacity>
-    );
-
-    const renderMessage = ({ item }) => (
-        <View style={styles.messageItem}>
-            <Text style={styles.messageType}>{item.type}: {item.tool}</Text>
-            <Text style={styles.messageContent}>{item.result}</Text>
-        </View>
-    );
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.header}>MCP Mobile Assistant</Text>
-            
-            <TextInput
-                style={styles.input}
-                placeholder="Enter input for tools..."
-                value={inputText}
-                onChangeText={setInputText}
-            />
-            
-            <Text style={styles.sectionHeader}>Available Tools:</Text>
-            <FlatList
-                data={tools}
-                renderItem={renderTool}
-                keyExtractor={item => item.name}
-                style={styles.toolsList}
-            />
-            
-            <Text style={styles.sectionHeader}>Results:</Text>
-            <FlatList
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={(item, index) => index.toString()}
-                style={styles.messagesList}
-            />
-        </View>
-    );
-};
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#f5f5f5'
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        padding: 10,
-        marginBottom: 20,
-        backgroundColor: 'white'
-    },
-    sectionHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10
-    },
-    toolsList: {
-        maxHeight: 200,
-        marginBottom: 20
-    },
-    toolItem: {
-        backgroundColor: 'white',
-        padding: 15,
-        marginBottom: 5,
-        borderRadius: 5
-    },
-    toolName: {
-        fontSize: 16,
-        fontWeight: 'bold'
-    },
-    toolDescription: {
-        fontSize: 14,
-        color: '#666'
-    },
-    messagesList: {
-        flex: 1
-    },
-    messageItem: {
-        backgroundColor: 'white',
-        padding: 10,
-        marginBottom: 5,
-        borderRadius: 5
-    },
-    messageType: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#333'
-    },
-    messageContent: {
-        fontSize: 12,
-        fontFamily: 'monospace',
-        marginTop: 5
-    }
-});
-
-export default App;
 ```
 
 ## Best Practices for Integration
 
-### 1. Error Handling
-
-Always implement robust error handling:
+### 1. Error Handling and Resilience
 
 ```javascript
 class RobustMcpClient {
@@ -1035,66 +711,65 @@ class RobustMcpClient {
         this.serverUrl = serverUrl;
         this.retryAttempts = 3;
         this.retryDelay = 1000;
+        this.circuitBreaker = {
+            failures: 0,
+            threshold: 5,
+            timeout: 30000,
+            lastFailure: null
+        };
     }
 
     async callToolWithRetry(toolName, params, attempt = 1) {
         try {
-            return await this.callTool(toolName, params);
+            // Check circuit breaker
+            if (this.isCircuitOpen()) {
+                throw new Error('Circuit breaker is open');
+            }
+            
+            const result = await this.callTool(toolName, params);
+            
+            // Reset circuit breaker on success
+            this.circuitBreaker.failures = 0;
+            return result;
+            
         } catch (error) {
+            this.circuitBreaker.failures++;
+            this.circuitBreaker.lastFailure = Date.now();
+            
             if (attempt < this.retryAttempts) {
                 console.log(`Attempt ${attempt} failed, retrying...`);
                 await this.delay(this.retryDelay * attempt);
                 return await this.callToolWithRetry(toolName, params, attempt + 1);
             }
+            
             throw error;
         }
+    }
+
+    isCircuitOpen() {
+        if (this.circuitBreaker.failures >= this.circuitBreaker.threshold) {
+            const timeSinceLastFailure = Date.now() - this.circuitBreaker.lastFailure;
+            return timeSinceLastFailure < this.circuitBreaker.timeout;
+        }
+        return false;
     }
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-}
-```
 
-### 2. Connection Management
-
-Implement proper connection lifecycle management:
-
-```javascript
-class ManagedMcpClient {
-    constructor(serverUrl) {
-        this.serverUrl = serverUrl;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.reconnectDelay = 2000;
-    }
-
-    async connect() {
+    async callToolWithFallback(toolName, params, fallbackFn) {
         try {
-            await this.establishConnection();
-            this.reconnectAttempts = 0;
+            return await this.callToolWithRetry(toolName, params);
         } catch (error) {
-            await this.handleConnectionError(error);
-        }
-    }
-
-    async handleConnectionError(error) {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`Connection failed, attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-            
-            await this.delay(this.reconnectDelay);
-            await this.connect();
-        } else {
-            throw new Error(`Failed to connect after ${this.maxReconnectAttempts} attempts`);
+            console.warn(`Tool ${toolName} failed, using fallback:`, error.message);
+            return await fallbackFn(params);
         }
     }
 }
 ```
 
-### 3. Performance Optimization
-
-Implement caching and batching:
+### 2. Performance Optimization
 
 ```javascript
 class OptimizedMcpClient {
@@ -1103,6 +778,7 @@ class OptimizedMcpClient {
         this.cache = new Map();
         this.batchQueue = [];
         this.batchTimeout = null;
+        this.requestPool = new Map();
     }
 
     async callToolCached(toolName, params, ttl = 60000) {
@@ -1141,14 +817,186 @@ class OptimizedMcpClient {
         this.batchTimeout = null;
         
         // Process batch efficiently
-        for (const item of batch) {
+        const promises = batch.map(async (item) => {
             try {
                 const result = await this.callTool(item.toolName, item.params);
                 item.resolve(result);
             } catch (error) {
                 item.reject(error);
             }
+        });
+        
+        await Promise.allSettled(promises);
+    }
+
+    // Request pooling for identical requests
+    async callToolPooled(toolName, params) {
+        const requestKey = `${toolName}:${JSON.stringify(params)}`;
+        
+        if (this.requestPool.has(requestKey)) {
+            return await this.requestPool.get(requestKey);
         }
+        
+        const promise = this.callTool(toolName, params);
+        this.requestPool.set(requestKey, promise);
+        
+        try {
+            const result = await promise;
+            this.requestPool.delete(requestKey);
+            return result;
+        } catch (error) {
+            this.requestPool.delete(requestKey);
+            throw error;
+        }
+    }
+}
+```
+
+### 3. Connection Management
+
+```javascript
+class ManagedMcpClient {
+    constructor(serverUrl) {
+        this.serverUrl = serverUrl;
+        this.connection = null;
+        this.connectionState = 'disconnected';
+        this.heartbeatInterval = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 2000;
+        this.listeners = new Map();
+    }
+
+    async connect() {
+        if (this.connectionState === 'connected') {
+            return;
+        }
+        
+        this.connectionState = 'connecting';
+        
+        try {
+            this.connection = new WebSocket(this.serverUrl);
+            
+            this.connection.onopen = () => {
+                this.connectionState = 'connected';
+                this.reconnectAttempts = 0;
+                this.startHeartbeat();
+                this.emit('connected');
+            };
+            
+            this.connection.onclose = () => {
+                this.connectionState = 'disconnected';
+                this.stopHeartbeat();
+                this.emit('disconnected');
+                this.handleReconnection();
+            };
+            
+            this.connection.onerror = (error) => {
+                this.emit('error', error);
+            };
+            
+            this.connection.onmessage = (event) => {
+                this.handleMessage(JSON.parse(event.data));
+            };
+            
+        } catch (error) {
+            this.connectionState = 'disconnected';
+            throw error;
+        }
+    }
+
+    startHeartbeat() {
+        this.heartbeatInterval = setInterval(() => {
+            if (this.connection && this.connection.readyState === WebSocket.OPEN) {
+                this.ping();
+            }
+        }, 30000); // 30 second heartbeat
+    }
+
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    }
+
+    async ping() {
+        try {
+            await this.sendRequest('ping');
+        } catch (error) {
+            console.warn('Heartbeat failed:', error);
+        }
+    }
+
+    async handleReconnection() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+            
+            console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+            
+            setTimeout(() => {
+                this.connect();
+            }, delay);
+        } else {
+            this.emit('maxReconnectAttemptsReached');
+        }
+    }
+
+    on(event, listener) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, []);
+        }
+        this.listeners.get(event).push(listener);
+    }
+
+    emit(event, ...args) {
+        const eventListeners = this.listeners.get(event);
+        if (eventListeners) {
+            eventListeners.forEach(listener => {
+                try {
+                    listener(...args);
+                } catch (error) {
+                    console.error('Event listener error:', error);
+                }
+            });
+        }
+    }
+
+    async waitForConnection() {
+        if (this.connectionState === 'connected') {
+            return;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Connection timeout'));
+            }, 10000);
+            
+            const onConnected = () => {
+                clearTimeout(timeout);
+                resolve();
+            };
+            
+            const onError = (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            };
+            
+            this.on('connected', onConnected);
+            this.on('error', onError);
+        });
+    }
+
+    async disconnect() {
+        this.stopHeartbeat();
+        
+        if (this.connection) {
+            this.connection.close();
+            this.connection = null;
+        }
+        
+        this.connectionState = 'disconnected';
     }
 }
 ```
@@ -1170,11 +1018,12 @@ describe('McpClient', () => {
             onopen: null,
             onmessage: null,
             onerror: null,
-            onclose: null
+            onclose: null,
+            readyState: WebSocket.OPEN
         };
         
         global.WebSocket = jest.fn(() => mockWebSocket);
-        client = new McpClient('ws://localhost:8080');
+        client = new McpWebSocketClient('ws://localhost:8080');
     });
 
     test('should connect and initialize', async () => {
@@ -1214,40 +1063,261 @@ describe('McpClient', () => {
         const result = await toolCallPromise;
         expect(result).toEqual({ success: true, data: 'test result' });
     });
+
+    test('should handle errors gracefully', async () => {
+        await client.connect();
+        
+        const toolCallPromise = client.callTool('failing_tool', {});
+        
+        // Simulate error response
+        mockWebSocket.onmessage({
+            data: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 2,
+                error: { message: 'Tool execution failed' }
+            })
+        });
+        
+        await expect(toolCallPromise).rejects.toThrow('Tool execution failed');
+    });
+
+    test('should handle disconnection and reconnection', async () => {
+        const reconnectSpy = jest.spyOn(client, 'handleDisconnection');
+        
+        await client.connect();
+        
+        // Simulate disconnection
+        mockWebSocket.onclose({ code: 1000, reason: 'Normal closure' });
+        
+        expect(reconnectSpy).toHaveBeenCalled();
+    });
 });
 ```
 
 ### 2. Integration Tests
 
-```javascript
-describe('MCP Integration', () => {
-    let server;
-    let client;
+```python
+# pytest integration test example
+import pytest
+import asyncio
+from mcp_client import McpPythonClient
 
-    beforeAll(async () => {
-        // Start test MCP server
-        server = await startTestMcpServer();
-        client = new McpClient(server.url);
-        await client.connect();
-    });
+@pytest.fixture
+async def mcp_client():
+    client = McpPythonClient('ws://localhost:8080/mcp')
+    await client.connect()
+    yield client
+    await client.disconnect()
 
-    afterAll(async () => {
-        await client.disconnect();
-        await server.stop();
-    });
+@pytest.mark.asyncio
+async def test_list_tools(mcp_client):
+    tools = await mcp_client.list_tools()
+    assert isinstance(tools, list)
+    assert len(tools) > 0
+    
+    # Check tool structure
+    tool = tools[0]
+    assert 'name' in tool
+    assert 'description' in tool
+    assert 'inputSchema' in tool
 
-    test('should list available tools', async () => {
-        const tools = await client.listTools();
-        expect(tools).toBeInstanceOf(Array);
-        expect(tools.length).toBeGreaterThan(0);
-    });
+@pytest.mark.asyncio
+async def test_call_tool_end_to_end(mcp_client):
+    # Get available tools
+    tools = await mcp_client.list_tools()
+    assert len(tools) > 0
+    
+    # Call the first tool
+    tool_name = tools[0]['name']
+    result = await mcp_client.call_tool(tool_name, {
+        'test_param': 'test_value'
+    })
+    
+    assert result is not None
 
-    test('should execute tools end-to-end', async () => {
-        const result = await client.callTool('echo', { message: 'hello' });
-        expect(result.message).toBe('hello');
-    });
-});
+@pytest.mark.asyncio
+async def test_resource_operations(mcp_client):
+    # List resources
+    resources = await mcp_client.list_resources()
+    
+    if resources:
+        # Read the first resource
+        resource_uri = resources[0]['uri']
+        content = await mcp_client.read_resource(resource_uri)
+        assert content is not None
+
+@pytest.mark.asyncio
+async def test_error_handling(mcp_client):
+    # Test calling non-existent tool
+    with pytest.raises(Exception) as exc_info:
+        await mcp_client.call_tool('non_existent_tool', {})
+    
+    assert 'not found' in str(exc_info.value).lower()
+
+@pytest.mark.asyncio
+async def test_connection_resilience():
+    # Test reconnection behavior
+    client = McpPythonClient('ws://localhost:8080/mcp')
+    
+    # Initial connection
+    await client.connect()
+    tools_before = await client.list_tools()
+    
+    # Simulate disconnection and reconnection
+    await client.disconnect()
+    await asyncio.sleep(1)
+    await client.connect()
+    
+    # Verify functionality after reconnection
+    tools_after = await client.list_tools()
+    assert tools_before == tools_after
+    
+    await client.disconnect()
 ```
+
+## Deployment Considerations
+
+### 1. Security
+
+- **Authentication**: Implement proper authentication mechanisms
+- **Authorization**: Control access to sensitive tools and resources
+- **Input validation**: Validate all parameters before sending to MCP server
+- **Network security**: Use secure connections (WSS/HTTPS)
+- **Rate limiting**: Implement client-side rate limiting
+
+### 2. Monitoring
+
+```javascript
+class MonitoredMcpClient extends McpWebSocketClient {
+    constructor(serverUrl, options = {}) {
+        super(serverUrl);
+        this.metrics = {
+            totalRequests: 0,
+            successfulRequests: 0,
+            failedRequests: 0,
+            avgResponseTime: 0,
+            connectionUptime: 0
+        };
+        this.logger = options.logger || console;
+    }
+
+    async callTool(toolName, params) {
+        const startTime = Date.now();
+        this.metrics.totalRequests++;
+        
+        try {
+            const result = await super.callTool(toolName, params);
+            
+            this.metrics.successfulRequests++;
+            this.updateResponseTime(Date.now() - startTime);
+            
+            this.logger.info(`Tool ${toolName} executed successfully`, {
+                duration: Date.now() - startTime,
+                params: Object.keys(params)
+            });
+            
+            return result;
+            
+        } catch (error) {
+            this.metrics.failedRequests++;
+            
+            this.logger.error(`Tool ${toolName} failed`, {
+                error: error.message,
+                duration: Date.now() - startTime,
+                params: Object.keys(params)
+            });
+            
+            throw error;
+        }
+    }
+
+    updateResponseTime(duration) {
+        const totalResponses = this.metrics.successfulRequests;
+        this.metrics.avgResponseTime = 
+            ((this.metrics.avgResponseTime * (totalResponses - 1)) + duration) / totalResponses;
+    }
+
+    getMetrics() {
+        return {
+            ...this.metrics,
+            successRate: this.metrics.totalRequests > 0 
+                ? (this.metrics.successfulRequests / this.metrics.totalRequests) * 100 
+                : 0
+        };
+    }
+}
+```
+
+### 3. Configuration Management
+
+```python
+class ConfigurableMcpClient:
+    def __init__(self, config_path: str = None):
+        self.config = self.load_config(config_path)
+        self.client = McpPythonClient(
+            self.config['server_url'],
+            transport=self.config.get('transport', 'websocket')
+        )
+
+    def load_config(self, config_path: str = None) -> dict:
+        import os
+        import json
+        
+        # Default configuration
+        default_config = {
+            'server_url': 'ws://localhost:8080/mcp',
+            'transport': 'websocket',
+            'timeout': 30,
+            'retry_attempts': 3,
+            'retry_delay': 1.0,
+            'enable_caching': True,
+            'cache_ttl': 300,
+            'enable_metrics': True
+        }
+        
+        # Load from file if provided
+        if config_path and os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                file_config = json.load(f)
+                default_config.update(file_config)
+        
+        # Override with environment variables
+        env_overrides = {
+            'MCP_SERVER_URL': 'server_url',
+            'MCP_TRANSPORT': 'transport',
+            'MCP_TIMEOUT': 'timeout',
+            'MCP_RETRY_ATTEMPTS': 'retry_attempts'
+        }
+        
+        for env_var, config_key in env_overrides.items():
+            if os.environ.get(env_var):
+                default_config[config_key] = os.environ[env_var]
+        
+        return default_config
+
+    async def connect(self):
+        await self.client.connect()
+
+    async def call_tool(self, tool_name: str, params: dict):
+        return await self.client.call_tool(tool_name, params)
+```
+
+## Next Steps
+
+1. **Choose the appropriate integration pattern** for your use case
+2. **Implement proper error handling and resilience** patterns
+3. **Add monitoring and metrics** to track performance
+4. **Test thoroughly** with unit and integration tests
+5. **Deploy with proper security considerations**
+6. **Monitor and optimize** based on real-world usage
+
+## Resources
+
+- [🖥️ Claude Desktop Integration](./claude-desktop.md) - Complete desktop integration
+- [⚡ Cursor IDE Integration](./cursor.md) - IDE integration patterns
+- [🚀 Getting Started](../getting-started.md) - Basic server development
+- [📖 Implementation Guide](../implementation-guide.md) - Complete development guide
+- [🔧 Examples](../../examples/) - Working example projects
 
 Your MCP servers can now integrate with any AI client or development tool! 🚀
 

@@ -1,6 +1,6 @@
 # 📖 API Reference
 
-Complete API documentation for the MCP Protocol SDK.
+Complete API documentation for the MCP Protocol SDK v0.5.0.
 
 ## Core Types
 
@@ -15,40 +15,116 @@ pub struct McpServer {
 
 impl McpServer {
     /// Create a new MCP server
-    pub fn new(name: &str, version: &str) -> Self
+    pub fn new(name: String, version: String) -> Self
     
-    /// Create a server with description
-    pub fn with_description(mut self, description: &str) -> Self
+    /// Create a server with custom configuration  
+    pub fn with_config(name: String, version: String, config: ServerConfig) -> Self
+    
+    /// Set server capabilities
+    pub fn set_capabilities(&mut self, capabilities: ServerCapabilities)
+    
+    /// Get server information
+    pub fn info(&self) -> &ServerInfo
+    
+    /// Get server capabilities
+    pub fn capabilities(&self) -> &ServerCapabilities
     
     /// Add a tool to the server
-    pub fn add_tool(&mut self, tool: Tool) -> &mut Self
+    pub async fn add_tool<H>(
+        &self,
+        name: String,
+        description: Option<String>,
+        schema: Value,
+        handler: H,
+    ) -> McpResult<()>
+    where
+        H: ToolHandler + 'static
+    
+    /// Add a tool with detailed information
+    pub async fn add_tool_detailed<H>(
+        &self, 
+        info: ToolInfo, 
+        handler: H
+    ) -> McpResult<()>
+    where
+        H: ToolHandler + 'static
+    
+    /// Remove a tool from the server
+    pub async fn remove_tool(&self, name: &str) -> McpResult<bool>
+    
+    /// List all registered tools
+    pub async fn list_tools(&self) -> McpResult<Vec<ToolInfo>>
+    
+    /// Call a tool
+    pub async fn call_tool(
+        &self,
+        name: &str,
+        arguments: Option<HashMap<String, Value>>,
+    ) -> McpResult<ToolResult>
     
     /// Add a resource to the server
-    pub fn add_resource(&mut self, resource: Resource) -> &mut Self
+    pub async fn add_resource<H>(
+        &self, 
+        name: String, 
+        uri: String, 
+        handler: H
+    ) -> McpResult<()>
+    where
+        H: ResourceHandler + 'static
+    
+    /// Add a resource with detailed information
+    pub async fn add_resource_detailed<H>(
+        &self, 
+        info: ResourceInfo, 
+        handler: H
+    ) -> McpResult<()>
+    where
+        H: ResourceHandler + 'static
+    
+    /// Remove a resource from the server
+    pub async fn remove_resource(&self, uri: &str) -> McpResult<bool>
+    
+    /// List all registered resources
+    pub async fn list_resources(&self) -> McpResult<Vec<ResourceInfo>>
+    
+    /// Read a resource
+    pub async fn read_resource(&self, uri: &str) -> McpResult<Vec<ResourceContents>>
     
     /// Add a prompt to the server
-    pub fn add_prompt(&mut self, prompt: Prompt) -> &mut Self
-    
-    /// Set a tool handler
-    pub fn set_tool_handler<F, Fut>(&mut self, name: &str, handler: F)
+    pub async fn add_prompt<H>(
+        &self, 
+        info: PromptInfo, 
+        handler: H
+    ) -> McpResult<()>
     where
-        F: Fn(HashMap<String, Value>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = Result<Value, String>> + Send + 'static
+        H: PromptHandler + 'static
     
-    /// Set a resource handler
-    pub fn set_resource_handler<F, Fut>(&mut self, uri_pattern: &str, handler: F)
+    /// Remove a prompt from the server
+    pub async fn remove_prompt(&self, name: &str) -> McpResult<bool>
+    
+    /// List all registered prompts
+    pub async fn list_prompts(&self) -> McpResult<Vec<PromptInfo>>
+    
+    /// Get a prompt
+    pub async fn get_prompt(
+        &self,
+        name: &str,
+        arguments: Option<HashMap<String, Value>>,
+    ) -> McpResult<PromptResult>
+    
+    /// Start the server with the given transport
+    pub async fn start<T>(&mut self, transport: T) -> McpResult<()>
     where
-        F: Fn(&str) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = Result<ResourceContent, String>> + Send + 'static
+        T: ServerTransport + 'static
     
-    /// Set a prompt handler
-    pub fn set_prompt_handler<F, Fut>(&mut self, name: &str, handler: F)
-    where
-        F: Fn(HashMap<String, Value>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = Result<PromptMessage, String>> + Send + 'static
+    /// Stop the server
+    pub async fn stop(&self) -> McpResult<()>
     
-    /// Run the server with a transport
-    pub async fn run<T: Transport>(self, transport: T) -> Result<(), McpError>
+    /// Check if the server is running
+    pub async fn is_running(&self) -> bool
+    
+    /// Get the current server state
+    pub async fn state(&self) -> ServerState
 }
 ```
 
@@ -62,369 +138,544 @@ pub struct McpClient {
 }
 
 impl McpClient {
-    /// Create a new client
-    pub fn new() -> ClientBuilder
+    /// Create a new MCP client
+    pub fn new(name: String, version: String) -> Self
     
-    /// Connect to a server
-    pub async fn connect<T: Transport>(&self, transport: T) -> Result<(), McpError>
+    /// Create a client with custom configuration
+    pub fn with_config(name: String, version: String, config: ClientConfig) -> Self
     
-    /// Initialize the connection
-    pub async fn initialize(&self) -> Result<InitializeResult, McpError>
+    /// Set client capabilities
+    pub fn set_capabilities(&mut self, capabilities: ClientCapabilities)
     
-    /// List available tools
-    pub async fn list_tools(&self) -> Result<Vec<ToolInfo>, McpError>
+    /// Get client information
+    pub fn info(&self) -> &ClientInfo
     
-    /// Call a tool
-    pub async fn call_tool(&self, name: &str, params: Value) -> Result<Value, McpError>
+    /// Get client capabilities
+    pub fn capabilities(&self) -> &ClientCapabilities
     
-    /// List available resources
-    pub async fn list_resources(&self) -> Result<Vec<ResourceInfo>, McpError>
+    /// Get server capabilities (if connected)
+    pub async fn server_capabilities(&self) -> Option<ServerCapabilities>
     
-    /// Read a resource
-    pub async fn read_resource(&self, uri: &str) -> Result<ResourceContent, McpError>
+    /// Get server information (if connected)
+    pub async fn server_info(&self) -> Option<ServerInfo>
     
-    /// List available prompts
-    pub async fn list_prompts(&self) -> Result<Vec<PromptInfo>, McpError>
+    /// Check if the client is connected
+    pub async fn is_connected(&self) -> bool
     
-    /// Get a prompt
-    pub async fn get_prompt(&self, name: &str, params: Value) -> Result<PromptMessage, McpError>
+    /// Connect to an MCP server using the provided transport
+    pub async fn connect<T>(&mut self, transport: T) -> McpResult<InitializeResult>
+    where
+        T: Transport + 'static
+    
+    /// Disconnect from the server
+    pub async fn disconnect(&self) -> McpResult<()>
 }
 ```
 
 ## Tool System
 
-### Tool
+### ToolHandler Trait
 
-Define tools that AI models can call.
+**Required trait for all tool implementations:**
+
+```rust
+#[async_trait]
+pub trait ToolHandler: Send + Sync {
+    /// Execute the tool with the given arguments
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult>;
+}
+```
+
+### Tool Struct
+
+Represents a registered tool with its handler and metadata:
 
 ```rust
 pub struct Tool {
-    pub name: String,
-    pub description: String,
-    pub parameters: Vec<ToolParameter>,
+    pub info: ToolInfo,
+    pub handler: Box<dyn ToolHandler>,
+    pub enabled: bool,
+    pub validator: Option<ParameterValidator>,
+    pub enhanced_metadata: EnhancedToolMetadata,
 }
 
 impl Tool {
-    /// Create a new tool
-    pub fn new(name: &str, description: &str) -> Self
+    /// Create a new tool with the given information and handler
+    pub fn new<H>(
+        name: String,
+        description: Option<String>,
+        input_schema: Value,
+        handler: H,
+    ) -> Self
+    where
+        H: ToolHandler + 'static
     
-    /// Add a parameter to the tool
-    pub fn with_parameter(mut self, name: &str, description: &str, required: bool) -> Self
+    /// Create a tool with custom validation configuration
+    pub fn with_validation<H>(
+        name: String,
+        description: Option<String>,
+        input_schema: Value,
+        handler: H,
+        validation_config: ValidationConfig,
+    ) -> Self
+    where
+        H: ToolHandler + 'static
     
-    /// Add a typed parameter
-    pub fn with_typed_parameter(mut self, param: ToolParameter) -> Self
-}
-
-pub struct ToolParameter {
-    pub name: String,
-    pub description: String,
-    pub parameter_type: ParameterType,
-    pub required: bool,
-    pub default_value: Option<Value>,
-}
-
-pub enum ParameterType {
-    String,
-    Number,
-    Boolean,
-    Array,
-    Object,
+    /// Enable the tool
+    pub fn enable(&mut self)
+    
+    /// Disable the tool
+    pub fn disable(&mut self)
+    
+    /// Check if the tool is enabled
+    pub fn is_enabled(&self) -> bool
+    
+    /// Execute the tool if it's enabled
+    pub async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult>
+    
+    /// Execute without validation (for advanced use cases)
+    pub async fn call_unchecked(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult>
+    
+    /// Validate parameters without executing
+    pub fn validate_parameters(&self, arguments: &mut HashMap<String, Value>) -> McpResult<()>
 }
 ```
 
-### Tool Handler
+### ToolBuilder
+
+Fluent API for creating tools with advanced features:
 
 ```rust
-pub type ToolHandler = Box<dyn Fn(HashMap<String, Value>) -> Pin<Box<dyn Future<Output = Result<Value, String>> + Send>> + Send + Sync>;
-```
-
-### Tool Call Result
-
-```rust
-pub struct ToolCallResult {
-    pub content: Vec<Content>,
-    pub is_error: bool,
+pub struct ToolBuilder {
+    // Internal fields...
 }
 
-pub enum Content {
-    Text(TextContent),
-    Image(ImageContent),
-    Resource(ResourceContent),
-}
-
-pub struct TextContent {
-    pub text: String,
-    pub mime_type: Option<String>,
+impl ToolBuilder {
+    /// Create a new tool builder
+    pub fn new<S: Into<String>>(name: S) -> Self
+    
+    /// Set the tool description
+    pub fn description<S: Into<String>>(self, description: S) -> Self
+    
+    /// Set the tool title (for UI display)
+    pub fn title<S: Into<String>>(self, title: S) -> Self
+    
+    /// Set the input schema
+    pub fn schema(self, schema: Value) -> Self
+    
+    /// Set custom validation configuration
+    pub fn validation_config(self, config: ValidationConfig) -> Self
+    
+    /// Enable strict validation
+    pub fn strict_validation(self) -> Self
+    
+    /// Enable permissive validation
+    pub fn permissive_validation(self) -> Self
+    
+    /// Set behavior hints
+    pub fn behavior_hints(self, hints: ToolBehaviorHints) -> Self
+    
+    /// Mark tool as read-only
+    pub fn read_only(self) -> Self
+    
+    /// Mark tool as destructive
+    pub fn destructive(self) -> Self
+    
+    /// Mark tool as idempotent
+    pub fn idempotent(self) -> Self
+    
+    /// Mark tool as requiring authentication
+    pub fn requires_auth(self) -> Self
+    
+    /// Mark tool as potentially long-running
+    pub fn long_running(self) -> Self
+    
+    /// Mark tool as resource-intensive
+    pub fn resource_intensive(self) -> Self
+    
+    /// Mark tool results as cacheable
+    pub fn cacheable(self) -> Self
+    
+    /// Set tool category
+    pub fn category(self, category: ToolCategory) -> Self
+    
+    /// Set tool version
+    pub fn version<S: Into<String>>(self, version: S) -> Self
+    
+    /// Set tool author
+    pub fn author<S: Into<String>>(self, author: S) -> Self
+    
+    /// Mark tool as deprecated
+    pub fn deprecated(self, deprecation: ToolDeprecation) -> Self
+    
+    /// Add custom metadata field
+    pub fn custom_metadata<S: Into<String>>(self, key: S, value: serde_json::Value) -> Self
+    
+    /// Build the tool with the given handler
+    pub fn build<H>(self, handler: H) -> McpResult<Tool>
+    where
+        H: ToolHandler + 'static
 }
 ```
 
 ## Resource System
 
-### Resource
+### ResourceHandler Trait
 
-Define resources that can be accessed.
+**Required trait for resource implementations:**
+
+```rust
+#[async_trait]
+pub trait ResourceHandler: Send + Sync {
+    /// Read resource content
+    async fn read(&self, uri: &str, params: &HashMap<String, String>) -> McpResult<Vec<ResourceContents>>;
+    
+    /// List available resources
+    async fn list(&self) -> McpResult<Vec<ResourceInfo>>;
+}
+```
+
+### Resource Struct
 
 ```rust
 pub struct Resource {
-    pub uri: String,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub mime_type: Option<String>,
+    pub info: ResourceInfo,
+    pub handler: Box<dyn ResourceHandler>,
 }
 
 impl Resource {
     /// Create a new resource
-    pub fn new(uri: &str, name: &str, mime_type: &str) -> Self
-    
-    /// Set resource description
-    pub fn with_description(mut self, description: &str) -> Self
-    
-    /// Set MIME type
-    pub fn with_mime_type(mut self, mime_type: &str) -> Self
-}
-```
-
-### Resource Content
-
-```rust
-pub enum ResourceContent {
-    Text(String),
-    Binary(Vec<u8>),
-}
-
-impl ResourceContent {
-    /// Get content as text
-    pub fn as_text(&self) -> Option<&str>
-    
-    /// Get content as bytes
-    pub fn as_bytes(&self) -> &[u8]
-    
-    /// Convert to string if possible
-    pub fn to_string(&self) -> Result<String, std::str::Utf8Error>
+    pub fn new<H>(info: ResourceInfo, handler: H) -> Self
+    where
+        H: ResourceHandler + 'static
 }
 ```
 
 ## Prompt System
 
-### Prompt
+### PromptHandler Trait
 
-Define reusable prompt templates.
+**Required trait for prompt implementations:**
+
+```rust
+#[async_trait]
+pub trait PromptHandler: Send + Sync {
+    /// Generate prompt content
+    async fn get(&self, arguments: HashMap<String, Value>) -> McpResult<PromptResult>;
+}
+```
+
+### Prompt Struct
 
 ```rust
 pub struct Prompt {
-    pub name: String,
-    pub description: Option<String>,
-    pub parameters: Vec<PromptParameter>,
+    pub info: PromptInfo,
+    pub handler: Box<dyn PromptHandler>,
 }
 
 impl Prompt {
     /// Create a new prompt
-    pub fn new(name: &str, description: &str) -> Self
-    
-    /// Add a parameter
-    pub fn with_parameter(mut self, name: &str, description: &str, required: bool) -> Self
-}
-
-pub struct PromptParameter {
-    pub name: String,
-    pub description: String,
-    pub required: bool,
-}
-```
-
-### Prompt Message
-
-```rust
-pub struct PromptMessage {
-    pub role: MessageRole,
-    pub content: MessageContent,
-}
-
-pub enum MessageRole {
-    User,
-    Assistant,
-    System,
-}
-
-pub enum MessageContent {
-    Text(String),
-    Mixed(Vec<ContentPart>),
-}
-
-pub enum ContentPart {
-    Text(String),
-    Image(ImageContent),
+    pub fn new<H>(info: PromptInfo, handler: H) -> Self
+    where
+        H: PromptHandler + 'static
 }
 ```
 
 ## Transport Layer
 
-### Transport Trait
+### Transport Trait (Client)
 
 ```rust
+#[async_trait]
 pub trait Transport: Send + Sync {
-    type Error: std::error::Error + Send + Sync + 'static;
+    /// Send a JSON-RPC request and wait for a response
+    async fn send_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse>;
     
-    /// Send a message
-    async fn send(&mut self, message: JsonRpcMessage) -> Result<(), Self::Error>;
+    /// Send a JSON-RPC notification
+    async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()>;
     
-    /// Receive a message
-    async fn receive(&mut self) -> Result<JsonRpcMessage, Self::Error>;
+    /// Receive a notification from the server
+    async fn receive_notification(&mut self) -> McpResult<Option<JsonRpcNotification>>;
     
-    /// Close the transport
-    async fn close(&mut self) -> Result<(), Self::Error>;
+    /// Close the transport connection
+    async fn close(&mut self) -> McpResult<()>;
+    
+    /// Check if the transport is connected
+    fn is_connected(&self) -> bool;
+    
+    /// Get connection information
+    fn connection_info(&self) -> String;
 }
 ```
+
+### ServerTransport Trait
+
+```rust
+#[async_trait]
+pub trait ServerTransport: Send + Sync {
+    /// Start the server transport
+    async fn start(&mut self) -> McpResult<()>;
+    
+    /// Set the request handler
+    fn set_request_handler(&mut self, handler: ServerRequestHandler);
+    
+    /// Send a notification to the client
+    async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()>;
+    
+    /// Stop the server transport
+    async fn stop(&mut self) -> McpResult<()>;
+}
+```
+
+### TransportConfig
+
+Configuration options for transport implementations:
+
+```rust
+pub struct TransportConfig {
+    /// Connection timeout in milliseconds
+    pub connect_timeout_ms: Option<u64>,
+    /// Read timeout in milliseconds
+    pub read_timeout_ms: Option<u64>,
+    /// Write timeout in milliseconds
+    pub write_timeout_ms: Option<u64>,
+    /// Maximum message size in bytes
+    pub max_message_size: Option<usize>,
+    /// Keep-alive interval in milliseconds
+    pub keep_alive_ms: Option<u64>,
+    /// Whether to enable compression
+    pub compression: bool,
+    /// Custom headers for HTTP-based transports
+    pub headers: std::collections::HashMap<String, String>,
+}
+
+impl Default for TransportConfig {
+    fn default() -> Self {
+        Self {
+            connect_timeout_ms: Some(30_000),         // 30 seconds
+            read_timeout_ms: Some(60_000),            // 60 seconds
+            write_timeout_ms: Some(30_000),           // 30 seconds
+            max_message_size: Some(16 * 1024 * 1024), // 16 MB
+            keep_alive_ms: Some(30_000),              // 30 seconds
+            compression: false,
+            headers: std::collections::HashMap::new(),
+        }
+    }
+}
+```
+
+## Transport Implementations
 
 ### STDIO Transport
 
 ```rust
+// Server-side
 pub struct StdioServerTransport {
     // Internal fields...
 }
 
 impl StdioServerTransport {
-    /// Create a new STDIO transport
+    /// Create a new STDIO server transport
     pub fn new() -> Self
-    
-    /// Set buffer size
-    pub fn with_buffer_size(mut self, size: usize) -> Self
-    
-    /// Set timeout
-    pub fn with_timeout(mut self, timeout: Duration) -> Self
 }
 
+// Client-side
 pub struct StdioClientTransport {
     // Internal fields...
 }
 
 impl StdioClientTransport {
     /// Create a new STDIO client transport
-    pub fn new() -> Self
+    pub async fn new(command: String) -> McpResult<Self>
     
-    /// Create transport for external process
-    pub fn new_process(command: &str, args: &[&str]) -> Result<Self, std::io::Error>
+    /// Create with custom arguments
+    pub async fn with_args(command: String, args: Vec<String>) -> McpResult<Self>
 }
 ```
 
 ### HTTP Transport
 
 ```rust
-pub struct HttpServerTransport {
-    // Internal fields...
-}
-
-impl HttpServerTransport {
-    /// Create a new HTTP server transport
-    pub fn new(bind_addr: &str) -> Self
-    
-    /// Enable CORS
-    pub fn with_cors_enabled(mut self, enabled: bool) -> Self
-    
-    /// Set timeout
-    pub fn with_timeout(mut self, timeout: Duration) -> Self
-    
-    /// Set maximum connections
-    pub fn with_max_connections(mut self, max: usize) -> Self
-}
-
+// Client-side
 pub struct HttpClientTransport {
     // Internal fields...
 }
 
 impl HttpClientTransport {
     /// Create a new HTTP client transport
-    pub fn new(server_url: &str) -> Self
+    pub async fn new<S: AsRef<str>>(base_url: S, sse_url: Option<S>) -> McpResult<Self>
     
-    /// Set timeout
-    pub fn with_timeout(mut self, timeout: Duration) -> Self
+    /// Create with custom configuration
+    pub async fn with_config<S: AsRef<str>>(
+        base_url: S,
+        sse_url: Option<S>,
+        config: TransportConfig,
+    ) -> McpResult<Self>
+}
+
+// Server-side
+pub struct HttpServerTransport {
+    // Internal fields...
+}
+
+impl HttpServerTransport {
+    /// Create a new HTTP server transport
+    pub fn new<S: Into<String>>(bind_addr: S) -> Self
     
-    /// Set authentication token
-    pub fn with_auth_token(mut self, token: &str) -> Self
+    /// Create with custom configuration
+    pub fn with_config<S: Into<String>>(bind_addr: S, config: TransportConfig) -> Self
 }
 ```
 
 ### WebSocket Transport
 
 ```rust
-pub struct WebSocketServerTransport {
-    // Internal fields...
-}
-
-impl WebSocketServerTransport {
-    /// Create a new WebSocket server transport
-    pub fn new(bind_addr: &str) -> Self
-    
-    /// Set heartbeat interval
-    pub fn with_heartbeat_interval(mut self, interval: Duration) -> Self
-    
-    /// Set maximum connections
-    pub fn with_max_connections(mut self, max: usize) -> Self
-}
-
+// Client-side
 pub struct WebSocketClientTransport {
     // Internal fields...
 }
 
 impl WebSocketClientTransport {
     /// Create a new WebSocket client transport
-    pub fn new(server_url: &str) -> Self
+    pub async fn new<S: AsRef<str>>(url: S) -> McpResult<Self>
     
-    /// Set heartbeat interval
-    pub fn with_heartbeat_interval(mut self, interval: Duration) -> Self
+    /// Create with custom configuration
+    pub async fn with_config<S: AsRef<str>>(url: S, config: TransportConfig) -> McpResult<Self>
+}
+
+// Server-side
+pub struct WebSocketServerTransport {
+    // Internal fields...
+}
+
+impl WebSocketServerTransport {
+    /// Create a new WebSocket server transport
+    pub fn new<S: Into<String>>(bind_addr: S) -> Self
+    
+    /// Create with custom configuration
+    pub fn with_config<S: Into<String>>(bind_addr: S, config: TransportConfig) -> Self
 }
 ```
 
 ## Protocol Types
 
-### JSON-RPC Messages
+### Core MCP Types
 
 ```rust
-pub struct JsonRpcRequest {
-    pub jsonrpc: String,
-    pub id: Value,
-    pub method: String,
-    pub params: Option<Value>,
+// Server information
+pub struct ServerInfo {
+    pub name: String,
+    pub version: String,
+    pub title: Option<String>,
 }
 
-pub struct JsonRpcResponse {
-    pub jsonrpc: String,
-    pub id: Value,
-    pub result: Option<Value>,
-    pub error: Option<JsonRpcError>,
-}
-
-pub struct JsonRpcNotification {
-    pub jsonrpc: String,
-    pub method: String,
-    pub params: Option<Value>,
-}
-
-pub struct JsonRpcError {
-    pub code: i32,
-    pub message: String,
-    pub data: Option<Value>,
-}
-```
-
-### MCP Protocol Messages
-
-```rust
-pub struct InitializeParams {
-    pub protocol_version: String,
-    pub capabilities: ClientCapabilities,
-    pub client_info: ClientInfo,
-}
-
-pub struct ClientCapabilities {
-    pub tools: Option<ToolCapabilities>,
-    pub resources: Option<ResourceCapabilities>,
-    pub prompts: Option<PromptCapabilities>,
-}
-
+// Client information
 pub struct ClientInfo {
     pub name: String,
     pub version: String,
+    pub title: Option<String>,
+}
+
+// Tool information
+pub struct ToolInfo {
+    pub name: String,
+    pub description: Option<String>,
+    pub input_schema: ToolInputSchema,
+    pub annotations: Option<Annotations>,
+    pub title: Option<String>,
+    pub meta: Option<serde_json::Map<String, serde_json::Value>>,
+}
+
+// Tool execution result
+pub struct ToolResult {
+    pub content: Vec<Content>,
+    pub is_error: Option<bool>,
+    pub structured_content: Option<serde_json::Value>,
+    pub meta: Option<serde_json::Map<String, serde_json::Value>>,
+}
+
+// Resource information
+pub struct ResourceInfo {
+    pub uri: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub mime_type: Option<String>,
+    pub annotations: Option<Annotations>,
+    pub size: Option<u64>,
+    pub title: Option<String>,
+    pub meta: Option<serde_json::Map<String, serde_json::Value>>,
+}
+
+// Resource contents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ResourceContents {
+    Text {
+        uri: String,
+        mime_type: Option<String>,
+        text: String,
+        meta: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    Blob {
+        uri: String,
+        mime_type: Option<String>,
+        blob: String, // Base64 encoded
+        meta: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+}
+
+// Content blocks
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Content {
+    Text {
+        text: String,
+        annotations: Option<Annotations>,
+        meta: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    Image {
+        data: String, // Base64 encoded
+        mime_type: String,
+        annotations: Option<Annotations>,
+        meta: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    Audio {
+        data: String, // Base64 encoded
+        mime_type: String,
+        annotations: Option<Annotations>,
+        meta: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+}
+
+impl Content {
+    /// Create text content
+    pub fn text<S: Into<String>>(text: S) -> Self {
+        Self::Text {
+            text: text.into(),
+            annotations: None,
+            meta: None,
+        }
+    }
+    
+    /// Create image content
+    pub fn image<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self::Image {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+            meta: None,
+        }
+    }
+    
+    /// Create audio content
+    pub fn audio<S: Into<String>>(data: S, mime_type: S) -> Self {
+        Self::Audio {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+            meta: None,
+        }
+    }
 }
 ```
 
@@ -433,395 +684,254 @@ pub struct ClientInfo {
 ### McpError
 
 ```rust
+#[derive(Debug, thiserror::Error)]
 pub enum McpError {
-    /// Transport-related errors
-    Transport(Box<dyn std::error::Error + Send + Sync>),
-    
-    /// Protocol-related errors
+    #[error("Protocol error: {0}")]
     Protocol(String),
     
-    /// JSON serialization/deserialization errors
-    Json(serde_json::Error),
+    #[error("Transport error: {0}")]
+    Transport(String),
     
-    /// Tool not found
+    #[error("Validation error: {0}")]
+    Validation(String),
+    
+    #[error("Tool not found: {0}")]
     ToolNotFound(String),
     
-    /// Resource not found
+    #[error("Resource not found: {0}")]
     ResourceNotFound(String),
     
-    /// Prompt not found
+    #[error("Prompt not found: {0}")]
     PromptNotFound(String),
     
-    /// Invalid parameters
-    InvalidParameters(String),
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
     
-    /// Timeout error
-    Timeout,
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
     
-    /// Connection error
-    Connection(String),
+    #[error("HTTP error: {0}")]
+    Http(String),
+    
+    #[error("WebSocket error: {0}")]
+    WebSocket(String),
+    
+    #[error("Timeout error: {0}")]
+    Timeout(String),
+    
+    #[error("Configuration error: {0}")]
+    Configuration(String),
+    
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
-impl std::error::Error for McpError {}
-
-impl std::fmt::Display for McpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            McpError::Transport(e) => write!(f, "Transport error: {}", e),
-            McpError::Protocol(msg) => write!(f, "Protocol error: {}", msg),
-            McpError::Json(e) => write!(f, "JSON error: {}", e),
-            McpError::ToolNotFound(name) => write!(f, "Tool not found: {}", name),
-            McpError::ResourceNotFound(uri) => write!(f, "Resource not found: {}", uri),
-            McpError::PromptNotFound(name) => write!(f, "Prompt not found: {}", name),
-            McpError::InvalidParameters(msg) => write!(f, "Invalid parameters: {}", msg),
-            McpError::Timeout => write!(f, "Request timeout"),
-            McpError::Connection(msg) => write!(f, "Connection error: {}", msg),
-        }
-    }
-}
-```
-
-## Validation
-
-### ValidationError
-
-```rust
-pub enum ValidationError {
-    /// Missing required field
-    MissingField(String),
-    
-    /// Invalid field type
-    InvalidType { field: String, expected: String, found: String },
-    
-    /// Invalid field value
-    InvalidValue { field: String, value: String, reason: String },
-    
-    /// Schema validation error
-    SchemaError(String),
-}
-
-/// Validation result type
-pub type ValidationResult<T> = Result<T, ValidationError>;
-```
-
-### Validators
-
-```rust
-pub trait Validator<T> {
-    fn validate(&self, value: &T) -> ValidationResult<()>;
-}
-
-pub struct ToolValidator;
-pub struct ResourceValidator;
-pub struct PromptValidator;
-pub struct MessageValidator;
-```
-
-## Utilities
-
-### URI Utilities
-
-```rust
-pub mod uri {
-    /// Parse a URI with parameters
-    pub fn parse_uri_with_params(uri: &str) -> Result<(String, HashMap<String, String>), String>
-    
-    /// Join URI components
-    pub fn join_uri(base: &str, path: &str) -> String
-    
-    /// Normalize a URI
-    pub fn normalize_uri(uri: &str) -> String
-    
-    /// Validate URI format
-    pub fn validate_uri(uri: &str) -> Result<(), String>
-    
-    /// Get file extension from URI
-    pub fn get_uri_extension(uri: &str) -> Option<String>
-    
-    /// Guess MIME type from URI
-    pub fn guess_mime_type(uri: &str) -> Option<String>
-    
-    /// Percent encode/decode
-    pub fn percent_encode(input: &str) -> String
-    pub fn percent_decode(input: &str) -> Result<String, String>
-}
-```
-
-## Builder Patterns
-
-### ServerBuilder
-
-```rust
-pub struct ServerBuilder {
-    // Internal fields...
-}
-
-impl ServerBuilder {
-    /// Set server name
-    pub fn name(mut self, name: &str) -> Self
-    
-    /// Set server version
-    pub fn version(mut self, version: &str) -> Self
-    
-    /// Set server description
-    pub fn description(mut self, description: &str) -> Self
-    
-    /// Set request timeout
-    pub fn timeout(mut self, timeout: Duration) -> Self
-    
-    /// Set maximum concurrent requests
-    pub fn max_concurrent_requests(mut self, max: usize) -> Self
-    
-    /// Set request size limit
-    pub fn request_size_limit(mut self, limit: usize) -> Self
-    
-    /// Build the server
-    pub fn build(self) -> McpServer
-}
-```
-
-### ClientBuilder
-
-```rust
-pub struct ClientBuilder {
-    // Internal fields...
-}
-
-impl ClientBuilder {
-    /// Set client name
-    pub fn name(mut self, name: &str) -> Self
-    
-    /// Set client version
-    pub fn version(mut self, version: &str) -> Self
-    
-    /// Set request timeout
-    pub fn timeout(mut self, timeout: Duration) -> Self
-    
-    /// Set retry configuration
-    pub fn retry_config(mut self, config: RetryConfig) -> Self
-    
-    /// Set connection pool size
-    pub fn connection_pool_size(mut self, size: usize) -> Self
-    
-    /// Build the client
-    pub fn build(self) -> McpClient
-}
-```
-
-## Configuration Types
-
-### RetryConfig
-
-```rust
-pub struct RetryConfig {
-    pub max_retries: usize,
-    pub initial_delay: Duration,
-    pub max_delay: Duration,
-    pub backoff_multiplier: f64,
-}
-
-impl Default for RetryConfig {
-    fn default() -> Self {
-        Self {
-            max_retries: 3,
-            initial_delay: Duration::from_millis(100),
-            max_delay: Duration::from_secs(5),
-            backoff_multiplier: 2.0,
-        }
-    }
-}
-```
-
-### TransportConfig
-
-```rust
-pub struct TransportConfig {
-    pub timeout: Duration,
-    pub buffer_size: usize,
-    pub keep_alive: bool,
-}
-
-impl Default for TransportConfig {
-    fn default() -> Self {
-        Self {
-            timeout: Duration::from_secs(30),
-            buffer_size: 8192,
-            keep_alive: true,
-        }
-    }
-}
-```
-
-## Feature Flags
-
-### Conditional Compilation
-
-```rust
-// HTTP transport (requires "http" feature)
-#[cfg(feature = "http")]
-pub mod http {
-    pub use crate::transport::http::*;
-}
-
-// WebSocket transport (requires "websocket" feature)
-#[cfg(feature = "websocket")]
-pub mod websocket {
-    pub use crate::transport::websocket::*;
-}
-
-// Validation utilities (requires "validation" feature)
-#[cfg(feature = "validation")]
-pub mod validation {
-    pub use crate::validation::*;
-}
-```
-
-## Testing Utilities
-
-### Mock Types
-
-```rust
-#[cfg(feature = "testing")]
-pub mod testing {
-    /// Mock server for testing clients
-    pub struct MockServer {
-        // Internal fields...
+impl McpError {
+    /// Create a validation error
+    pub fn validation<S: Into<String>>(msg: S) -> Self {
+        Self::Validation(msg.into())
     }
     
-    impl MockServer {
-        pub fn new() -> Self
-        
-        pub fn expect_tool_call(&mut self, name: &str) -> &mut ToolCallExpectation
-        
-        pub fn expect_resource_read(&mut self, uri: &str) -> &mut ResourceReadExpectation
-        
-        pub fn start(&mut self) -> MockTransport
-    }
-    
-    /// Mock client for testing servers
-    pub struct MockClient {
-        // Internal fields...
-    }
-    
-    impl MockClient {
-        pub fn new() -> Self
-        
-        pub async fn call_tool(&self, name: &str, params: Value) -> Result<Value, McpError>
-        
-        pub async fn read_resource(&self, uri: &str) -> Result<ResourceContent, McpError>
-    }
-    
-    /// Mock transport for testing
-    pub struct MockTransport {
-        // Internal fields...
+    /// Create an internal error
+    pub fn internal<S: Into<String>>(msg: S) -> Self {
+        Self::Internal(msg.into())
     }
 }
+
+/// Result type for MCP operations
+pub type McpResult<T> = Result<T, McpError>;
 ```
 
-## Prelude
+## Helper Utilities
 
-Common imports for convenience:
+### Parameter Extraction
 
 ```rust
-pub mod prelude {
-    // Core types
-    pub use crate::{McpServer, McpClient};
+/// Extension trait for easier parameter extraction
+pub trait ParameterExt {
+    /// Extract a required string parameter
+    fn get_string(&self, key: &str) -> McpResult<&str>;
     
-    // Tool system
-    pub use crate::core::tool::{Tool, ToolParameter, ParameterType};
+    /// Extract an optional string parameter
+    fn get_optional_string(&self, key: &str) -> Option<&str>;
     
-    // Resource system
-    pub use crate::core::resource::{Resource, ResourceContent};
+    /// Extract a required number parameter
+    fn get_number(&self, key: &str) -> McpResult<f64>;
     
-    // Prompt system
-    pub use crate::core::prompt::{Prompt, PromptMessage, MessageRole};
+    /// Extract an optional number parameter
+    fn get_optional_number(&self, key: &str) -> Option<f64>;
     
-    // Transport layer
-    pub use crate::transport::{Transport, StdioServerTransport, StdioClientTransport};
+    /// Extract a required integer parameter
+    fn get_integer(&self, key: &str) -> McpResult<i64>;
     
-    #[cfg(feature = "http")]
-    pub use crate::transport::{HttpServerTransport, HttpClientTransport};
+    /// Extract an optional integer parameter
+    fn get_optional_integer(&self, key: &str) -> Option<i64>;
     
-    #[cfg(feature = "websocket")]
-    pub use crate::transport::{WebSocketServerTransport, WebSocketClientTransport};
+    /// Extract a required boolean parameter
+    fn get_boolean(&self, key: &str) -> McpResult<bool>;
     
-    // Error types
-    pub use crate::errors::McpError;
-    
-    // Protocol types
-    pub use crate::protocol::types::{JsonRpcRequest, JsonRpcResponse, JsonRpcNotification};
-    
-    // Common external types
-    pub use serde_json::{json, Value};
-    pub use std::collections::HashMap;
-    pub use std::time::Duration;
-    
-    // Async runtime
-    pub use tokio;
+    /// Extract an optional boolean parameter
+    fn get_optional_boolean(&self, key: &str) -> Option<bool>;
+}
+
+impl ParameterExt for HashMap<String, Value> {
+    // Implementation details...
 }
 ```
 
-## Examples
+## Usage Examples
 
-### Basic Server Example
+### Complete Server Example
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use async_trait::async_trait;
+use std::collections::HashMap;
+use serde_json::{json, Value};
+
+// Tool handler implementation
+struct CalculatorHandler;
+
+#[async_trait]
+impl ToolHandler for CalculatorHandler {
+    async fn call(&self, arguments: HashMap<String, Value>) -> McpResult<ToolResult> {
+        let a = arguments.get_number("a")?;
+        let b = arguments.get_number("b")?;
+        let operation = arguments.get_string("operation")?;
+        
+        let result = match operation {
+            "add" => a + b,
+            "subtract" => a - b,
+            "multiply" => a * b,
+            "divide" => {
+                if b == 0.0 {
+                    return Ok(ToolResult {
+                        content: vec![Content::text("Error: Division by zero")],
+                        is_error: Some(true),
+                        structured_content: None,
+                        meta: None,
+                    });
+                }
+                a / b
+            }
+            _ => return Err(McpError::validation("Invalid operation")),
+        };
+        
+        Ok(ToolResult {
+            content: vec![Content::text(result.to_string())],
+            is_error: None,
+            structured_content: Some(json!({
+                "operation": operation,
+                "operands": [a, b],
+                "result": result
+            })),
+            meta: None,
+        })
+    }
+}
 
 #[tokio::main]
-async fn main() -> Result<(), McpError> {
-    let mut server = McpServer::new("example-server", "1.0.0");
+async fn main() -> McpResult<()> {
+    // Create server
+    let mut server = McpServer::new("calculator".to_string(), "1.0.0".to_string());
     
-    // Add a simple echo tool
-    let echo_tool = Tool::new("echo", "Echo back the input message")
-        .with_parameter("message", "Message to echo", true);
+    // Add calculator tool
+    server.add_tool(
+        "calculate".to_string(),
+        Some("Perform arithmetic calculations".to_string()),
+        json!({
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "enum": ["add", "subtract", "multiply", "divide"]
+                },
+                "a": {"type": "number"},
+                "b": {"type": "number"}
+            },
+            "required": ["operation", "a", "b"]
+        }),
+        CalculatorHandler,
+    ).await?;
     
-    server.add_tool(echo_tool);
-    
-    server.set_tool_handler("echo", |params| async move {
-        let message = params.get("message")
-            .and_then(|v| v.as_str())
-            .unwrap_or("No message provided");
-        
-        Ok(json!({ "echo": message }))
-    });
-    
+    // Start with STDIO transport
+    use mcp_protocol_sdk::transport::stdio::StdioServerTransport;
     let transport = StdioServerTransport::new();
-    server.run(transport).await
+    server.start(transport).await?;
+    
+    Ok(())
 }
 ```
 
-### Basic Client Example
+### Complete Client Example
 
 ```rust
 use mcp_protocol_sdk::prelude::*;
+use mcp_protocol_sdk::client::McpClient;
+use serde_json::json;
 
 #[tokio::main]
-async fn main() -> Result<(), McpError> {
-    let client = McpClient::new()
-        .name("example-client")
-        .version("1.0.0")
-        .build();
+async fn main() -> McpResult<()> {
+    // Create client
+    let mut client = McpClient::new("my-client".to_string(), "1.0.0".to_string());
     
-    let transport = StdioClientTransport::new();
-    client.connect(transport).await?;
+    // Connect with STDIO transport
+    use mcp_protocol_sdk::transport::stdio::StdioClientTransport;
+    let transport = StdioClientTransport::new("./calculator-server".to_string()).await?;
     
-    client.initialize().await?;
+    // Connect and initialize
+    let init_result = client.connect(transport).await?;
     
-    let tools = client.list_tools().await?;
-    println!("Available tools: {:?}", tools);
+    println!("Connected to: {} v{}", 
+        init_result.server_info.name,
+        init_result.server_info.version
+    );
     
-    if !tools.is_empty() {
-        let result = client.call_tool(
-            &tools[0].name,
-            json!({ "message": "Hello, World!" })
-        ).await?;
-        
-        println!("Tool result: {:?}", result);
+    // Check capabilities
+    if let Some(capabilities) = client.server_capabilities().await {
+        if capabilities.tools.is_some() {
+            println!("✅ Server supports tools");
+        }
     }
     
     Ok(())
 }
 ```
 
-This completes the API reference documentation for the MCP Protocol SDK. All public types, methods, and usage patterns are documented with examples. 📚
+## Type Aliases and Convenience Types
+
+```rust
+/// JSON-RPC request ID type
+pub type RequestId = serde_json::Value;
+
+/// Server request handler function type
+pub type ServerRequestHandler = std::sync::Arc<
+    dyn Fn(JsonRpcRequest) -> std::pin::Pin<Box<dyn std::future::Future<Output = McpResult<JsonRpcResponse>> + Send + 'static>>
+        + Send
+        + Sync,
+>;
+
+/// Tool parameter validation function
+pub type ParameterValidationFn = Box<dyn Fn(&mut HashMap<String, Value>) -> McpResult<()> + Send + Sync>;
+```
+
+## Important Notes
+
+### API Requirements
+
+1. **String Parameters**: All names and identifiers must be `String`, not `&str`
+2. **Async Traits**: Use `#[async_trait]` for all handler implementations
+3. **Error Handling**: Use `McpResult<T>` for all fallible operations
+4. **JSON Schemas**: Required for tool parameter validation
+
+### Thread Safety
+
+All public types implement `Send + Sync` where appropriate for safe concurrent usage.
+
+### Memory Management
+
+The SDK uses `Arc` and `Box` internally for efficient memory management while maintaining thread safety.
+
+---
+
+For complete examples and usage patterns, see the [Examples Directory](../../examples/) and [Getting Started Guide](../getting-started.md).
