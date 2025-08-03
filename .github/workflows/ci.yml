@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Badge refresh or manual testing'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -321,9 +326,22 @@ jobs:
       - name: Generate code coverage (excluding broken integration tests)
         run: cargo tarpaulin --all-features --workspace --timeout 120 --out xml --exclude-files="tests/integration_e2e_http.rs" --exclude-files="tests/integration_e2e_websocket.rs"
 
+      - name: Validate codecov configuration
+        run: |
+          if [ -z "${{ secrets.CODECOV_TOKEN }}" ]; then
+            echo "⚠️ CODECOV_TOKEN not configured - badge may not update"
+            echo "Add CODECOV_TOKEN to repository secrets for badge updates"
+          else
+            echo "✅ CODECOV_TOKEN is configured"
+          fi
+
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v5
         with:
           file: cobertura.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          flags: ci
+          name: ci-coverage
+          functionalities: gcov

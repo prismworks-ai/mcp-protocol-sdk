@@ -16,6 +16,11 @@ on:
       - '.github/workflows/security.yml'
       - 'deny.toml'
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Badge refresh or security check'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

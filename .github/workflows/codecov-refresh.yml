@@ -1,0 +1,157 @@
+name: Codecov Refresh
+
+# Dedicated workflow for refreshing the codecov badge
+# This can be triggered manually when the codecov badge is stale
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_upload:
+        description: 'Force upload to codecov even if coverage is low'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'codecov.yml'
+      - '.github/workflows/codecov-refresh.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'codecov.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "codecov"
+          cache-on-failure: true
+
+      - name: Install cargo-tarpaulin
+        run: |
+          # Check if tarpaulin is already installed to save time
+          if ! command -v cargo-tarpaulin &> /dev/null; then
+            echo "Installing cargo-tarpaulin..."
+            cargo install cargo-tarpaulin
+          else
+            echo "cargo-tarpaulin already installed"
+          fi
+
+      - name: Generate comprehensive code coverage
+        run: |
+          echo "🔍 Generating comprehensive code coverage report..."
+          echo "Excluding problematic integration tests to ensure reliable coverage"
+          
+          # Generate coverage with comprehensive options
+          cargo tarpaulin \
+            --all-features \
+            --workspace \
+            --timeout 120 \
+            --out xml \
+            --exclude-files="tests/integration_e2e_http.rs" \
+            --exclude-files="tests/integration_e2e_websocket.rs" \
+            --exclude-files="examples/*" \
+            --exclude-files="benches/*" \
+            --verbose
+          
+          echo "📊 Coverage report generated successfully"
+          
+          # Display coverage summary
+          if [ -f cobertura.xml ]; then
+            echo "✅ Coverage file created successfully"
+            # Extract and display coverage percentage for debugging
+            coverage_percent=$(grep -o 'line-rate="[0-9.]*"' cobertura.xml | head -1 | cut -d'"' -f2 | awk '{printf "%.1f", $1*100}')
+            echo "📈 Current coverage: ${coverage_percent}%"
+          else
+            echo "❌ Coverage file not found"
+            exit 1
+          fi
+
+      - name: Validate codecov token
+        run: |
+          if [ -z "${{ secrets.CODECOV_TOKEN }}" ]; then
+            echo "⚠️ CODECOV_TOKEN not found in secrets"
+            echo "Please add CODECOV_TOKEN to repository secrets for badge updates"
+            echo "Visit: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          else
+            echo "✅ CODECOV_TOKEN is configured"
+          fi
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          file: cobertura.xml
+          fail_ci_if_error: ${{ !github.event.inputs.force_upload }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+          flags: unittests
+          name: mcp-protocol-sdk-coverage
+          functionalities: gcov
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f cobertura.xml ]; then
+            coverage_percent=$(grep -o 'line-rate="[0-9.]*"' cobertura.xml | head -1 | cut -d'"' -f2 | awk '{printf "%.1f", $1*100}')
+            echo "**Current Coverage:** ${coverage_percent}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if (( $(echo "$coverage_percent >= 80" | bc -l) )); then
+              echo "✅ **Status:** Coverage meets quality threshold (≥80%)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ **Status:** Coverage below recommended threshold (80%)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ **Status:** Coverage report generation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Badge URL:** https://codecov.io/gh/${{ github.repository }}/branch/main/graph/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Codecov Dashboard:** https://codecov.io/gh/${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            cobertura.xml
+            tarpaulin-report.html
+          retention-days: 30

@@ -13,6 +13,11 @@ on:
       - 'benches/**'
       - 'Cargo.toml'
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Badge refresh or benchmark update'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

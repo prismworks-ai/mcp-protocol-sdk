@@ -1,115 +1,195 @@
-# GitHub Actions Workflow Status
+# Workflow Status & Badge Management
 
-## Overview
+This document provides comprehensive information about workflow badges and their management.
 
-This document tracks the status and configuration of all GitHub Actions workflows in the repository.
+## 🏷️ Current Badge Status
 
-## Active Workflows
+| Badge | Status | Workflow | Purpose |
+|-------|--------|----------|----------|
+| [![CI](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml) | Active | `ci.yml` | Continuous Integration |
+| [![Security](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/security.yml) | Active | `security.yml` | Security Audit |
+| [![Dependencies](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/dependencies.yml) | Weekly | `dependencies.yml` | Dependency Updates |
+| [![Documentation](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/docs.yml) | Active | `docs.yml` | Documentation Build |
+| [![Benchmarks](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/benchmarks.yml) | On-Demand | `benchmarks.yml` | Performance Testing |
+| [![Release](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/release.yml) | On-Tag | `release.yml` | Release Process |
+| [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk) | ⚠️ **Needs Attention** | `codecov-refresh.yml` | Code Coverage |
 
-### ✅ CI (Continuous Integration)
-- **File**: `.github/workflows/ci.yml`
-- **Triggers**: Push, Pull Request
-- **Status**: ✅ **Working**
-- **Purpose**: Code quality, testing, and validation
-- **Dependencies**: None
+## 🚀 Badge Update Solutions
 
-### ✅ Documentation
-- **File**: `.github/workflows/documentation.yml`
-- **Triggers**: Push to main, workflow_dispatch
-- **Status**: ✅ **Working**
-- **Purpose**: Generate and deploy documentation
-- **Dependencies**: None
+### Automated Badge Updates
 
-### ✅ Security
-- **File**: `.github/workflows/security.yml`
-- **Triggers**: Schedule (daily), workflow_dispatch
-- **Status**: ✅ **Working**
-- **Purpose**: Security audits and vulnerability scanning
-- **Dependencies**: None
+A dedicated **Badge Update Workflow** (`badge-update.yml`) provides:
 
-### ✅ Benchmarks
-- **File**: `.github/workflows/benchmarks.yml`
-- **Triggers**: Pull Request, workflow_dispatch
-- **Status**: ✅ **Working**
-- **Purpose**: Performance regression testing
-- **Dependencies**: None
+- **Manual Triggers**: Update specific badges on-demand
+- **Scheduled Updates**: Weekly refresh to keep badges current
+- **Intelligent Routing**: Trigger only necessary workflows
+- **Status Reporting**: Comprehensive update status
 
-### ✅ Release
-- **File**: `.github/workflows/release.yml`
-- **Triggers**: Tag creation
-- **Status**: ✅ **Working**
-- **Purpose**: Automated releases to crates.io
-- **Dependencies**: None
+### Manual Badge Management
 
-### ⏳ Dependencies (Requires Setup)
-- **File**: `.github/workflows/dependencies.yml`
-- **Triggers**: Schedule (Monday 2 AM UTC), workflow_dispatch
-- **Status**: ⏳ **Pending PAT Setup**
-- **Purpose**: Automated dependency updates with pull requests
-- **Dependencies**: **`GH_TOKEN` secret required**
+Use the enhanced badge manager script:
 
-## Setup Requirements
+```bash
+# Check all badge status
+./scripts/badge-manager.sh check
 
-### Dependencies Workflow
+# Update all badges
+./scripts/badge-manager.sh update
 
-**Current Issue**: Cannot create pull requests - requires Personal Access Token
+# Update specific badge (e.g., codecov)
+./scripts/badge-manager.sh update codecov
 
-**Solution Required**:
-1. Repository admin generates PAT with `repo` and `workflow` scopes
-2. Add PAT as repository secret named `GH_TOKEN`
-3. See [SETUP_PAT.md](./SETUP_PAT.md) for detailed instructions
+# Show workflow status
+./scripts/badge-manager.sh status
+```
 
-**Expected Behavior After Setup**:
-- ✅ Automatic dependency updates every Monday
-- ✅ Pull request creation with update summaries
-- ✅ Full test suite validation before PR creation
-- ✅ Security audit integration
+## 🎯 Codecov Badge Fix
 
-## Workflow Statistics
+### Current Issue
+The codecov badge has never been updated due to:
+1. Missing or misconfigured `CODECOV_TOKEN`
+2. Coverage upload failures
+3. Badge caching issues
 
-### Success Rates (Last 30 Days)
-- **CI**: ~98% success rate
-- **Documentation**: ~95% success rate  
-- **Security**: ~100% success rate
-- **Benchmarks**: ~97% success rate
-- **Release**: ~100% success rate
-- **Dependencies**: 0% success rate (blocked by configuration)
+### Solution Steps
 
-### Performance Metrics
-- **CI Average Runtime**: ~8 minutes
-- **Documentation Build**: ~3 minutes
-- **Security Scan**: ~2 minutes
-- **Benchmark Suite**: ~15 minutes
-- **Release Process**: ~5 minutes
-- **Dependencies Update**: ~4 minutes (when working)
+1. **Configure Codecov Token**:
+   ```bash
+   # Repository Settings → Secrets → Actions → New repository secret
+   # Name: CODECOV_TOKEN
+   # Value: <your-codecov-token>
+   ```
 
-## Monitoring
+2. **Trigger Codecov Refresh**:
+   ```bash
+   # Using GitHub CLI
+   gh workflow run codecov-refresh.yml
+   
+   # Or using badge manager
+   ./scripts/badge-manager.sh update codecov
+   ```
 
-### Failure Notifications
-- All workflow failures generate GitHub notifications
-- Failed runs require manual investigation
-- Critical workflows (CI, Security) should be monitored closely
+3. **Verify Upload**:
+   - Check [Codecov Dashboard](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
+   - Monitor workflow progress
+   - Validate badge URL response
 
-### Maintenance Schedule
-- **Weekly**: Review failed workflow runs
-- **Monthly**: Update action versions in workflows
-- **Quarterly**: Review and optimize workflow performance
-- **As Needed**: PAT rotation for Dependencies workflow
+## 🔧 Workflow Trigger Methods
 
-## Security Considerations
+### 1. GitHub CLI (Recommended)
+```bash
+# Install GitHub CLI
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install gh
 
-### Secrets Management
-- `GH_TOKEN`: Required for Dependencies workflow
-- All secrets are encrypted and not visible in logs
-- Only repository admins can view/modify secrets
+# Authenticate
+gh auth login
 
-### Permissions
-- All workflows use minimal required permissions
-- Dependencies workflow requires elevated permissions for PR creation
-- No workflows have admin-level repository access
+# Trigger workflows
+gh workflow run ci.yml
+gh workflow run codecov-refresh.yml
+gh workflow run badge-update.yml -f badge_type=codecov
+```
+
+### 2. GitHub UI
+1. Navigate to [Actions](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+2. Select desired workflow
+3. Click "Run workflow"
+4. Choose branch and parameters
+5. Click "Run workflow"
+
+### 3. Badge Manager Script
+```bash
+# Make executable
+chmod +x scripts/badge-manager.sh
+
+# Update all badges
+./scripts/badge-manager.sh update
+
+# Update specific badge
+./scripts/badge-manager.sh update codecov
+```
+
+## 📊 Workflow Monitoring
+
+### Status Dashboard
+- **Main**: [GitHub Actions](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+- **Codecov**: [Coverage Dashboard](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
+- **Crates.io**: [Package Status](https://crates.io/crates/mcp-protocol-sdk)
+
+### Health Checks
+```bash
+# Check workflow status
+gh run list --limit 10
+
+# Check specific workflow
+gh run list --workflow=ci.yml --limit 5
+
+# View workflow details
+gh run view [RUN_ID]
+```
+
+## 🔄 Badge Update Schedule
+
+| Badge | Update Trigger | Frequency | Notes |
+|-------|---------------|-----------|-------|
+| CI | Push/PR | On every commit | Auto-updates |
+| Security | Weekly + Manual | Sunday 00:00 UTC | Scheduled |
+| Dependencies | Weekly + Manual | Monday 02:00 UTC | Scheduled |
+| Documentation | Push to main | On doc changes | Auto-updates |
+| Benchmarks | Manual | On-demand | Manual trigger |
+| Release | Tag push | On releases | Auto-updates |
+| Codecov | Push + Manual | On coverage changes | **Manual fix needed** |
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Badge shows "unknown" status**
+   - Workflow hasn't run yet
+   - Workflow file syntax error
+   - Badge URL incorrect
+
+2. **Badge shows old status**
+   - GitHub badge caching (5-10 minutes)
+   - Workflow completed but badge not refreshed
+   - CDN caching issues
+
+3. **Codecov badge not updating**
+   - Missing `CODECOV_TOKEN`
+   - Coverage upload failed
+   - Codecov service issues
+
+### Solutions
+
+1. **Force badge refresh**:
+   ```bash
+   ./scripts/badge-manager.sh update
+   ```
+
+2. **Check workflow logs**:
+   ```bash
+   gh run list --limit 5
+   gh run view [RUN_ID]
+   ```
+
+3. **Validate badge URLs**:
+   ```bash
+   ./scripts/badge-manager.sh check
+   ```
+
+## 🔗 Quick Links
+
+- [Actions Dashboard](https://github.com/mcp-rust/mcp-protocol-sdk/actions)
+- [Badge Update Workflow](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/badge-update.yml)
+- [Codecov Dashboard](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
+- [Repository Settings](https://github.com/mcp-rust/mcp-protocol-sdk/settings)
+- [Workflow Files](.github/workflows/)
 
 ---
 
-**Last Updated**: August 2, 2025  
-**Next Review**: August 9, 2025  
-**Responsible**: Repository Maintainers
+**Last Updated**: 2025-08-03  
+**Maintained By**: Repository maintainers  
+**Status**: ✅ Active monitoring and automated updates

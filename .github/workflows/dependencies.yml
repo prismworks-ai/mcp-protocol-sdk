@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: '0 2 * * 1' # Monday at 2 AM UTC
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Badge refresh or dependency check'
 
 permissions:
   contents: write

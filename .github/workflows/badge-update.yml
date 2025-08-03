@@ -1,0 +1,311 @@
+name: Badge Update
+
+# Workflow to ensure all badges get properly updated
+# This workflow can be triggered manually to refresh specific badges
+
+on:
+  workflow_dispatch:
+    inputs:
+      badge_type:
+        description: 'Which badge to update (all, ci, security, deps, docs, benchmarks, codecov)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ci
+          - security
+          - deps
+          - docs
+          - benchmarks
+          - codecov
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/badge-update.yml'
+  schedule:
+    # Run weekly to ensure badges stay fresh
+    - cron: '0 6 * * 1'  # Monday at 6 AM UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  badge-status:
+    name: Badge Status Check
+    runs-on: ubuntu-latest
+    outputs:
+      should_update_ci: ${{ steps.check.outputs.should_update_ci }}
+      should_update_security: ${{ steps.check.outputs.should_update_security }}
+      should_update_deps: ${{ steps.check.outputs.should_update_deps }}
+      should_update_docs: ${{ steps.check.outputs.should_update_docs }}
+      should_update_benchmarks: ${{ steps.check.outputs.should_update_benchmarks }}
+      should_update_codecov: ${{ steps.check.outputs.should_update_codecov }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Check badge update requirements
+        id: check
+        run: |
+          BADGE_TYPE="${{ github.event.inputs.badge_type || 'all' }}"
+          echo "Badge type requested: $BADGE_TYPE"
+          
+          # Default to updating all badges
+          UPDATE_ALL="true"
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "ci" ]; then
+            echo "should_update_ci=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_ci=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "security" ]; then
+            echo "should_update_security=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_security=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "deps" ]; then
+            echo "should_update_deps=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_deps=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "docs" ]; then
+            echo "should_update_docs=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_docs=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "benchmarks" ]; then
+            echo "should_update_benchmarks=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_benchmarks=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$BADGE_TYPE" = "all" ] || [ "$BADGE_TYPE" = "codecov" ]; then
+            echo "should_update_codecov=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update_codecov=false" >> $GITHUB_OUTPUT
+          fi
+
+  trigger-ci:
+    name: Trigger CI Badge Update
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_ci == 'true'
+    steps:
+      - name: Trigger CI Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci.yml',
+                ref: 'main'
+              });
+              console.log('✅ CI workflow triggered successfully');
+            } catch (error) {
+              console.log('⚠️ CI workflow trigger failed:', error.message);
+            }
+
+  trigger-security:
+    name: Trigger Security Badge Update
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_security == 'true'
+    steps:
+      - name: Trigger Security Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'security.yml',
+                ref: 'main'
+              });
+              console.log('✅ Security workflow triggered successfully');
+            } catch (error) {
+              console.log('⚠️ Security workflow trigger failed:', error.message);
+            }
+
+  trigger-dependencies:
+    name: Trigger Dependencies Badge Update
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_deps == 'true'
+    steps:
+      - name: Trigger Dependencies Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'dependencies.yml',
+                ref: 'main'
+              });
+              console.log('✅ Dependencies workflow triggered successfully');
+            } catch (error) {
+              console.log('⚠️ Dependencies workflow trigger failed:', error.message);
+            }
+
+  trigger-docs:
+    name: Trigger Documentation Badge Update
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_docs == 'true'
+    steps:
+      - name: Trigger Documentation Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'docs.yml',
+                ref: 'main'
+              });
+              console.log('✅ Documentation workflow triggered successfully');
+            } catch (error) {
+              console.log('⚠️ Documentation workflow trigger failed:', error.message);
+            }
+
+  trigger-benchmarks:
+    name: Trigger Benchmarks Badge Update
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_benchmarks == 'true'
+    steps:
+      - name: Trigger Benchmarks Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'benchmarks.yml',
+                ref: 'main'
+              });
+              console.log('✅ Benchmarks workflow triggered successfully');
+            } catch (error) {
+              console.log('⚠️ Benchmarks workflow trigger failed:', error.message);
+            }
+
+  codecov-refresh:
+    name: Refresh Codecov Badge
+    runs-on: ubuntu-latest
+    needs: badge-status
+    if: needs.badge-status.outputs.should_update_codecov == 'true'
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install OpenSSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "codecov-refresh"
+          cache-on-failure: true
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Generate fresh code coverage
+        run: |
+          echo "🔄 Generating fresh code coverage for Codecov badge update..."
+          cargo tarpaulin --all-features --workspace --timeout 120 --out xml --exclude-files="tests/integration_e2e_http.rs" --exclude-files="tests/integration_e2e_websocket.rs"
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          file: cobertura.xml
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  status-report:
+    name: Badge Update Status Report
+    runs-on: ubuntu-latest
+    needs: [badge-status, trigger-ci, trigger-security, trigger-dependencies, trigger-docs, trigger-benchmarks, codecov-refresh]
+    if: always()
+    steps:
+      - name: Generate Status Report
+        run: |
+          echo "## 🏷️ Badge Update Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📊 Requested Updates" >> $GITHUB_STEP_SUMMARY
+          echo "Badge Type: ${{ github.event.inputs.badge_type || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🚀 Workflow Triggers" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.badge-status.outputs.should_update_ci }}" = "true" ]; then
+            echo "| CI | ${{ needs.trigger-ci.result == 'success' && '✅ Triggered' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.badge-status.outputs.should_update_security }}" = "true" ]; then
+            echo "| Security | ${{ needs.trigger-security.result == 'success' && '✅ Triggered' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.badge-status.outputs.should_update_deps }}" = "true" ]; then
+            echo "| Dependencies | ${{ needs.trigger-dependencies.result == 'success' && '✅ Triggered' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.badge-status.outputs.should_update_docs }}" = "true" ]; then
+            echo "| Documentation | ${{ needs.trigger-docs.result == 'success' && '✅ Triggered' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.badge-status.outputs.should_update_benchmarks }}" = "true" ]; then
+            echo "| Benchmarks | ${{ needs.trigger-benchmarks.result == 'success' && '✅ Triggered' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.badge-status.outputs.should_update_codecov }}" = "true" ]; then
+            echo "| Codecov | ${{ needs.codecov-refresh.result == 'success' && '✅ Updated' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Check individual workflow runs for completion status" >> $GITHUB_STEP_SUMMARY
+          echo "2. Badges typically update within 5-10 minutes of workflow completion" >> $GITHUB_STEP_SUMMARY
+          echo "3. Visit the [Actions page](https://github.com/${{ github.repository }}/actions) to monitor progress" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Badge URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- CI: https://github.com/${{ github.repository }}/actions/workflows/ci.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Security: https://github.com/${{ github.repository }}/actions/workflows/security.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies: https://github.com/${{ github.repository }}/actions/workflows/dependencies.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation: https://github.com/${{ github.repository }}/actions/workflows/docs.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Benchmarks: https://github.com/${{ github.repository }}/actions/workflows/benchmarks.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Release: https://github.com/${{ github.repository }}/actions/workflows/release.yml/badge.svg" >> $GITHUB_STEP_SUMMARY
+          echo "- Codecov: https://codecov.io/gh/${{ github.repository }}/branch/main/graph/badge.svg" >> $GITHUB_STEP_SUMMARY
