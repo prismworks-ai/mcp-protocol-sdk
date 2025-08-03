@@ -352,7 +352,7 @@ impl ServerTransport for StdioServerTransport {
         let request_handler = self.request_handler.clone();
 
         let mut line = String::new();
-        while self.running {
+        loop {
             line.clear();
 
             match reader.read_line(&mut line).await {

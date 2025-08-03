@@ -128,7 +128,7 @@ impl ToolHandler for EchoHandler {
 
 // Test async server setup (compilation test)
 async fn test_async_server_setup() -> McpResult<()> {
-    let mut server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
+    let server = McpServer::new("test-server".to_string(), "1.0.0".to_string());
 
     // Test adding a tool with the actual API
     server

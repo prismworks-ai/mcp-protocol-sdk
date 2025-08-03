@@ -165,7 +165,7 @@ async fn test_transport_integration() {
 #[tokio::test]
 async fn test_complete_server_startup() {
     // Create server
-    let mut server = McpServer::new("startup-test".to_string(), "1.0.0".to_string());
+    let server = McpServer::new("startup-test".to_string(), "1.0.0".to_string());
 
     // Add a simple tool for testing
     use async_trait::async_trait;
@@ -205,7 +205,7 @@ async fn test_complete_server_startup() {
         .unwrap();
 
     // Create transport
-    let transport = StdioServerTransport::new();
+    let _transport = StdioServerTransport::new();
 
     // Verify that server startup would work (without actually starting)
     // The important part is that the server.start() method sets up the request handler correctly
