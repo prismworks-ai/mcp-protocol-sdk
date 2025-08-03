@@ -556,28 +556,6 @@ impl ServerTransport for WebSocketServerTransport {
         Ok(())
     }
 
-    async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
-        let handler_guard = self.request_handler.read().await;
-
-        if let Some(ref handler) = *handler_guard {
-            let response_rx = handler(request);
-            drop(handler_guard);
-
-            match response_rx.await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(McpError::WebSocket(
-                    "Request handler channel closed".to_string(),
-                )),
-            }
-        } else {
-            Ok(JsonRpcResponse {
-                jsonrpc: "2.0".to_string(),
-                id: request.id,
-                result: None,
-            })
-        }
-    }
-
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
         let notification_text = serde_json::to_string(&notification)
             .map_err(|e| McpError::Serialization(e.to_string()))?;
@@ -641,7 +619,7 @@ impl ServerTransport for WebSocketServerTransport {
 
     fn set_request_handler(&mut self, handler: crate::transport::traits::ServerRequestHandler) {
         // Convert the ServerRequestHandler to the WebSocket transport's expected format
-        let ws_handler = Arc::new(move |request: JsonRpcRequest| {
+        let _ws_handler = Arc::new(move |request: JsonRpcRequest| {
             let (tx, rx) = tokio::sync::oneshot::channel();
             let handler_future = handler(request);
             tokio::spawn(async move {

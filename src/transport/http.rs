@@ -503,7 +503,7 @@ impl ServerTransport for HttpServerTransport {
 
     fn set_request_handler(&mut self, handler: crate::transport::traits::ServerRequestHandler) {
         // Convert the ServerRequestHandler to the HTTP transport's expected format
-        let http_handler = Arc::new(move |request: JsonRpcRequest| {
+        let _http_handler = Arc::new(move |request: JsonRpcRequest| {
             let (tx, rx) = tokio::sync::oneshot::channel();
             let handler_future = handler(request);
             tokio::spawn(async move {
@@ -527,31 +527,6 @@ impl ServerTransport for HttpServerTransport {
             // Note: This is a limitation - we can't call async methods from a sync trait method
             // The HTTP transport should be updated in the future to support the new trait design
         });
-    }
-
-    async fn handle_request(&mut self, request: JsonRpcRequest) -> McpResult<JsonRpcResponse> {
-        // This is now handled by the HTTP server itself and should not be called directly
-        // The HTTP transport handles requests through the HTTP server routes
-        tracing::warn!(
-            "handle_request called directly on HTTP transport - this may indicate a configuration issue"
-        );
-
-        let state = self.state.read().await;
-
-        if let Some(ref handler) = state.request_handler {
-            let response_rx = handler(request);
-            drop(state); // Release the lock
-
-            match response_rx.await {
-                Ok(response) => Ok(response),
-                Err(_) => Err(McpError::Http("Request handler channel closed".to_string())),
-            }
-        } else {
-            // Return an error indicating no handler is configured
-            Err(McpError::Http(
-                "No request handler configured for HTTP transport".to_string(),
-            ))
-        }
     }
 
     async fn send_notification(&mut self, notification: JsonRpcNotification) -> McpResult<()> {
