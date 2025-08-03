@@ -14,7 +14,7 @@
 
 [![codecov](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mcp-rust/mcp-protocol-sdk)
 [![Schema Compliance](https://img.shields.io/badge/MCP%20Schema%20Compliance-100%25-brightgreen.svg)](#-mcp-protocol-schema-compliance)
-[![Tests](https://img.shields.io/badge/Tests-97%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/Tests-105%20Passing-success.svg)](https://github.com/mcp-rust/mcp-protocol-sdk/actions/workflows/ci.yml)
 [![Rust Version](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 
 **A production-ready, feature-complete Rust implementation of the Model Context Protocol**
@@ -227,7 +227,7 @@ Our comprehensive test suite validates every aspect of the MCP protocol:
 cargo test --test comprehensive_schema_tests -- --nocapture
 ```
 
-**Results**: `97 tests passing` with `100.0% compliance rate` 🎉
+**Results**: `105 tests passing` with `100.0% compliance rate` 🎉
 
 ### 📊 Schema Compliance Report
 

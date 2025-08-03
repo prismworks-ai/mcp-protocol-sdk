@@ -6,7 +6,7 @@ This document provides detailed information about the MCP Protocol SDK's 100% co
 
 ## 📊 Executive Summary
 
-- **Compliance Rate**: 100.0% (97 tests passing)
+- **Compliance Rate**: 100.0% (105 tests passing)
 - **Protocol Version**: 2025-06-18 (Latest)
 - **Schema Upgrade**: Successfully completed from 2025-03-26 to 2025-06-18
 - **JSON-RPC Version**: 2.0
@@ -704,4 +704,4 @@ fn test_new_feature_schema_compliance() {
 
 ---
 
-**This document is automatically updated when schema compliance tests change. Last updated: 2024-12-XX**
+**This document is automatically updated when schema compliance tests change. Last updated: 2025-01-31**
