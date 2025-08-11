@@ -1,0 +1,18 @@
+mcp-protocol-sdk v0.5.1 (/home/runner/work/mcp-protocol-sdk/mcp-protocol-sdk)
+[2m├──[0m async-trait v0.1.88 (proc-macro)
+[2m├──[0m chrono v0.4.41
+[2m├──[0m serde v1.0.219
+[2m├──[0m serde_json v1.0.142
+[2m├──[0m thiserror v2.0.12
+[2m├──[0m tokio v1.47.1
+[2m├──[0m tracing v0.1.41
+[2m├──[0m tracing-subscriber v0.3.19
+[2m├──[0m url v2.5.4
+[2m└──[0m uuid v1.17.0
+[36m[1m[dev-dependencies][39m[22m
+[1m[36m├──[0m chrono v0.4.41 [33m[2m(*)[39m[22m
+[1m[36m├──[0m criterion v0.7.0
+[1m[36m├──[0m futures v0.3.31
+[1m[36m├──[0m pretty_assertions v1.4.1
+[1m[36m├──[0m tempfile v3.20.0
+[1m[36m└──[0m tokio-test v0.4.4
